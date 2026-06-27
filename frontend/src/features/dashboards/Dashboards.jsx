@@ -165,6 +165,6 @@ const SimpleDashboard = ({ title, role }) => {
 };
 
 export { AdminDashboard } from './AdminDashboard';
-export const HodDashboard = () => <SimpleDashboard title="HOD Portal" role="HOD" />;
+export { HodDashboard } from '../hod/HodDashboard';
 export const StudentDashboard = () => <SimpleDashboard title="Student Portal" role="Student" />;
 export const AuthorityDashboard = () => <SimpleDashboard title="Higher Authority Portal" role="Authority" />;

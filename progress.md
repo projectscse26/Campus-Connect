@@ -47,10 +47,10 @@ npm run dev
 - [x] Course Management
 
 ## Phase 4: Academic Routing (HOD Portal)
-- [ ] HOD Dashboard UI
-- [ ] Faculty to Course Assignment Logic
-- [ ] Mentor & Class Advisor Assignment
-- [ ] Department Monitoring Views
+- [x] HOD Dashboard UI
+- [x] Faculty to Course Assignment Logic
+- [x] Mentor & Class Advisor Assignment
+- [x] Department Monitoring Views
 
 ## Phase 5: LMS & Teaching Operations (Faculty Portal)
 - [ ] Faculty Dashboard UI

@@ -24,6 +24,10 @@ app.include_router(departments.router, prefix="/api/departments", tags=["Departm
 app.include_router(faculty.router, prefix="/api/faculty", tags=["Faculty"])
 app.include_router(students.router, prefix="/api/students", tags=["Students"])
 app.include_router(authorities.router, prefix="/api/authorities", tags=["Authorities"])
+from app.api import courses
+app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
+from app.api import hod
+app.include_router(hod.router, prefix="/api/hod", tags=["HOD"])
 
 @app.get("/")
 def read_root():

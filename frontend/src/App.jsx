@@ -5,7 +5,6 @@ import DashboardLayout from './layouts/DashboardLayout';
 import Login from './features/auth/Login';
 import { 
   AdminDashboard, 
-  HodDashboard, 
   FacultyDashboard, 
   StudentDashboard, 
   AuthorityDashboard 
@@ -14,6 +13,18 @@ import { Departments } from './features/admin/Departments';
 import { Faculty } from './features/admin/Faculty';
 import { Students } from './features/admin/Students';
 import { Authorities } from './features/admin/Authorities';
+import { Courses } from './features/admin/Courses';
+import { HodDashboard } from './features/hod/HodDashboard';
+import { FacultyList } from './features/hod/FacultyList';
+import { StudentList } from './features/hod/StudentList';
+import { Sections } from './features/hod/Sections';
+import { FacultyAssignment } from './features/hod/FacultyAssignment';
+import { MentorAssignment } from './features/hod/MentorAssignment';
+import { Timetable } from './features/hod/Timetable';
+import { Announcements } from './features/hod/Announcements';
+import { AttendanceMonitor } from './features/hod/AttendanceMonitor';
+import { ResultsMonitor } from './features/hod/ResultsMonitor';
+import { Reports } from './features/hod/Reports';
 
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -70,11 +81,66 @@ function AppRoutes() {
             <Authorities />
           </ProtectedRoute>
         } />
+        <Route path="/admin/courses" element={
+          <ProtectedRoute allowedRole="admin">
+            <Courses />
+          </ProtectedRoute>
+        } />
         
         {/* HOD Routes */}
         <Route path="/hod" element={
           <ProtectedRoute allowedRole="hod">
             <HodDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/hod/faculty" element={
+          <ProtectedRoute allowedRole="hod">
+            <FacultyList />
+          </ProtectedRoute>
+        } />
+        <Route path="/hod/students" element={
+          <ProtectedRoute allowedRole="hod">
+            <StudentList />
+          </ProtectedRoute>
+        } />
+        <Route path="/hod/sections" element={
+          <ProtectedRoute allowedRole="hod">
+            <Sections />
+          </ProtectedRoute>
+        } />
+        <Route path="/hod/assignments" element={
+          <ProtectedRoute allowedRole="hod">
+            <FacultyAssignment />
+          </ProtectedRoute>
+        } />
+        <Route path="/hod/mentors" element={
+          <ProtectedRoute allowedRole="hod">
+            <MentorAssignment />
+          </ProtectedRoute>
+        } />
+        <Route path="/hod/timetable" element={
+          <ProtectedRoute allowedRole="hod">
+            <Timetable />
+          </ProtectedRoute>
+        } />
+        <Route path="/hod/announcements" element={
+          <ProtectedRoute allowedRole="hod">
+            <Announcements />
+          </ProtectedRoute>
+        } />
+        <Route path="/hod/attendance" element={
+          <ProtectedRoute allowedRole="hod">
+            <AttendanceMonitor />
+          </ProtectedRoute>
+        } />
+        <Route path="/hod/results" element={
+          <ProtectedRoute allowedRole="hod">
+            <ResultsMonitor />
+          </ProtectedRoute>
+        } />
+        <Route path="/hod/reports" element={
+          <ProtectedRoute allowedRole="hod">
+            <Reports />
           </ProtectedRoute>
         } />
         

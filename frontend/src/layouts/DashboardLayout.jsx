@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar
 } from 'lucide-react';
 
 const ROLE_NAV_LINKS = {
@@ -16,8 +16,16 @@ const ROLE_NAV_LINKS = {
   ],
   hod: [
     { name: 'Dashboard', path: '/hod', icon: LayoutDashboard },
-    { name: 'Faculty Assignment', path: '/hod/faculty', icon: Users },
-    { name: 'Classes', path: '/hod/classes', icon: BookOpen },
+    { name: 'Faculty', path: '/hod/faculty', icon: Users },
+    { name: 'Students', path: '/hod/students', icon: GraduationCap },
+    { name: 'Sections', path: '/hod/sections', icon: Settings },
+    { name: 'Timetable', path: '/hod/timetable', icon: Calendar },
+    { name: 'Course Assignment', path: '/hod/assignments', icon: BookOpen },
+    { name: 'Mentor Assignment', path: '/hod/mentors', icon: Users },
+    { name: 'Attendance', path: '/hod/attendance', icon: Search },
+    { name: 'Results', path: '/hod/results', icon: Search },
+    { name: 'Announcements', path: '/hod/announcements', icon: Bell },
+    { name: 'Reports', path: '/hod/reports', icon: Home },
   ],
   faculty: [
     { name: 'Dashboard', path: '/faculty', icon: LayoutDashboard },

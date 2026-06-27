@@ -53,15 +53,29 @@ def create_faculty(
     if db_emp:
         raise HTTPException(status_code=400, detail="Employee ID already exists")
 
+    # Determine role based on designation
+    is_hod = faculty_in.designation and faculty_in.designation.upper() == "HOD"
+    user_role = "hod" if is_hod else "faculty"
+
+    # If HOD, check that the department doesn't already have one
+    if is_hod:
+        existing_hod = db.query(Faculty).join(User).filter(
+            Faculty.department_id == faculty_in.department_id,
+            Faculty.designation == "HOD",
+            User.role == "hod"
+        ).first()
+        if existing_hod:
+            raise HTTPException(status_code=400, detail="This department already has an HOD assigned")
+
     # 1. Create the User account
     new_user = User(
         email=faculty_in.college_email,
         hashed_password=get_password_hash(faculty_in.password),
-        role="faculty",
+        role=user_role,
         is_active=True
     )
     db.add(new_user)
-    db.flush() # Flush to get the new_user.id
+    db.flush()
     
     # 2. Create the Faculty profile linked to the User
     new_faculty = Faculty(
@@ -78,6 +92,12 @@ def create_faculty(
         specialization=faculty_in.specialization
     )
     db.add(new_faculty)
+    db.flush()
+
+    # 3. If HOD, set Department.hod_id
+    if is_hod:
+        db_dept.hod_id = new_faculty.id
+
     db.commit()
     db.refresh(new_faculty)
     
@@ -172,7 +192,7 @@ def update_faculty(
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Update a faculty member.
+    Update a faculty member. Handles HOD role transitions.
     """
     if current_user.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can update faculty")
@@ -183,11 +203,40 @@ def update_faculty(
         
     update_data = faculty_in.model_dump(exclude_unset=True)
     
-    # Optional: If employee ID is updated, verify uniqueness
     if "employee_id" in update_data and update_data["employee_id"] != db_faculty.employee_id:
         if db.query(Faculty).filter(Faculty.employee_id == update_data["employee_id"]).first():
             raise HTTPException(status_code=400, detail="Employee ID already in use")
-            
+
+    # Handle designation/role changes
+    old_designation = (db_faculty.designation or "").upper()
+    new_designation = (update_data.get("designation") or db_faculty.designation or "").upper()
+    db_user = db.query(User).filter(User.id == db_faculty.user_id).first()
+    dept_id = update_data.get("department_id", db_faculty.department_id)
+
+    if new_designation == "HOD" and old_designation != "HOD":
+        # Promoting to HOD — check dept doesn't already have one
+        existing_hod = db.query(Faculty).join(User).filter(
+            Faculty.department_id == dept_id,
+            Faculty.designation == "HOD",
+            User.role == "hod",
+            Faculty.id != faculty_id
+        ).first()
+        if existing_hod:
+            raise HTTPException(status_code=400, detail="This department already has an HOD assigned")
+        if db_user:
+            db_user.role = "hod"
+        db_dept = db.query(Department).filter(Department.id == dept_id).first()
+        if db_dept:
+            db_dept.hod_id = db_faculty.id
+
+    elif old_designation == "HOD" and new_designation != "HOD":
+        # Demoting from HOD
+        if db_user:
+            db_user.role = "faculty"
+        db_dept = db.query(Department).filter(Department.id == db_faculty.department_id).first()
+        if db_dept and db_dept.hod_id == db_faculty.id:
+            db_dept.hod_id = None
+
     for field, value in update_data.items():
         setattr(db_faculty, field, value)
         
