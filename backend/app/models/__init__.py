@@ -11,6 +11,7 @@ from app.models.department import Department
 from app.models.faculty import Faculty
 from app.models.student import Student
 from app.models.authority import Authority
+from app.models.alumni import Alumni
 
 # Academic
 from app.models.academic import (

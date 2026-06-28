@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.models.student import Student
 from app.models.user import User
 from app.models.department import Department
+from app.models.alumni import Alumni
 from app.schemas.student import StudentCreate, StudentUpdate, StudentResponse
 from app.core.security import get_current_active_user, get_password_hash
 
@@ -61,6 +62,9 @@ def create_student(
     db.flush() 
     
     # 2. Create the Student profile linked to the User
+    sem = student_in.current_semester or 1
+    year = student_in.current_year or ((sem + 1) // 2)
+
     new_student = Student(
         user_id=new_user.id,
         department_id=student_in.department_id,
@@ -70,8 +74,8 @@ def create_student(
         college_email=student_in.college_email,
         phone=student_in.phone,
         batch=student_in.batch,
-        current_semester=student_in.current_semester,
-        current_year=student_in.current_year,
+        current_semester=sem,
+        current_year=year,
         gender=student_in.gender,
         date_of_birth=student_in.date_of_birth
     )
@@ -80,6 +84,69 @@ def create_student(
     db.refresh(new_student)
     
     return new_student
+
+@router.post("/promote", status_code=status.HTTP_200_OK)
+def promote_students(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Promote all active students to the next semester.
+    If a student is in the 8th semester, graduate them to Alumni.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins can promote students")
+
+    active_students = db.query(Student).filter(Student.is_active == True).all()
+    promoted_count = 0
+    graduated_count = 0
+
+    for s in active_students:
+        if s.current_semester < 8:
+            s.current_semester += 1
+            promoted_count += 1
+        elif s.current_semester == 8:
+            # Create Alumni record
+            alumni_record = Alumni(
+                user_id=s.user_id,
+                department_id=s.department_id,
+                first_name=s.first_name,
+                last_name=s.last_name,
+                register_number=s.register_number,
+                gender=s.gender,
+                date_of_birth=s.date_of_birth,
+                blood_group=s.blood_group,
+                nationality=s.nationality,
+                community=s.community,
+                photo_url=s.photo_url,
+                batch=s.batch,
+                graduation_year=2026, # Using a hardcoded year for now or derive from batch
+                college_email=s.college_email,
+                personal_email=s.personal_email,
+                phone=s.phone,
+                address_line1=s.address_line1,
+                address_line2=s.address_line2,
+                city=s.city,
+                state=s.state,
+                pincode=s.pincode
+            )
+            db.add(alumni_record)
+            
+            # Deactivate user account (optional, based on requirement)
+            if s.user:
+                s.user.is_active = False
+
+            # Delete student record
+            db.delete(s)
+            graduated_count += 1
+
+    db.commit()
+
+    return {
+        "message": f"Successfully promoted {promoted_count} students and graduated {graduated_count} students to Alumni.",
+        "promoted_count": promoted_count,
+        "graduated_count": graduated_count
+    }
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_students(
@@ -134,6 +201,9 @@ async def upload_students(
             db.add(new_user)
             db.flush()
             
+            semester_val = int(row.get('current_semester', '1').strip() or '1')
+            year_val = int(row.get('current_year', str((semester_val + 1) // 2)).strip() or str((semester_val + 1) // 2))
+
             new_student = Student(
                 user_id=new_user.id,
                 department_id=int(row['department_id']),
@@ -143,7 +213,8 @@ async def upload_students(
                 college_email=email,
                 phone=row['phone'].strip(),
                 batch=row['batch'].strip(),
-                current_semester=int(row.get('current_semester', '1').strip() or '1')
+                current_semester=semester_val,
+                current_year=year_val
             )
             db.add(new_student)
             success_count += 1

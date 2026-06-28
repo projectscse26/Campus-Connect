@@ -4,6 +4,7 @@ import { Building2, Plus, Edit2, Trash2, Search, X } from 'lucide-react';
 
 export const Departments = () => {
   const [departments, setDepartments] = useState([]);
+  const [faculty, setFaculty] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -22,8 +23,12 @@ export const Departments = () => {
   const fetchDepartments = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/departments');
-      setDepartments(response.data);
+      const [deptRes, facRes] = await Promise.all([
+        axios.get('/api/departments'),
+        axios.get('/api/faculty')
+      ]);
+      setDepartments(deptRes.data);
+      setFaculty(facRes.data);
       setError(null);
     } catch (err) {
       console.error(err);
@@ -165,7 +170,14 @@ export const Departments = () => {
                     </td>
                     <td className="px-6 py-4">
                       {dept.hod_id ? (
-                        <span className="text-sm font-medium text-gray-900">User #{dept.hod_id}</span>
+                        (() => {
+                          const hod = faculty.find(f => f.id === dept.hod_id);
+                          return hod ? (
+                            <span className="text-sm font-medium text-gray-900">{hod.first_name} {hod.last_name}</span>
+                          ) : (
+                            <span className="text-sm font-medium text-gray-900">User #{dept.hod_id}</span>
+                          );
+                        })()
                       ) : (
                         <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-md">Not Assigned</span>
                       )}

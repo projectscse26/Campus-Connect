@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { BookOpen, Plus, Search, X, Edit2, Trash2, ChevronLeft, Building2 } from 'lucide-react';
+import { BookOpen, Plus, Search, X, Edit2, Trash2, ChevronLeft, ChevronRight, Building2, Folder, Calendar, Layers, GraduationCap } from 'lucide-react';
 
 export const Courses = () => {
   const [courses, setCourses] = useState([]);
@@ -10,6 +10,8 @@ export const Courses = () => {
   
   // View state: null means showing department cards, otherwise it's the selected department object
   const [selectedDept, setSelectedDept] = useState(null);
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [selectedSemester, setSelectedSemester] = useState(null);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,7 +74,7 @@ export const Courses = () => {
         name: '',
         credits: 3,
         course_type: 'theory',
-        semester: 1
+        semester: selectedSemester ? selectedSemester : 1
       });
     }
     setFormError(null);
@@ -187,29 +189,24 @@ export const Courses = () => {
   // Specific Department Courses View
   // ----------------------------------------------------
   
-  const filteredCourses = courses.filter(c => 
-    c.department_id === selectedDept.id && 
-    (c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.code.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredCourses = courses.filter(c => {
+    const matchDept = c.department_id === selectedDept.id;
+    const matchSem = selectedSemester ? c.semester === selectedSemester : true;
+    const matchSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.code.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchDept && matchSem && matchSearch;
+  });
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header Area */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-[24px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100">
         <div className="flex items-center space-x-4">
-          <button 
-            onClick={() => {
-              setSelectedDept(null);
-              setSearchTerm('');
-            }}
-            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors text-gray-500"
-            title="Back to Departments"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
+          <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
+            <BookOpen className="w-6 h-6 text-indigo-600" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{selectedDept.code} Courses</h1>
-            <p className="text-sm text-gray-500 font-medium">{selectedDept.name}</p>
+            <h1 className="text-2xl font-bold text-gray-900">Course Management</h1>
+            <p className="text-sm text-gray-500 font-medium">Manage courses across departments, years, and semesters</p>
           </div>
         </div>
         <button 
@@ -221,14 +218,46 @@ export const Courses = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="bg-white rounded-[24px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
-        {/* Toolbar */}
-        <div className="p-4 border-b border-gray-100 flex items-center">
+      <div className="bg-white rounded-[24px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden min-h-[500px]">
+        {/* Toolbar & Breadcrumbs */}
+        <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center space-x-2 text-sm font-medium">
+            <button 
+              onClick={() => { setSelectedDept(null); setSelectedYear(null); setSelectedSemester(null); }}
+              className="hover:text-primary-600 transition-colors text-gray-500"
+            >
+              All Departments
+            </button>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <button 
+              onClick={() => { setSelectedYear(null); setSelectedSemester(null); }}
+              className={`hover:text-primary-600 transition-colors ${!selectedYear ? 'text-gray-900 font-bold' : 'text-gray-500'}`}
+            >
+              {selectedDept.code}
+            </button>
+            {selectedYear && (
+              <>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <button 
+                  onClick={() => setSelectedSemester(null)}
+                  className={`hover:text-primary-600 transition-colors ${!selectedSemester ? 'text-gray-900 font-bold' : 'text-gray-500'}`}
+                >
+                  Year {selectedYear}
+                </button>
+              </>
+            )}
+            {selectedSemester && (
+              <>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-900 font-bold">Semester {selectedSemester}</span>
+              </>
+            )}
+          </div>
           <div className="relative w-full max-w-md">
             <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 
               type="text" 
-              placeholder="Search courses in this department..."
+              placeholder="Search courses..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all outline-none"
@@ -236,19 +265,66 @@ export const Courses = () => {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Content View */}
         <div className="overflow-x-auto">
           {error ? (
             <div className="p-8 text-center text-red-500 font-medium">{error}</div>
           ) : loading ? (
             <div className="p-8 text-center text-gray-500 font-medium">Loading courses...</div>
+          ) : !selectedYear ? (
+            // Year Cards View
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6">
+              {[1, 2, 3, 4].map(year => {
+                const sems = [year * 2 - 1, year * 2];
+                const yearCourses = courses.filter(c => c.department_id === selectedDept.id && sems.includes(c.semester)).length;
+                return (
+                  <div 
+                    key={year}
+                    onClick={() => setSelectedYear(year)}
+                    className="group bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-md hover:border-primary-100 cursor-pointer transition-all duration-200"
+                  >
+                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-indigo-100 transition-all">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">Year {year}</h3>
+                    <p className="text-sm font-medium text-gray-500 flex items-center">
+                      <GraduationCap className="w-4 h-4 mr-1.5" />
+                      {yearCourses} Courses
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : selectedYear && !selectedSemester ? (
+            // Semester Cards View
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 max-w-4xl mx-auto">
+              {[selectedYear * 2 - 1, selectedYear * 2].map(sem => {
+                const semCourses = courses.filter(c => c.department_id === selectedDept.id && c.semester === sem).length;
+                return (
+                  <div 
+                    key={sem}
+                    onClick={() => setSelectedSemester(sem)}
+                    className="group bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-md hover:border-primary-100 cursor-pointer transition-all duration-200"
+                  >
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-blue-100 transition-all">
+                      <Layers className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">Semester {sem}</h3>
+                    <p className="text-sm font-medium text-gray-500 flex items-center">
+                      <BookOpen className="w-4 h-4 mr-1.5" />
+                      {semCourses} Courses
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           ) : filteredCourses.length === 0 ? (
             <div className="p-16 flex flex-col items-center justify-center text-center">
               <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
                 <BookOpen className="w-8 h-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-1">No Courses Found</h3>
-              <p className="text-gray-500 text-sm">Add a new course for {selectedDept.code}.</p>
+              <p className="text-gray-500 text-sm">Add a new course for Semester {selectedSemester}.</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse">

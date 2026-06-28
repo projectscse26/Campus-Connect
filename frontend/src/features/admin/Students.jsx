@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { GraduationCap, Plus, X, Search, FileUp, Edit2, Trash2 } from 'lucide-react';
+import { GraduationCap, Plus, X, Search, FileUp, Edit2, Trash2, ArrowUpRight, ChevronRight, Folder, Calendar, Building2 } from 'lucide-react';
 
 export const Students = () => {
   const [students, setStudents] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Drill-down UI state
+  const [selectedDeptId, setSelectedDeptId] = useState(null);
+  const [selectedYear, setSelectedYear] = useState(null);
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+  const [isPromoting, setIsPromoting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const fileInputRef = useRef(null);
   
@@ -35,7 +41,7 @@ export const Students = () => {
     try {
       setLoading(true);
       const [stuRes, deptRes] = await Promise.all([
-        axios.get('/api/students'),
+        axios.get('/api/students?limit=10000'),
         axios.get('/api/departments')
       ]);
       setStudents(stuRes.data);
@@ -129,6 +135,20 @@ export const Students = () => {
     }
   };
 
+  const handlePromoteStudents = async () => {
+    setIsPromoting(true);
+    try {
+      const response = await axios.post('/api/students/promote');
+      alert(`Success! ${response.data.message}`);
+      await fetchData();
+      setIsPromoteModalOpen(false);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to promote students');
+    } finally {
+      setIsPromoting(false);
+    }
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -153,11 +173,14 @@ export const Students = () => {
     }
   };
 
-  const filteredStudents = students.filter(s => 
-    s.first_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.last_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.register_number.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = students.filter(s => {
+    const matchSearch = s.first_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        s.last_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        s.register_number.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchDept = selectedDeptId ? s.department_id === selectedDeptId : true;
+    const matchYear = selectedYear ? s.current_year === selectedYear : true;
+    return matchSearch && matchDept && matchYear;
+  });
 
   const getDeptCode = (deptId) => {
     const dept = departments.find(d => d.id === deptId);
@@ -192,19 +215,52 @@ export const Students = () => {
             <FileUp className="w-4 h-4 mr-2" /> Bulk Import CSV
           </button>
           <button 
-            onClick={() => handleOpenModal()}
-            className="flex items-center px-5 py-2.5 bg-primary-600 text-white text-sm font-bold rounded-xl hover:bg-primary-700 transition-colors shadow-sm"
+            onClick={() => setIsPromoteModalOpen(true)}
+            className="flex items-center px-4 py-2.5 bg-indigo-100 text-indigo-700 text-sm font-bold rounded-xl hover:bg-indigo-200 transition-colors"
           >
-            <Plus className="w-4 h-4 mr-2" /> Onboard Student
+            <ArrowUpRight className="w-4 h-4 mr-2" />
+            Promote Students
+          </button>
+          <button 
+            onClick={() => handleOpenModal()}
+            className="flex items-center px-4 py-2.5 bg-primary-600 text-white text-sm font-bold rounded-xl hover:bg-primary-700 transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Onboard Student
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="bg-white rounded-[24px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
-        {/* Toolbar */}
-        <div className="p-4 border-b border-gray-100 flex items-center">
-          <div className="relative w-full max-w-md">
+      <div className="bg-white rounded-[24px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden min-h-[500px]">
+        {/* Toolbar & Breadcrumbs */}
+        <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center space-x-2 text-sm font-medium">
+            <button 
+              onClick={() => { setSelectedDeptId(null); setSelectedYear(null); }}
+              className={`hover:text-primary-600 transition-colors ${!selectedDeptId ? 'text-gray-900 font-bold' : 'text-gray-500'}`}
+            >
+              All Departments
+            </button>
+            {selectedDeptId && (
+              <>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <button 
+                  onClick={() => setSelectedYear(null)}
+                  className={`hover:text-primary-600 transition-colors ${!selectedYear ? 'text-gray-900 font-bold' : 'text-gray-500'}`}
+                >
+                  {getDeptCode(selectedDeptId)}
+                </button>
+              </>
+            )}
+            {selectedYear && (
+              <>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-900 font-bold">Year {selectedYear}</span>
+              </>
+            )}
+          </div>
+          <div className="relative w-full max-w-sm">
             <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 
               type="text" 
@@ -216,12 +272,63 @@ export const Students = () => {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Content View */}
         <div className="overflow-x-auto">
           {error ? (
             <div className="p-8 text-center text-red-500 font-medium">{error}</div>
           ) : loading ? (
-            <div className="p-8 text-center text-gray-500 font-medium">Loading students...</div>
+            <div className="p-8 text-center text-gray-500 font-medium">Loading data...</div>
+          ) : !selectedDeptId ? (
+            // Department Cards View
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+              {departments.map(dept => {
+                const deptStudents = students.filter(s => s.department_id === dept.id).length;
+                return (
+                  <div 
+                    key={dept.id}
+                    onClick={() => setSelectedDeptId(dept.id)}
+                    className="group bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-md hover:border-primary-100 cursor-pointer transition-all duration-200"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-100 transition-all">
+                        <Building2 className="w-6 h-6" />
+                      </div>
+                      <span className="px-3 py-1 bg-gray-50 text-gray-600 text-xs font-bold rounded-full">
+                        {dept.code}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">{dept.name}</h3>
+                    <p className="text-sm font-medium text-gray-500 flex items-center">
+                      <Folder className="w-4 h-4 mr-1.5" />
+                      {deptStudents} Students Enrolled
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : selectedDeptId && !selectedYear ? (
+            // Year Cards View
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6">
+              {[1, 2, 3, 4].map(year => {
+                const yearStudents = students.filter(s => s.department_id === selectedDeptId && s.current_year === year).length;
+                return (
+                  <div 
+                    key={year}
+                    onClick={() => setSelectedYear(year)}
+                    className="group bg-white border border-gray-100 p-6 rounded-2xl shadow-sm hover:shadow-md hover:border-primary-100 cursor-pointer transition-all duration-200"
+                  >
+                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-indigo-100 transition-all">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">Year {year}</h3>
+                    <p className="text-sm font-medium text-gray-500 flex items-center">
+                      <GraduationCap className="w-4 h-4 mr-1.5" />
+                      {yearStudents} Students
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           ) : filteredStudents.length === 0 ? (
             <div className="p-16 flex flex-col items-center justify-center text-center">
               <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
@@ -434,6 +541,42 @@ export const Students = () => {
               >
                 {formLoading ? 'Saving...' : editingId ? 'Save Changes' : 'Onboard Student'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Promote Students Confirmation Modal */}
+      {isPromoteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-4">
+                <ArrowUpRight className="w-6 h-6 text-indigo-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Promote All Active Students?</h2>
+              <p className="text-gray-600 text-sm mb-6">
+                Are you sure you want to promote all active students to the next semester? 
+                Students currently in their 8th semester will be graduated and moved to the Alumni database. 
+                This action cannot be easily undone.
+              </p>
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                <button 
+                  type="button"
+                  onClick={() => setIsPromoteModalOpen(false)}
+                  className="px-5 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button"
+                  onClick={handlePromoteStudents}
+                  disabled={isPromoting}
+                  className="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shadow-sm disabled:opacity-50"
+                >
+                  {isPromoting ? 'Promoting...' : 'Confirm Promotion'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
