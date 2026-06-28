@@ -25,6 +25,11 @@ import { Announcements } from './features/hod/Announcements';
 import { AttendanceMonitor } from './features/hod/AttendanceMonitor';
 import { ResultsMonitor } from './features/hod/ResultsMonitor';
 import { Reports } from './features/hod/Reports';
+import { Discipline as AdminDiscipline } from './features/admin/Discipline';
+import { Discipline as HodDiscipline } from './features/hod/Discipline';
+import { Discipline as AuthorityDiscipline } from './features/authority/Discipline';
+import { Discipline as FacultyDiscipline } from './features/faculty/Discipline';
+import { Discipline as StudentDiscipline } from './features/student/Discipline';
 
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -86,6 +91,11 @@ function AppRoutes() {
             <Courses />
           </ProtectedRoute>
         } />
+        <Route path="/admin/discipline" element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminDiscipline />
+          </ProtectedRoute>
+        } />
         
         {/* HOD Routes */}
         <Route path="/hod" element={
@@ -143,11 +153,21 @@ function AppRoutes() {
             <Reports />
           </ProtectedRoute>
         } />
+        <Route path="/hod/discipline" element={
+          <ProtectedRoute allowedRole="hod">
+            <HodDiscipline />
+          </ProtectedRoute>
+        } />
         
         {/* Faculty Routes */}
         <Route path="/faculty" element={
           <ProtectedRoute allowedRole="faculty">
             <FacultyDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/discipline" element={
+          <ProtectedRoute allowedRole="faculty">
+            <FacultyDiscipline />
           </ProtectedRoute>
         } />
         
@@ -157,11 +177,21 @@ function AppRoutes() {
             <StudentDashboard />
           </ProtectedRoute>
         } />
+        <Route path="/student/discipline" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentDiscipline />
+          </ProtectedRoute>
+        } />
         
         {/* Authority Routes */}
         <Route path="/authority" element={
           <ProtectedRoute allowedRole="authority">
             <AuthorityDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/authority/discipline" element={
+          <ProtectedRoute allowedRole="authority">
+            <AuthorityDiscipline />
           </ProtectedRoute>
         } />
         

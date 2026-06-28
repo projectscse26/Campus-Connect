@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert
 } from 'lucide-react';
 
 const ROLE_NAV_LINKS = {
@@ -13,6 +13,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Students', path: '/admin/students', icon: GraduationCap },
     { name: 'Authorities', path: '/admin/authorities', icon: Home },
     { name: 'Courses', path: '/admin/courses', icon: BookOpen },
+    { name: 'Discipline', path: '/admin/discipline', icon: ShieldAlert },
   ],
   hod: [
     { name: 'Dashboard', path: '/hod', icon: LayoutDashboard },
@@ -26,20 +27,24 @@ const ROLE_NAV_LINKS = {
     { name: 'Results', path: '/hod/results', icon: Search },
     { name: 'Announcements', path: '/hod/announcements', icon: Bell },
     { name: 'Reports', path: '/hod/reports', icon: Home },
+    { name: 'Discipline', path: '/hod/discipline', icon: ShieldAlert },
   ],
   faculty: [
     { name: 'Dashboard', path: '/faculty', icon: LayoutDashboard },
     { name: 'My Courses', path: '/faculty/courses', icon: BookOpen },
     { name: 'Attendance', path: '/faculty/attendance', icon: Users },
+    { name: 'Report Incident', path: '/faculty/discipline', icon: ShieldAlert },
   ],
   student: [
     { name: 'Dashboard', path: '/student', icon: LayoutDashboard },
     { name: 'My Courses', path: '/student/courses', icon: BookOpen },
     { name: 'Leave Tracker', path: '/student/leave', icon: Settings },
+    { name: 'Discipline', path: '/student/discipline', icon: ShieldAlert },
   ],
   authority: [
     { name: 'Dashboard', path: '/authority', icon: LayoutDashboard },
     { name: 'Analytics', path: '/authority/analytics', icon: BookOpen },
+    { name: 'Discipline', path: '/authority/discipline', icon: ShieldAlert },
   ]
 };
 

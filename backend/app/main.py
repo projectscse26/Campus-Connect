@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, admin, departments, faculty, students, authorities
+from app.api import (
+    auth, admin, departments, faculty, 
+    students, authorities, discipline
+)
 
 app = FastAPI(
     title="Campus Connect ERP API",
@@ -18,6 +21,7 @@ app.add_middleware(
 )
 
 # Include Routers
+app.include_router(discipline.router, prefix="/api/discipline", tags=["Discipline"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(departments.router, prefix="/api/departments", tags=["Departments"])

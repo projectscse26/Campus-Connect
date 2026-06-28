@@ -2,6 +2,9 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
 from datetime import datetime, date
 
+class SectionSimple(BaseModel):
+    name: str
+
 class StudentBase(BaseModel):
     first_name: str
     last_name: str
@@ -34,6 +37,7 @@ class StudentResponse(StudentBase):
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
+    section: Optional[SectionSimple] = None
 
     model_config = ConfigDict(from_attributes=True)
 
