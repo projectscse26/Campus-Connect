@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock
 } from 'lucide-react';
 
 const ROLE_NAV_LINKS = {
@@ -14,6 +14,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Authorities', path: '/admin/authorities', icon: Home },
     { name: 'Courses', path: '/admin/courses', icon: BookOpen },
     { name: 'Discipline', path: '/admin/discipline', icon: ShieldAlert },
+    { name: 'Late Tracker', path: '/admin/latetracker', icon: Clock },
   ],
   hod: [
     { name: 'Dashboard', path: '/hod', icon: LayoutDashboard },
@@ -28,6 +29,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Announcements', path: '/hod/announcements', icon: Bell },
     { name: 'Reports', path: '/hod/reports', icon: Home },
     { name: 'Discipline', path: '/hod/discipline', icon: ShieldAlert },
+    { name: 'Late Tracker', path: '/hod/latetracker', icon: Clock },
   ],
   faculty: [
     { name: 'Dashboard', path: '/faculty', icon: LayoutDashboard },
@@ -45,6 +47,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Dashboard', path: '/authority', icon: LayoutDashboard },
     { name: 'Analytics', path: '/authority/analytics', icon: BookOpen },
     { name: 'Discipline', path: '/authority/discipline', icon: ShieldAlert },
+    { name: 'Late Tracker', path: '/authority/latetracker', icon: Clock },
   ]
 };
 

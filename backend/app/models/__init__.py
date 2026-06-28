@@ -13,6 +13,7 @@ from app.models.student import Student
 from app.models.authority import Authority
 from app.models.alumni import Alumni
 from app.models.discipline import DisciplineRecord
+from app.models.late import LateRecord
 
 # Academic
 from app.models.academic import (

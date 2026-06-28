@@ -30,6 +30,8 @@ import { Discipline as HodDiscipline } from './features/hod/Discipline';
 import { Discipline as AuthorityDiscipline } from './features/authority/Discipline';
 import { Discipline as FacultyDiscipline } from './features/faculty/Discipline';
 import { Discipline as StudentDiscipline } from './features/student/Discipline';
+import { LateTrackerDashboard } from './features/latetracker/Dashboard';
+import { LateManagement } from './features/hod/LateManagement';
 
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -96,6 +98,11 @@ function AppRoutes() {
             <AdminDiscipline />
           </ProtectedRoute>
         } />
+        <Route path="/admin/latetracker" element={
+          <ProtectedRoute allowedRole="admin">
+            <LateManagement />
+          </ProtectedRoute>
+        } />
         
         {/* HOD Routes */}
         <Route path="/hod" element={
@@ -158,6 +165,11 @@ function AppRoutes() {
             <HodDiscipline />
           </ProtectedRoute>
         } />
+        <Route path="/hod/latetracker" element={
+          <ProtectedRoute allowedRole="hod">
+            <LateManagement />
+          </ProtectedRoute>
+        } />
         
         {/* Faculty Routes */}
         <Route path="/faculty" element={
@@ -182,7 +194,22 @@ function AppRoutes() {
             <StudentDiscipline />
           </ProtectedRoute>
         } />
-        
+      </Route>
+
+      {/* Late Tracker Routes (No Sidebar) */}
+      <Route path="/late_tracker" element={
+        <ProtectedRoute allowedRole="late_tracker">
+          <LateTrackerDashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/late_tracker/*" element={
+        <ProtectedRoute allowedRole="late_tracker">
+          <LateTrackerDashboard />
+        </ProtectedRoute>
+      } />
+      
+      {/* Continuing DashboardLayout for Authority (Needs separate Route wrapper if we closed it above, wait, I need to wrap Authority inside DashboardLayout as well) */}
+      <Route element={<DashboardLayout />}>
         {/* Authority Routes */}
         <Route path="/authority" element={
           <ProtectedRoute allowedRole="authority">
@@ -192,6 +219,11 @@ function AppRoutes() {
         <Route path="/authority/discipline" element={
           <ProtectedRoute allowedRole="authority">
             <AuthorityDiscipline />
+          </ProtectedRoute>
+        } />
+        <Route path="/authority/latetracker" element={
+          <ProtectedRoute allowedRole="authority">
+            <LateManagement />
           </ProtectedRoute>
         } />
         
