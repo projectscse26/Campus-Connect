@@ -75,6 +75,21 @@ export const Students = () => {
       });
     } else {
       setEditingId(null);
+
+      // Derive batch and semester from the current drill-down context
+      const currentYear = new Date().getFullYear();
+      let autoDeptId = selectedDeptId || (departments.length > 0 ? departments[0].id : '');
+      let autoBatch = currentYear + '-' + (currentYear + 4);
+      let autoSemester = 1;
+
+      if (selectedYear) {
+        // Batch start year = current year minus (selectedYear - 1)
+        const batchStart = currentYear - (selectedYear - 1);
+        autoBatch = batchStart + '-' + (batchStart + 4);
+        // Semester: year 1 → sem 1, year 2 → sem 3, year 3 → sem 5, year 4 → sem 7
+        autoSemester = (selectedYear - 1) * 2 + 1;
+      }
+
       setFormData({ 
         first_name: '', 
         last_name: '',
@@ -82,9 +97,9 @@ export const Students = () => {
         phone: '',
         register_number: '',
         password: 'password123',
-        department_id: departments.length > 0 ? departments[0].id : '',
-        batch: new Date().getFullYear() + '-' + (new Date().getFullYear() + 4),
-        current_semester: 1
+        department_id: autoDeptId,
+        batch: autoBatch,
+        current_semester: autoSemester
       });
     }
     setFormError(null);

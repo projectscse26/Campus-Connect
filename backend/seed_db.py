@@ -15,6 +15,7 @@ def seed_users(db: Session):
         (UserRole.FACULTY, "faculty@svcet.edu", "faculty123"),
         (UserRole.STUDENT, "student@svcet.edu", "student123"),
         (UserRole.AUTHORITY, "authority@svcet.edu", "auth123"),
+        (UserRole.LATE_TRACKER, "latetracker@svcet.ac.in", "svcet@123"),
     ]
     
     for role, email, password in roles:
