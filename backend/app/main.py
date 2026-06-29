@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import (
     auth, admin, departments, faculty, 
-    students, authorities, discipline, late
+    students, authorities, discipline, late, leave
 )
 
 app = FastAPI(
@@ -29,6 +29,7 @@ app.include_router(faculty.router, prefix="/api/faculty", tags=["Faculty"])
 app.include_router(students.router, prefix="/api/students", tags=["Students"])
 app.include_router(late.router, prefix="/api/late", tags=["Late Tracker"])
 app.include_router(authorities.router, prefix="/api/authorities", tags=["Authorities"])
+app.include_router(leave.router, prefix="/api/leave", tags=["Leave Management"])
 from app.api import courses
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
 from app.api import hod

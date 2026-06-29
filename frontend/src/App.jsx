@@ -34,6 +34,10 @@ import { LMSManager } from './features/faculty/LMSManager';
 import { Discipline as StudentDiscipline } from './features/student/Discipline';
 import { LateTrackerDashboard } from './features/latetracker/Dashboard';
 import { LateManagement } from './features/hod/LateManagement';
+import { LeaveRequests } from './features/faculty/LeaveRequests';
+import { LeaveApply } from './features/faculty/LeaveApply';
+import { LeaveDetails } from './features/faculty/LeaveDetails';
+import { SubstituteApprovals } from './features/faculty/SubstituteApprovals';
 
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -193,6 +197,27 @@ function AppRoutes() {
         <Route path="/faculty/discipline" element={
           <ProtectedRoute allowedRole="faculty">
             <FacultyDiscipline />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/faculty/leave" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LeaveRequests />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/leave/apply" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LeaveApply />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/leave/substitutes" element={
+          <ProtectedRoute allowedRole="faculty">
+            <SubstituteApprovals />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/leave/:id" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LeaveDetails />
           </ProtectedRoute>
         } />
         
