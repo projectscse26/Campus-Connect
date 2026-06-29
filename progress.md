@@ -6,14 +6,13 @@ Open two terminal windows from the root `Campus-Connect` folder:
 **1. Start the Backend API (FastAPI)**
 ```powershell
 cd backend
-.\venv\Scripts\activate
-uvicorn app.main:app --reload --port 8000
+& "$env:USERPROFILE\miniconda3\envs\campus_connect\python.exe" -m uvicorn app.main:app --reload --port 8000
 ```
 
 **2. Start the Frontend UI (React/Vite)**
 ```powershell
 cd frontend
-npm run dev
+cmd /c "npm run dev"
 ```
 *The app will be available at `http://localhost:5173/`*
 

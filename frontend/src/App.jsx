@@ -29,6 +29,8 @@ import { Discipline as AdminDiscipline } from './features/admin/Discipline';
 import { Discipline as HodDiscipline } from './features/hod/Discipline';
 import { Discipline as AuthorityDiscipline } from './features/authority/Discipline';
 import { Discipline as FacultyDiscipline } from './features/faculty/Discipline';
+import { Courses as FacultyCourses } from './features/faculty/Courses';
+import { LMSManager } from './features/faculty/LMSManager';
 import { Discipline as StudentDiscipline } from './features/student/Discipline';
 import { LateTrackerDashboard } from './features/latetracker/Dashboard';
 import { LateManagement } from './features/hod/LateManagement';
@@ -177,6 +179,17 @@ function AppRoutes() {
             <FacultyDashboard />
           </ProtectedRoute>
         } />
+        <Route path="/faculty/courses" element={
+          <ProtectedRoute allowedRole="faculty">
+            <FacultyCourses />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSManager />
+          </ProtectedRoute>
+        } />
+
         <Route path="/faculty/discipline" element={
           <ProtectedRoute allowedRole="faculty">
             <FacultyDiscipline />

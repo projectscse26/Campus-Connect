@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { GraduationCap, Plus, X, Search, FileUp, Edit2, Trash2, ArrowUpRight, ChevronRight, Folder, Calendar, Building2 } from 'lucide-react';
+import { GraduationCap, Plus, X, Search, FileUp, Edit2, Trash2, ArrowUpRight, ChevronRight, Folder, Calendar, Building2, ChevronDown } from 'lucide-react';
 
 export const Students = () => {
   const [students, setStudents] = useState([]);
@@ -19,6 +19,20 @@ export const Students = () => {
   const [editingId, setEditingId] = useState(null);
   const fileInputRef = useRef(null);
   
+  // Custom dropdown state
+  const [showDeptDropdown, setShowDeptDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDeptDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Form state
   const [formData, setFormData] = useState({ 
     first_name: '', 
@@ -75,6 +89,21 @@ export const Students = () => {
       });
     } else {
       setEditingId(null);
+
+      // Derive batch and semester from the current drill-down context
+      const currentYear = new Date().getFullYear();
+      let autoDeptId = selectedDeptId || (departments.length > 0 ? departments[0].id : '');
+      let autoBatch = currentYear + '-' + (currentYear + 4);
+      let autoSemester = 1;
+
+      if (selectedYear) {
+        // Batch start year = current year minus (selectedYear - 1)
+        const batchStart = currentYear - (selectedYear - 1);
+        autoBatch = batchStart + '-' + (batchStart + 4);
+        // Semester: year 1 → sem 1, year 2 → sem 3, year 3 → sem 5, year 4 → sem 7
+        autoSemester = (selectedYear - 1) * 2 + 1;
+      }
+
       setFormData({ 
         first_name: '', 
         last_name: '',
@@ -82,9 +111,9 @@ export const Students = () => {
         phone: '',
         register_number: '',
         password: 'password123',
-        department_id: departments.length > 0 ? departments[0].id : '',
-        batch: new Date().getFullYear() + '-' + (new Date().getFullYear() + 4),
-        current_semester: 1
+        department_id: autoDeptId,
+        batch: autoBatch,
+        current_semester: autoSemester
       });
     }
     setFormError(null);
@@ -407,7 +436,7 @@ export const Students = () => {
             </div>
             
             <div className="overflow-y-auto p-6">
-              <form id="onboard-form" onSubmit={handleSubmit} className="space-y-5">
+              <form id="onboard-form" onSubmit={handleSubmit} className="space-y-5 pb-32">
                 {formError && (
                   <div className="p-3 bg-red-50 text-red-600 text-sm font-medium rounded-xl border border-red-100">
                     {formError}
@@ -486,19 +515,40 @@ export const Students = () => {
                 </div>
                 
                 <div className="grid grid-cols-3 gap-4">
-                  <div>
+                  <div className="relative" ref={dropdownRef}>
                     <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Department</label>
-                    <select 
-                      required
-                      value={formData.department_id}
-                      onChange={(e) => setFormData({...formData, department_id: e.target.value})}
-                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all outline-none"
+                    <div 
+                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500 focus-within:bg-white transition-all cursor-pointer flex justify-between items-center text-gray-900"
+                      onClick={() => setShowDeptDropdown(!showDeptDropdown)}
                     >
-                      {departments.length === 0 && <option value="">No Depts Available</option>}
-                      {departments.map(dept => (
-                        <option key={dept.id} value={dept.id}>{dept.name} ({dept.code})</option>
-                      ))}
-                    </select>
+                      <span className="truncate pr-2">
+                        {formData.department_id 
+                          ? departments.find(d => d.id == formData.department_id)?.code 
+                          : 'All Depts'}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showDeptDropdown ? 'rotate-180' : ''}`} />
+                    </div>
+                    
+                    {showDeptDropdown && (
+                      <div className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-[0_4px_20px_rgb(0,0,0,0.08)] max-h-60 overflow-y-auto py-2">
+                        {departments.length === 0 ? (
+                          <div className="px-5 py-3 text-sm text-gray-500">No Depts Available</div>
+                        ) : (
+                          departments.map(dept => (
+                            <div 
+                              key={dept.id}
+                              className={`px-5 py-3 text-sm cursor-pointer transition-colors ${formData.department_id == dept.id ? 'bg-red-50 text-red-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                              onClick={() => {
+                                setFormData({...formData, department_id: dept.id});
+                                setShowDeptDropdown(false);
+                              }}
+                            >
+                              {dept.code}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Batch (e.g. 2024-2028)</label>

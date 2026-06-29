@@ -37,3 +37,66 @@ class FacultyResponse(FacultyBase):
     updated_at: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
+
+class SimpleCourse(BaseModel):
+    id: int
+    code: str
+    name: str
+    credits: int
+    course_type: str
+
+class SimpleSection(BaseModel):
+    id: int
+    name: str
+    year: int
+    batch: str
+
+class CourseAssignmentFacultyResponse(BaseModel):
+    id: int
+    course_id: int
+    section_id: int
+    academic_year: str
+    semester: int
+    is_active: bool
+    created_at: datetime
+    course: Optional[SimpleCourse] = None
+    section: Optional[SimpleSection] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+class LMSResourceCreate(BaseModel):
+    title: str
+    module_unit: str
+    category: str
+    description: str
+    external_link: Optional[str] = None
+
+class LMSResourceResponse(BaseModel):
+    id: int
+    course_id: int
+    uploaded_by_id: int
+    title: str
+    description: Optional[str] = None
+    resource_type: str
+    file_url: Optional[str] = None
+    external_link: Optional[str] = None
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class AnnouncementCreate(BaseModel):
+    title: str
+    content: str
+    is_global: Optional[bool] = False
+
+class AnnouncementResponse(BaseModel):
+    id: int
+    course_id: Optional[int] = None
+    department_id: Optional[int] = None
+    posted_by_id: int
+    title: str
+    content: str
+    is_global: bool
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
