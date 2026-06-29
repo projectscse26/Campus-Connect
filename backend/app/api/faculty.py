@@ -1,17 +1,164 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 import csv
 import io
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 
 from app.core.database import get_db
 from app.models.faculty import Faculty
 from app.models.user import User
 from app.models.department import Department
-from app.schemas.faculty import FacultyCreate, FacultyUpdate, FacultyResponse
+from app.models.academic import CourseAssignment
+from app.models.lms import LMSResource, ResourceType, Announcement
+from app.schemas.faculty import FacultyCreate, FacultyUpdate, FacultyResponse, CourseAssignmentFacultyResponse, LMSResourceCreate, LMSResourceResponse, AnnouncementCreate, AnnouncementResponse
 from app.core.security import get_current_active_user, get_password_hash
 
 router = APIRouter()
+
+@router.get("/me/courses", response_model=List[CourseAssignmentFacultyResponse])
+def get_my_courses(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Retrieve courses assigned to the current faculty.
+    """
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only faculty and HODs can view assigned courses")
+    
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+
+    assignments = db.query(CourseAssignment).options(
+        joinedload(CourseAssignment.course),
+        joinedload(CourseAssignment.section)
+    ).filter(
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).all()
+    
+    return assignments
+
+@router.post("/courses/{assignment_id}/resources", response_model=LMSResourceResponse, status_code=status.HTTP_201_CREATED)
+def create_lms_resource(
+    assignment_id: int,
+    resource_in: LMSResourceCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+    
+    # Verify assignment belongs to this faculty
+    assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+        
+    # Format title to include module unit if provided
+    combined_title = f"[{resource_in.module_unit}] {resource_in.title}" if resource_in.module_unit else resource_in.title
+    
+    # Map category to enum
+    try:
+        resource_type = ResourceType(resource_in.category)
+    except ValueError:
+        resource_type = ResourceType.NOTES # fallback
+    
+    new_resource = LMSResource(
+        course_id=assignment.course_id,
+        uploaded_by_id=faculty.id,
+        title=combined_title,
+        description=resource_in.description,
+        resource_type=resource_type,
+        external_link=resource_in.external_link
+    )
+    
+    db.add(new_resource)
+    db.commit()
+    db.refresh(new_resource)
+    return new_resource
+
+@router.get("/courses/{assignment_id}/resources", response_model=List[LMSResourceResponse])
+def get_lms_resources(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod", "student"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        
+    assignment = db.query(CourseAssignment).filter(CourseAssignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+        
+    resources = db.query(LMSResource).filter(
+        LMSResource.course_id == assignment.course_id
+    ).order_by(LMSResource.created_at.desc()).all()
+    
+    return resources
+
+
+@router.post("/courses/{assignment_id}/announcements", response_model=AnnouncementResponse, status_code=status.HTTP_201_CREATED)
+def create_course_announcement(
+    assignment_id: int,
+    announcement_in: AnnouncementCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        
+    assignment = db.query(CourseAssignment).filter(CourseAssignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+        
+    # Check if faculty owns the assignment
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty or assignment.faculty_id != faculty.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to post to this course")
+
+    new_announcement = Announcement(
+        course_id=assignment.course_id,
+        posted_by_id=current_user.id,
+        title=announcement_in.title,
+        content=announcement_in.content,
+        is_global=announcement_in.is_global
+    )
+    
+    db.add(new_announcement)
+    db.commit()
+    db.refresh(new_announcement)
+    return new_announcement
+
+
+@router.get("/courses/{assignment_id}/announcements", response_model=List[AnnouncementResponse])
+def get_course_announcements(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod", "student"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        
+    assignment = db.query(CourseAssignment).filter(CourseAssignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+        
+    announcements = db.query(Announcement).filter(
+        Announcement.course_id == assignment.course_id
+    ).order_by(Announcement.created_at.desc()).all()
+    
+    return announcements
+
 
 @router.get("/", response_model=List[FacultyResponse])
 def get_faculty(
