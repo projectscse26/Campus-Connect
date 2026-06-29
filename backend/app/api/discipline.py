@@ -100,10 +100,14 @@ def get_records(
             return []
         query = query.filter(DisciplineRecord.student_id == student.id)
     
-    elif current_user.role == "hod" or current_user.role == "faculty":
-        # Usually filter by their own department
+    elif current_user.role == "hod":
+        # HOD sees all in their department
         if current_user.faculty_profile and current_user.faculty_profile.department_id:
             query = query.filter(Student.department_id == current_user.faculty_profile.department_id)
+            
+    elif current_user.role == "faculty":
+        # Faculty sees ONLY incidents they reported
+        query = query.filter(DisciplineRecord.reported_by_id == current_user.id)
             
     if department_id and current_user.role in ["admin", "authority"]:
         query = query.filter(Student.department_id == department_id)

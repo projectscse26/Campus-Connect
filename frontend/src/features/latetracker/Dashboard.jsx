@@ -345,7 +345,7 @@ export const LateTrackerDashboard = () => {
                       placeholder="All Depts"
                       value={selectedDept}
                       onChange={setSelectedDept}
-                      options={departments.map(d => ({ label: d.name, value: d.id }))}
+                      options={departments.map(d => ({ label: d.code || d.name, value: d.id }))}
                     />
                     
                     <CustomSelect 

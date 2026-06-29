@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Calendar, Save, Trash2, Check, BookOpen, Clock } from 'lucide-react';
+import { Calendar, Save, Trash2, Check, BookOpen, Clock, Eraser } from 'lucide-react';
 
 const PERIODS = [
   { id: 1, label: '1', time: '8.45 - 9.30am', type: 'period', start: '08:45', end: '09:30' },
@@ -190,6 +190,19 @@ export function Timetable() {
               </option>
             ))}
           </select>
+          <button
+            onClick={() => {
+              if (window.confirm("Are you sure you want to erase the entire timetable for this section? You will need to click Save to apply changes.")) {
+                setGrid(emptyGrid());
+                setSaved(false);
+              }
+            }}
+            disabled={saving || !selectedSection}
+            className="flex items-center px-4 py-2 rounded-xl text-red-600 bg-red-50 font-medium hover:bg-red-100 transition-all shadow-sm"
+          >
+            <Eraser className="w-5 h-5 mr-2" />
+            Erase All
+          </button>
           <button 
             onClick={handleSave}
             disabled={saving || !selectedSection}

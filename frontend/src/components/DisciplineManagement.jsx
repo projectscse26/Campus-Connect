@@ -2,9 +2,51 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   ShieldAlert, Search, Plus, X, User, Calendar, 
-  Trash2, Edit2, Lock, ChevronRight, ChevronLeft, Building2, Layers, CheckCircle2
+  Trash2, Edit2, Lock, ChevronRight, ChevronLeft, Building2, Layers, CheckCircle2, ChevronDown
 } from 'lucide-react';
 import { DisciplineAnalytics } from './DisciplineAnalytics';
+
+// Custom Dropdown Component
+const CustomSelect = ({ label, options, value, onChange, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find(o => o.value == value);
+  return (
+    <div className="relative">
+      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">{label}</label>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium hover:bg-white hover:border-red-300 transition-all cursor-pointer flex justify-between items-center group"
+      >
+        <span className={selectedOption ? "text-gray-900 font-bold" : "text-gray-500 truncate pr-2"}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 flex-shrink-0 text-gray-400 group-hover:text-red-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </div>
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)}></div>
+          <div className="absolute z-20 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 py-1">
+            <div 
+              className={`px-4 py-2.5 cursor-pointer text-sm font-medium transition-colors ${!value ? 'bg-red-50 text-red-700' : 'hover:bg-gray-50 text-gray-600'}`}
+              onClick={() => { onChange(''); setIsOpen(false); }}
+            >
+              {placeholder}
+            </div>
+            {options.map(opt => (
+              <div 
+                key={opt.value}
+                className={`px-4 py-2.5 cursor-pointer text-sm font-medium transition-colors ${value == opt.value ? 'bg-red-50 text-red-700' : 'hover:bg-gray-50 text-gray-700'}`}
+                onClick={() => { onChange(opt.value); setIsOpen(false); }}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 export const DisciplineManagement = ({ role }) => {
   const [records, setRecords] = useState([]);
@@ -66,7 +108,7 @@ export const DisciplineManagement = ({ role }) => {
       const [recordsRes, analyticsRes, studentsRes, deptsRes] = await Promise.all([
         axios.get('/api/discipline/'),
         axios.get('/api/discipline/analytics'),
-        axios.get('/api/students/'),
+        axios.get('/api/students/?limit=1000'),
         axios.get('/api/departments/')
       ]);
       
@@ -396,40 +438,30 @@ export const DisciplineManagement = ({ role }) => {
                   </div>
 
                   {/* Visual Drill Down */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">1. Department</label>
-                      <select 
-                        value={selectedDept} 
-                        onChange={(e) => setSelectedDept(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-red-500/20 focus:border-red-500 focus:bg-white transition-all outline-none"
-                      >
-                        <option value="">All Depts</option>
-                        {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">2. Year</label>
-                      <select 
-                        value={selectedYear} 
-                        onChange={(e) => setSelectedYear(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-red-500/20 focus:border-red-500 focus:bg-white transition-all outline-none"
-                      >
-                        <option value="">All Years</option>
-                        {availableYears.map(y => <option key={y} value={y}>Year {y}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">3. Section</label>
-                      <select 
-                        value={selectedSection} 
-                        onChange={(e) => setSelectedSection(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-red-500/20 focus:border-red-500 focus:bg-white transition-all outline-none"
-                      >
-                        <option value="">All Sections</option>
-                        {availableSections.map(s => <option key={s} value={s}>Section {s}</option>)}
-                      </select>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-20">
+                    <CustomSelect 
+                      label="1. Department"
+                      placeholder="All Depts"
+                      value={selectedDept}
+                      onChange={setSelectedDept}
+                      options={departments.map(d => ({ label: d.code || d.name, value: d.id }))}
+                    />
+                    
+                    <CustomSelect 
+                      label="2. Year"
+                      placeholder="All Years"
+                      value={selectedYear}
+                      onChange={setSelectedYear}
+                      options={availableYears.map(y => ({ label: `Year ${y}`, value: y }))}
+                    />
+                    
+                    <CustomSelect 
+                      label="3. Section"
+                      placeholder="All Sections"
+                      value={selectedSection}
+                      onChange={setSelectedSection}
+                      options={availableSections.map(s => ({ label: `Section ${s}`, value: s }))}
+                    />
                   </div>
 
                   <div className="mt-4 border border-gray-100 rounded-xl max-h-48 overflow-y-auto bg-gray-50/30">
