@@ -111,7 +111,7 @@ export const MentorAssignment = () => {
   if (error) return <div className="p-4 bg-red-50 text-red-600 rounded-xl flex items-center"><AlertCircle className="mr-2" />{error}</div>;
 
   return (
-    <div className="flex flex-col h-full space-y-6">
+    <div className="flex flex-col h-[calc(100vh-8rem)] space-y-6">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-4">
           <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
