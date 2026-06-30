@@ -221,7 +221,7 @@ export const LMSManager = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-6 border-b border-gray-200">
+      <div className="flex space-x-6 border-b border-gray-200 overflow-x-auto whitespace-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <button
           onClick={() => setActiveTab('resources')}
           className={`pb-3 font-semibold text-sm transition-colors relative ${activeTab === 'resources' ? 'text-primary-600' : 'text-gray-500 hover:text-gray-700'
