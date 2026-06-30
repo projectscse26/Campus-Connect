@@ -14,6 +14,7 @@ from app.models.authority import Authority
 from app.models.alumni import Alumni
 from app.models.discipline import DisciplineRecord
 from app.models.late import LateRecord
+from app.models.leave import FacultyLeaveRequest, FacultyDutyArrangement, FacultyLeaveBalance
 
 # Academic
 from app.models.academic import (

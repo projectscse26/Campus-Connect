@@ -34,6 +34,19 @@ import { LMSManager } from './features/faculty/LMSManager';
 import { Discipline as StudentDiscipline } from './features/student/Discipline';
 import { LateTrackerDashboard } from './features/latetracker/Dashboard';
 import { LateManagement } from './features/hod/LateManagement';
+import { LeaveRequests } from './features/faculty/LeaveRequests';
+import { LeaveApply } from './features/faculty/LeaveApply';
+import { LeaveDetails } from './features/faculty/LeaveDetails';
+import { SubstituteApprovals } from './features/faculty/SubstituteApprovals';
+import { CADashboard } from './features/faculty/classadvisor/CADashboard';
+import { CAStudentList } from './features/faculty/classadvisor/CAStudentList';
+import { CAStudentProfile } from './features/faculty/classadvisor/CAStudentProfile';
+import { CADailyAttendance } from './features/faculty/classadvisor/CADailyAttendance';
+import { CAAttendanceSummary } from './features/faculty/classadvisor/CAAttendanceSummary';
+import { CATimetable } from './features/faculty/classadvisor/CATimetable';
+import { CASubjects } from './features/faculty/classadvisor/CASubjects';
+import { CACourseProgress } from './features/faculty/classadvisor/CACourseProgress';
+import { CAClassInfo } from './features/faculty/classadvisor/CAClassInfo';
 
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -194,6 +207,56 @@ function AppRoutes() {
           <ProtectedRoute allowedRole="faculty">
             <FacultyDiscipline />
           </ProtectedRoute>
+        } />
+        
+        <Route path="/faculty/leave" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LeaveRequests />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/leave/apply" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LeaveApply />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/leave/substitutes" element={
+          <ProtectedRoute allowedRole="faculty">
+            <SubstituteApprovals />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/leave/:id" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LeaveDetails />
+          </ProtectedRoute>
+        } />
+
+        {/* Class Advisor Routes */}
+        <Route path="/faculty/class-advisor" element={
+          <ProtectedRoute allowedRole="faculty"><CADashboard /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/students" element={
+          <ProtectedRoute allowedRole="faculty"><CAStudentList /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/students/:studentId" element={
+          <ProtectedRoute allowedRole="faculty"><CAStudentProfile /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/attendance" element={
+          <ProtectedRoute allowedRole="faculty"><CADailyAttendance /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/attendance-summary" element={
+          <ProtectedRoute allowedRole="faculty"><CAAttendanceSummary /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/timetable" element={
+          <ProtectedRoute allowedRole="faculty"><CATimetable /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/subjects" element={
+          <ProtectedRoute allowedRole="faculty"><CASubjects /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/progress" element={
+          <ProtectedRoute allowedRole="faculty"><CACourseProgress /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/info" element={
+          <ProtectedRoute allowedRole="faculty"><CAClassInfo /></ProtectedRoute>
         } />
         
         {/* Student Routes */}

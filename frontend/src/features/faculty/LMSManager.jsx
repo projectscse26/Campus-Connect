@@ -291,14 +291,7 @@ export const LMSManager = () => {
               <div className="bg-[#f8fbfd] border border-gray-200 rounded-xl p-6">
                 <h3 className="text-base font-bold text-gray-900 mb-4">Upload Course Resource</h3>
 
-                <div className="flex gap-3 mb-6">
-                  <button className="flex items-center gap-2 bg-white border border-yellow-200 text-yellow-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-yellow-50">
-                    <FilePlus className="w-4 h-4 text-yellow-500" /> Local File Upload
-                  </button>
-                  <button className="flex items-center gap-2 bg-[#eaf4fc] border border-blue-200 text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm">
-                    <LinkIcon className="w-4 h-4 text-blue-500" /> Shared Drive Link
-                  </button>
-                </div>
+
 
                 {message.text && (
                   <div className={`p-3 rounded-lg text-sm font-medium mb-4 ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info
 } from 'lucide-react';
 
 const ROLE_NAV_LINKS = {
@@ -28,12 +28,14 @@ const ROLE_NAV_LINKS = {
     { name: 'Results', path: '/hod/results', icon: Search },
     { name: 'Announcements', path: '/hod/announcements', icon: Bell },
     { name: 'Reports', path: '/hod/reports', icon: Home },
+    { name: 'Leave Approvals', path: '/hod/leave', icon: Calendar },
     { name: 'Discipline', path: '/hod/discipline', icon: ShieldAlert },
     { name: 'Late Tracker', path: '/hod/latetracker', icon: Clock },
   ],
   faculty: [
     { name: 'Dashboard', path: '/faculty', icon: LayoutDashboard },
     { name: 'My Courses', path: '/faculty/courses', icon: BookOpen },
+    { name: 'Leave Requests', path: '/faculty/leave', icon: Calendar },
     { name: 'Attendance', path: '/faculty/attendance', icon: Users },
     { name: 'Report Incident', path: '/faculty/discipline', icon: ShieldAlert },
   ],
@@ -55,12 +57,37 @@ export default function DashboardLayout() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCAOpen, setIsCAOpen] = useState(location.pathname.startsWith('/faculty/class-advisor'));
 
   if (!user) return <Navigate to="/login" replace />;
 
   const navLinks = ROLE_NAV_LINKS[user.role] || [];
   const currentLink = navLinks.find(link => link.path === location.pathname);
-  const pageName = currentLink ? currentLink.name : 'Dashboard';
+
+  // For Class Advisor sub-pages, find a label
+  const CA_SUB_LABELS = {
+    '/faculty/class-advisor': 'Class Advisor',
+    '/faculty/class-advisor/students': 'Student List',
+    '/faculty/class-advisor/attendance': 'Daily Attendance',
+    '/faculty/class-advisor/attendance-summary': 'Attendance Summary',
+    '/faculty/class-advisor/timetable': 'Class Timetable',
+    '/faculty/class-advisor/subjects': 'Class Subjects',
+    '/faculty/class-advisor/progress': 'Course Progress',
+    '/faculty/class-advisor/info': 'Class Information',
+  };
+  const caLabel = CA_SUB_LABELS[location.pathname];
+  const pageName = currentLink ? currentLink.name : (caLabel || 'Dashboard');
+
+  const CA_SUB_LINKS = [
+    { name: 'Dashboard',          path: '/faculty/class-advisor',                    icon: LayoutDashboard },
+    { name: 'Student List',       path: '/faculty/class-advisor/students',            icon: GraduationCap },
+    { name: 'Daily Attendance',   path: '/faculty/class-advisor/attendance',          icon: ClipboardList },
+    { name: 'Attendance Summary', path: '/faculty/class-advisor/attendance-summary',  icon: BarChart2 },
+    { name: 'Class Timetable',    path: '/faculty/class-advisor/timetable',           icon: Calendar },
+    { name: 'Class Subjects',     path: '/faculty/class-advisor/subjects',            icon: BookOpen },
+    { name: 'Course Progress',    path: '/faculty/class-advisor/progress',            icon: TrendingUp },
+    { name: 'Class Information',  path: '/faculty/class-advisor/info',                icon: Info },
+  ];
 
   return (
     <div className="flex h-screen bg-[#f8fafc] overflow-hidden font-sans w-full relative">
@@ -114,6 +141,53 @@ export default function DashboardLayout() {
               </Link>
             );
           })}
+
+          {/* Class Advisor — only visible if assigned */}
+          {user.role === 'faculty' && user.is_class_advisor && (
+            <div>
+              <button
+                onClick={() => setIsCAOpen(prev => !prev)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium ${
+                  location.pathname.startsWith('/faculty/class-advisor')
+                    ? 'bg-indigo-50 text-indigo-700 font-bold'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <GraduationCap className={`w-5 h-5 ${location.pathname.startsWith('/faculty/class-advisor') ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  <span className="text-[15px]">Class Advisor</span>
+                </div>
+                {isCAOpen
+                  ? <ChevronDown className="w-4 h-4 text-gray-400" />
+                  : <ChevronRight className="w-4 h-4 text-gray-400" />
+                }
+              </button>
+
+              {isCAOpen && (
+                <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-indigo-100 pl-3">
+                  {CA_SUB_LINKS.map(link => {
+                    const Icon = link.icon;
+                    const isActive = location.pathname === link.path;
+                    return (
+                      <Link
+                        key={link.path}
+                        to={link.path}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-xl transition-all text-[14px] ${
+                          isActive
+                            ? 'bg-indigo-50 text-indigo-700 font-bold'
+                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 font-medium'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                        <span>{link.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </nav>
         
         <div className="p-4 mt-auto border-t border-gray-100">

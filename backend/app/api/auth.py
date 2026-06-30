@@ -47,11 +47,27 @@ def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2Passw
     return {"access_token": access_token, "token_type": "bearer", "user": user_data}
 
 from app.core.security import get_current_active_user
+from app.models.faculty import Faculty
+from app.models.academic import Section
 
 @router.get("/me")
-def read_users_me(current_user: User = Depends(get_current_active_user)):
+def read_users_me(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    extra = {"is_class_advisor": False, "advisor_section_id": None}
+
+    if current_user.role in ("faculty", "hod"):
+        faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+        if faculty:
+            section = db.query(Section).filter(
+                Section.class_advisor_id == faculty.id,
+                Section.is_active == True
+            ).first()
+            if section:
+                extra["is_class_advisor"] = True
+                extra["advisor_section_id"] = section.id
+
     return {
         "id": current_user.id,
         "email": current_user.email,
-        "role": current_user.role.value
+        "role": current_user.role.value,
+        **extra
     }
