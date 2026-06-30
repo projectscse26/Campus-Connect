@@ -15,7 +15,8 @@ from app.schemas.hod import (
     MentorAssignmentCreate, MentorAssignmentResponse,
     HodDashboardResponse,
     TimetableSlotCreate, TimetableSlotResponse, TimetableBulkCreate,
-    AnnouncementCreate, AnnouncementResponse
+    AnnouncementCreate, AnnouncementResponse,
+    AssignStudentsRequest
 )
 from typing import List, Optional
 from app.core.security import get_current_active_user
@@ -227,6 +228,68 @@ def delete_section(
     db.delete(section)
     db.commit()
     return None
+
+@router.get("/sections/{section_id}/unassigned-students")
+def get_unassigned_students(
+    section_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    department, _ = get_hod_department(current_user, db)
+    section = db.query(Section).filter(Section.id == section_id, Section.department_id == department.id).first()
+    if not section:
+        raise HTTPException(status_code=404, detail="Section not found")
+
+    # Fetch students in the same department, year, and batch who don't have a section assigned
+    students = db.query(Student).filter(
+        Student.department_id == department.id,
+        Student.batch == section.batch,
+        Student.current_year == section.year,
+        Student.section_id == None,
+        Student.is_active == True
+    ).all()
+    
+    return [
+        {
+            "id": s.id,
+            "first_name": s.first_name,
+            "last_name": s.last_name,
+            "register_number": s.register_number,
+        }
+        for s in students
+    ]
+
+@router.put("/sections/{section_id}/students")
+def update_section_students(
+    section_id: int,
+    payload: AssignStudentsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    department, _ = get_hod_department(current_user, db)
+    section = db.query(Section).filter(Section.id == section_id, Section.department_id == department.id).first()
+    if not section:
+        raise HTTPException(status_code=404, detail="Section not found")
+
+    # Unassign all students currently in this section
+    db.query(Student).filter(Student.section_id == section_id).update({"section_id": None})
+    
+    # Assign the provided students to this section
+    if payload.student_ids:
+        # Verify that these students belong to the same department
+        valid_students = db.query(Student).filter(
+            Student.id.in_(payload.student_ids),
+            Student.department_id == department.id
+        ).all()
+        
+        valid_student_ids = [s.id for s in valid_students]
+        if len(valid_student_ids) != len(payload.student_ids):
+            raise HTTPException(status_code=400, detail="Some students do not exist or belong to a different department")
+            
+        db.query(Student).filter(Student.id.in_(valid_student_ids)).update({"section_id": section_id})
+
+    db.commit()
+    return {"message": "Students successfully assigned to the section"}
 
 
 # ── Course Assignments CRUD ──────────────────────────────
