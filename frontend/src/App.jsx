@@ -47,6 +47,7 @@ import { CATimetable } from './features/faculty/classadvisor/CATimetable';
 import { CASubjects } from './features/faculty/classadvisor/CASubjects';
 import { CACourseProgress } from './features/faculty/classadvisor/CACourseProgress';
 import { CAClassInfo } from './features/faculty/classadvisor/CAClassInfo';
+import { Mentorship } from './features/faculty/Mentorship';
 
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -234,7 +235,6 @@ function AppRoutes() {
             <LeaveDetails />
           </ProtectedRoute>
         } />
-
         {/* Class Advisor Routes */}
         <Route path="/faculty/class-advisor" element={
           <ProtectedRoute allowedRole="faculty"><CADashboard /></ProtectedRoute>
@@ -266,6 +266,11 @@ function AppRoutes() {
         <Route path="/faculty/announcements" element={
           <ProtectedRoute allowedRole="faculty">
             <Announcements />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/mentorship" element={
+          <ProtectedRoute allowedRole="faculty">
+            <Mentorship />
           </ProtectedRoute>
         } />
         

@@ -39,6 +39,7 @@ const ROLE_NAV_LINKS = {
     { name: 'My Courses', path: '/faculty/courses', icon: BookOpen },
     { name: 'Leave Requests', path: '/faculty/leave', icon: Calendar },
     { name: 'Attendance', path: '/faculty/attendance', icon: Users },
+    { name: 'Mentorship', path: '/faculty/mentorship', icon: GraduationCap },
     { name: 'Report Incident', path: '/faculty/discipline', icon: ShieldAlert },
     { name: 'Announcements', path: '/faculty/announcements', icon: Bell },
   ],
