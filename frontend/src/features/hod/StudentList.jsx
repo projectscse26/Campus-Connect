@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { GraduationCap, Search, Filter, ChevronLeft, Users } from 'lucide-react';
+import { GraduationCap, Search, Filter, ChevronLeft, Users, UserPlus } from 'lucide-react';
+import AssignStudentsKanban from './AssignStudentsKanban';
 
 export const StudentList = () => {
   const [students, setStudents] = useState([]);
@@ -8,7 +9,9 @@ export const StudentList = () => {
   const [error, setError] = useState(null);
   
   // Navigation State
+  // Navigation State
   const [selectedSectionId, setSelectedSectionId] = useState(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   
   // Search state for detailed view
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,7 +28,7 @@ export const StudentList = () => {
       }
     };
     fetchStudents();
-  }, []);
+  }, [isAssignModalOpen]); // Re-fetch when modal closes to reflect changes
 
   // Compute unique sections from students data
   const availableSections = Array.from(new Map(
@@ -130,6 +133,13 @@ export const StudentList = () => {
               className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all outline-none"
             />
           </div>
+          <button 
+            onClick={() => setIsAssignModalOpen(true)}
+            className="flex-shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2"
+          >
+            <UserPlus className="w-4 h-4" />
+            Assign Students
+          </button>
         </div>
 
         <div className="bg-white rounded-[24px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
@@ -200,6 +210,15 @@ export const StudentList = () => {
         renderSectionsView()
       ) : (
         renderStudentTableView()
+      )}
+
+      {/* Assign Students Kanban Modal */}
+      {isAssignModalOpen && selectedSectionId && (
+        <AssignStudentsKanban 
+          section={availableSections.find(s => s.id === selectedSectionId)}
+          onClose={() => setIsAssignModalOpen(false)}
+          onSaveComplete={() => setIsAssignModalOpen(false)}
+        />
       )}
     </div>
   );
