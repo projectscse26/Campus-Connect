@@ -22,6 +22,7 @@ export const Courses = () => {
     department_id: '',
     code: '', 
     name: '',
+    short_name: '',
     credits: 3,
     course_type: 'theory',
     semester: 1
@@ -61,6 +62,7 @@ export const Courses = () => {
         department_id: course.department_id,
         code: course.code,
         name: course.name,
+        short_name: course.short_name || '',
         credits: course.credits,
         course_type: course.course_type,
         semester: course.semester || 1
@@ -68,10 +70,10 @@ export const Courses = () => {
     } else {
       setEditingId(null);
       setFormData({ 
-        // Default to the selected department if we are inside a specific department view
         department_id: selectedDept ? selectedDept.id : (departments.length > 0 ? departments[0].id : ''),
         code: '', 
         name: '',
+        short_name: '',
         credits: 3,
         course_type: 'theory',
         semester: selectedSemester ? selectedSemester : 1
@@ -419,6 +421,20 @@ export const Courses = () => {
                       className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all outline-none"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    Short Name <span className="text-gray-400 font-normal normal-case">(e.g. CN for Computer Networks)</span>
+                  </label>
+                  <input 
+                    type="text"
+                    maxLength={20}
+                    placeholder="e.g. CN, DS, OS"
+                    value={formData.short_name}
+                    onChange={(e) => setFormData({...formData, short_name: e.target.value.toUpperCase()})}
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all outline-none"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

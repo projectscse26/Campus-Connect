@@ -14,7 +14,7 @@ app = FastAPI(
 # Configure CORS for the React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://10.1.10.24:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,6 +35,8 @@ from app.api import courses
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
 from app.api import hod
 app.include_router(hod.router, prefix="/api/hod", tags=["HOD"])
+from app.api import announcements
+app.include_router(announcements.router, prefix="/api/announcements", tags=["Announcements"])
 
 @app.get("/")
 def read_root():

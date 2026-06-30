@@ -2,15 +2,25 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 import csv
 import io
 from sqlalchemy.orm import Session, joinedload
-from typing import List
+from typing import List, Optional
+from datetime import date as date_type
 
 from app.core.database import get_db
 from app.models.faculty import Faculty
 from app.models.user import User
 from app.models.department import Department
-from app.models.academic import CourseAssignment
-from app.models.lms import LMSResource, ResourceType, Announcement
-from app.schemas.faculty import FacultyCreate, FacultyUpdate, FacultyResponse, CourseAssignmentFacultyResponse, LMSResourceCreate, LMSResourceResponse, AnnouncementCreate, AnnouncementResponse
+from app.models.academic import CourseAssignment, Section, MentorAssignment
+from app.models.attendance import Attendance, AttendanceStatus
+from app.models.student import Student
+from app.models.grade import Grade
+from app.models.mentorship import AdvisingLog
+from app.models.lms import LMSResource, ResourceType, Announcement, TimetableSlot
+from app.schemas.faculty import (
+    FacultyCreate, FacultyUpdate, FacultyResponse,
+    CourseAssignmentFacultyResponse,
+    LMSResourceCreate, LMSResourceResponse,
+    AnnouncementCreate, AnnouncementResponse,
+)
 from app.core.security import get_current_active_user, get_password_hash
 
 router = APIRouter()
@@ -39,6 +49,350 @@ def get_my_courses(
     ).all()
     
     return assignments
+
+
+# ── Mentorship Endpoints (from development) ───────────────────────────────────
+
+def _get_faculty_profile(current_user: User, db: Session) -> Faculty:
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only faculty can access this")
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+    return faculty
+
+
+@router.get("/me/mentees")
+def get_my_mentees(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    faculty = _get_faculty_profile(current_user, db)
+    assignments = db.query(MentorAssignment).options(
+        joinedload(MentorAssignment.student).joinedload(Student.department),
+        joinedload(MentorAssignment.student).joinedload(Student.section),
+    ).filter(MentorAssignment.mentor_id == faculty.id).all()
+    result = []
+    for ma in assignments:
+        s = ma.student
+        result.append({
+            "id": s.id, "first_name": s.first_name, "last_name": s.last_name,
+            "register_number": s.register_number, "college_email": s.college_email,
+            "current_semester": s.current_semester, "current_year": s.current_year,
+            "department": s.department.name if s.department else None,
+            "section": s.section.name if s.section else None, "batch": s.batch,
+        })
+    return result
+
+
+@router.get("/me/mentees/{student_id}")
+def get_mentee_detail(student_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    faculty = _get_faculty_profile(current_user, db)
+    assignment = db.query(MentorAssignment).filter(
+        MentorAssignment.mentor_id == faculty.id, MentorAssignment.student_id == student_id
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Student not found in your mentee list")
+    student = db.query(Student).options(
+        joinedload(Student.department), joinedload(Student.section)
+    ).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    total = db.query(Attendance).filter(Attendance.student_id == student_id).count()
+    present = db.query(Attendance).filter(Attendance.student_id == student_id, Attendance.status == AttendanceStatus.PRESENT).count()
+    att_pct = round((present / total * 100), 1) if total > 0 else None
+    grades = db.query(Grade).filter(Grade.student_id == student_id).all()
+    backlogs = sum(1 for g in grades if g.max_marks and g.marks_obtained is not None and (float(g.marks_obtained) / float(g.max_marks)) < 0.40)
+    logs = db.query(AdvisingLog).filter(AdvisingLog.mentor_id == faculty.id, AdvisingLog.student_id == student_id).order_by(AdvisingLog.created_at.desc()).all()
+    return {
+        "id": student.id, "first_name": student.first_name, "last_name": student.last_name,
+        "register_number": student.register_number, "college_email": student.college_email,
+        "current_semester": student.current_semester, "current_year": student.current_year,
+        "department": student.department.name if student.department else None,
+        "section": student.section.name if student.section else None, "batch": student.batch,
+        "attendance_percentage": att_pct, "backlog_count": backlogs,
+        "advising_logs": [{"id": l.id, "note": l.note, "created_at": l.created_at} for l in logs],
+    }
+
+
+@router.post("/me/mentees/{student_id}/logs")
+def add_advising_log(student_id: int, payload: dict, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    faculty = _get_faculty_profile(current_user, db)
+    assignment = db.query(MentorAssignment).filter(
+        MentorAssignment.mentor_id == faculty.id, MentorAssignment.student_id == student_id
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Student not found in your mentee list")
+    note_text = payload.get("note", "").strip()
+    if not note_text:
+        raise HTTPException(status_code=400, detail="Note cannot be empty")
+    log = AdvisingLog(mentor_id=faculty.id, student_id=student_id, note=note_text)
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return {"id": log.id, "note": log.note, "created_at": log.created_at}
+
+
+# ── Attendance Endpoints ───────────────────────────────────────────────────────
+
+@router.get("/courses/{assignment_id}/attendance-slots")
+def get_attendance_slots(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Returns today's timetable slots for this assignment.
+    Each slot includes is_current (True if current time is within that period).
+    Faculty can only mark attendance during or after the period starts.
+    """
+    from datetime import datetime, time as time_type
+
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+
+    assignment = db.query(CourseAssignment).options(
+        joinedload(CourseAssignment.course),
+        joinedload(CourseAssignment.section)
+    ).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    # Use weekday() — locale-independent: 0=Monday ... 5=Saturday
+    DAY_MAP = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}
+    today_name = DAY_MAP[date_type.today().weekday()]
+    now_time = datetime.now().time()
+
+    slots = db.query(TimetableSlot).filter(
+        TimetableSlot.course_assignment_id == assignment_id
+    ).all()
+
+    today_slots = []
+    for s in slots:
+        slot_day = s.day.value if hasattr(s.day, 'value') else s.day
+        if slot_day != today_name:
+            continue
+
+        start = s.start_time if isinstance(s.start_time, time_type) else s.start_time
+        end   = s.end_time   if isinstance(s.end_time,   time_type) else s.end_time
+
+        # Allow marking from start_time until end of day (so staff can mark even slightly late)
+        is_active = now_time >= start
+
+        today_slots.append({
+            "id": s.id,
+            "day": slot_day,
+            "start_time": start.strftime("%H:%M"),
+            "end_time":   end.strftime("%H:%M"),
+            "room": s.room,
+            "is_active": is_active,   # True = faculty can mark now
+            "is_current": start <= now_time <= end,  # True = currently in this period
+        })
+
+    # Students in this section
+    students = db.query(Student).filter(
+        Student.section_id == assignment.section_id,
+        Student.is_active == True
+    ).order_by(Student.register_number).all()
+
+    today = date_type.today()
+    student_ids = [s.id for s in students]
+    existing = {}
+    if student_ids:
+        records = db.query(Attendance).filter(
+            Attendance.student_id.in_(student_ids),
+            Attendance.course_id == assignment.course_id,
+            Attendance.date == today
+        ).all()
+        existing = {r.student_id: r.status.value for r in records}
+
+    return {
+        "today_slots": today_slots,
+        "course_name": assignment.course.name,
+        "course_code": assignment.course.code,
+        "section": f"{assignment.section.year} Year {assignment.section.name}" if assignment.section else "",
+        "today": str(today),
+        "today_day": today_name,
+        "students": [
+            {
+                "id": s.id,
+                "register_number": s.register_number,
+                "first_name": s.first_name,
+                "last_name": s.last_name,
+                "status": existing.get(s.id)
+            }
+            for s in students
+        ]
+    }
+
+
+@router.post("/courses/{assignment_id}/attendance")
+def save_course_attendance(
+    assignment_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Save attendance for today for a specific course assignment.
+    payload: { records: [{ student_id, status }], slot_start_time: "HH:MM" (optional) }
+    """
+    from datetime import datetime, time as time_type
+
+    # Map start_time → period number
+    PERIOD_MAP = {
+        "08:45": 1, "09:30": 2, "10:35": 3, "11:25": 4,
+        "13:00": 5, "13:50": 6, "14:50": 7, "15:40": 8
+    }
+
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+
+    assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    today = date_type.today()
+    now_time = datetime.now().time()
+    records = payload.get("records", [])
+    slot_start = payload.get("slot_start_time")  # e.g. "08:45"
+
+    # Determine period number from slot_start or current time
+    period_number = PERIOD_MAP.get(slot_start) if slot_start else None
+    if not period_number:
+        # Find active slot from timetable right now
+        DAY_MAP = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}
+        today_name = DAY_MAP[date_type.today().weekday()]
+        slots = db.query(TimetableSlot).filter(
+            TimetableSlot.course_assignment_id == assignment_id
+        ).all()
+        for s in slots:
+            slot_day = s.day.value if hasattr(s.day, 'value') else s.day
+            if slot_day == today_name and s.start_time <= now_time:
+                period_number = PERIOD_MAP.get(s.start_time.strftime("%H:%M"))
+                break
+
+    saved = 0
+    for rec in records:
+        try:
+            att_status = AttendanceStatus(rec["status"])
+        except (ValueError, KeyError):
+            continue
+
+        existing = db.query(Attendance).filter(
+            Attendance.student_id == rec["student_id"],
+            Attendance.course_id == assignment.course_id,
+            Attendance.date == today,
+            Attendance.hour == period_number
+        ).first()
+
+        if existing:
+            existing.status = att_status
+            existing.marked_by_id = faculty.id
+        else:
+            db.add(Attendance(
+                student_id=rec["student_id"],
+                course_id=assignment.course_id,
+                date=today,
+                hour=period_number,
+                status=att_status,
+                marked_by_id=faculty.id
+            ))
+        saved += 1
+
+    db.commit()
+    return {"message": "Attendance saved", "saved": saved}
+
+
+@router.get("/courses/{assignment_id}/attendance-history")
+def get_attendance_history(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Returns attendance history grouped by date for this course assignment.
+    Each date entry shows present/absent count and per-student status.
+    """
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+
+    assignment = db.query(CourseAssignment).options(
+        joinedload(CourseAssignment.course),
+        joinedload(CourseAssignment.section)
+    ).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+
+    # All students in section
+    students = db.query(Student).filter(
+        Student.section_id == assignment.section_id,
+        Student.is_active == True
+    ).order_by(Student.register_number).all()
+    student_map = {s.id: f"{s.first_name} {s.last_name}" for s in students}
+    reg_map     = {s.id: s.register_number for s in students}
+
+    # All attendance records for this course
+    records = db.query(Attendance).filter(
+        Attendance.course_id == assignment.course_id,
+        Attendance.student_id.in_([s.id for s in students])
+    ).order_by(Attendance.date.desc()).all()
+
+    # Group by date + hour
+    from collections import defaultdict
+    by_date_hour = defaultdict(list)
+    for r in records:
+        key = (str(r.date), r.hour)
+        by_date_hour[key].append(r)
+
+    # Period number → time label
+    PERIOD_TIMES = {
+        1: "8:45–9:30am", 2: "9:30–10:20am", 3: "10:35–11:25am", 4: "11:25–12:15pm",
+        5: "1:00–1:50pm", 6: "1:50–2:40pm",  7: "2:50–3:40pm",  8: "3:40–4:30pm"
+    }
+
+    history = []
+    for (date_str, hour) in sorted(by_date_hour.keys(), key=lambda x: (x[0], x[1] or 0), reverse=True):
+        day_records = by_date_hour[(date_str, hour)]
+        present = sum(1 for r in day_records if r.status == AttendanceStatus.PRESENT)
+        absent  = sum(1 for r in day_records if r.status == AttendanceStatus.ABSENT)
+        history.append({
+            "date": date_str,
+            "hour": hour,
+            "hour_label": f"Period {hour} · {PERIOD_TIMES[hour]}" if hour and hour in PERIOD_TIMES else "—",
+            "present": present,
+            "absent": absent,
+            "total": len(students),
+            "records": [
+                {
+                    "student_id": r.student_id,
+                    "name": student_map.get(r.student_id, "—"),
+                    "register_number": reg_map.get(r.student_id, "—"),
+                    "status": r.status.value
+                }
+                for r in sorted(day_records, key=lambda x: reg_map.get(x.student_id, ""))
+            ]
+        })
+
+    return {
+        "course_name": assignment.course.name,
+        "course_code": assignment.course.code,
+        "section": f"{assignment.section.year} Year {assignment.section.name}" if assignment.section else "",
+        "total_students": len(students),
+        "history": history
+    }
 
 @router.post("/courses/{assignment_id}/resources", response_model=LMSResourceResponse, status_code=status.HTTP_201_CREATED)
 def create_lms_resource(

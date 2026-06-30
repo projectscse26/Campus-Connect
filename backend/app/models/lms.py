@@ -56,6 +56,8 @@ class Announcement(Base):
     posted_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
+    category = Column(String(50), nullable=False, server_default="General")
+    target_audience = Column(String(50), nullable=False, server_default="Everyone")
     is_global = Column(Boolean, default=False)  # True = visible to entire college
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

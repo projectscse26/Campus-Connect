@@ -25,6 +25,9 @@ from app.models.academic import (
     MentorAssignment,
 )
 
+# Mentorship
+from app.models.mentorship import MentoringMeeting, MeetingStatus, AdvisingLog
+
 # Operations
 from app.models.attendance import Attendance, AttendanceStatus, LeaveRequest, LeaveStatus, LeaveType
 from app.models.grade import Grade, GradeType
@@ -43,6 +46,7 @@ __all__ = [
     "CourseAssignment",
     "Enrollment",
     "MentorAssignment",
+    "MentoringMeeting", "MeetingStatus", "AdvisingLog",
     "Attendance", "AttendanceStatus",
     "LeaveRequest", "LeaveStatus", "LeaveType",
     "Grade", "GradeType",

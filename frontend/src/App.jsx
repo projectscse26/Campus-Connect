@@ -47,6 +47,7 @@ import { CATimetable } from './features/faculty/classadvisor/CATimetable';
 import { CASubjects } from './features/faculty/classadvisor/CASubjects';
 import { CACourseProgress } from './features/faculty/classadvisor/CACourseProgress';
 import { CAClassInfo } from './features/faculty/classadvisor/CAClassInfo';
+import { Mentorship } from './features/faculty/Mentorship';
 
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -116,6 +117,11 @@ function AppRoutes() {
         <Route path="/admin/latetracker" element={
           <ProtectedRoute allowedRole="admin">
             <LateManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/announcements" element={
+          <ProtectedRoute allowedRole="admin">
+            <Announcements />
           </ProtectedRoute>
         } />
         
@@ -229,7 +235,6 @@ function AppRoutes() {
             <LeaveDetails />
           </ProtectedRoute>
         } />
-
         {/* Class Advisor Routes */}
         <Route path="/faculty/class-advisor" element={
           <ProtectedRoute allowedRole="faculty"><CADashboard /></ProtectedRoute>
@@ -258,6 +263,16 @@ function AppRoutes() {
         <Route path="/faculty/class-advisor/info" element={
           <ProtectedRoute allowedRole="faculty"><CAClassInfo /></ProtectedRoute>
         } />
+        <Route path="/faculty/announcements" element={
+          <ProtectedRoute allowedRole="faculty">
+            <Announcements />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/mentorship" element={
+          <ProtectedRoute allowedRole="faculty">
+            <Mentorship />
+          </ProtectedRoute>
+        } />
         
         {/* Student Routes */}
         <Route path="/student" element={
@@ -268,6 +283,11 @@ function AppRoutes() {
         <Route path="/student/discipline" element={
           <ProtectedRoute allowedRole="student">
             <StudentDiscipline />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/announcements" element={
+          <ProtectedRoute allowedRole="student">
+            <Announcements />
           </ProtectedRoute>
         } />
       </Route>
@@ -300,6 +320,11 @@ function AppRoutes() {
         <Route path="/authority/latetracker" element={
           <ProtectedRoute allowedRole="authority">
             <LateManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/authority/announcements" element={
+          <ProtectedRoute allowedRole="authority">
+            <Announcements />
           </ProtectedRoute>
         } />
         
