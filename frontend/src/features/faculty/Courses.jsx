@@ -59,7 +59,11 @@ export const Courses = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((assignment) => (
-            <div key={assignment.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+            <div
+              key={assignment.id}
+              onClick={() => navigate(`/faculty/courses/${assignment.id}/lms`)}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:border-primary-100 transition-all cursor-pointer active:scale-[0.99]"
+            >
               <div className="h-2 bg-primary-600"></div>
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -91,18 +95,6 @@ export const Courses = () => {
                     <span className="font-medium text-gray-900 mr-1">Type:</span>
                     <span className="capitalize">{assignment.course.course_type}</span>
                   </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-gray-100 flex gap-3">
-                  <button className="flex-1 bg-white border border-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm hover:bg-gray-50 transition-colors">
-                    View Roster
-                  </button>
-                  <button 
-                    onClick={() => navigate(`/faculty/courses/${assignment.id}/lms`)}
-                    className="flex-1 bg-primary-600 text-white font-semibold py-2 px-4 rounded-lg text-sm hover:bg-primary-700 transition-colors"
-                  >
-                    LMS Manager
-                  </button>
                 </div>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FileText, Link as LinkIcon, BookOpen, Layers, Settings, FilePlus } from 'lucide-react';
+import { FileText, Link as LinkIcon, BookOpen, Layers, Settings, FilePlus, Users, CheckCircle, XCircle, Save } from 'lucide-react';
 
 export const LMSManager = () => {
   const { assignmentId } = useParams();
@@ -258,6 +258,20 @@ export const LMSManager = () => {
           title="Coming soon"
         >
           <Settings className="w-4 h-4 text-blue-400" /> Syllabus
+        </button>
+        <button
+          onClick={() => setActiveTab('attendance')}
+          className={`pb-3 font-semibold text-sm transition-colors relative flex items-center gap-2 ${activeTab === 'attendance' ? 'text-primary-600' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <Users className="w-4 h-4" /> Attendance
+          {activeTab === 'attendance' && <div className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary-600 rounded-t"></div>}
+        </button>
+        <button
+          onClick={() => setActiveTab('att-history')}
+          className={`pb-3 font-semibold text-sm transition-colors relative flex items-center gap-2 ${activeTab === 'att-history' ? 'text-primary-600' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <FileText className="w-4 h-4" /> Att. History
+          {activeTab === 'att-history' && <div className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-primary-600 rounded-t"></div>}
         </button>
       </div>
 
@@ -724,7 +738,308 @@ export const LMSManager = () => {
           </div>
         )}
 
+        {/* ATTENDANCE TAB */}
+        {activeTab === 'attendance' && (
+          <AttendanceTab assignmentId={assignmentId} />
+        )}
+
+        {/* ATTENDANCE HISTORY TAB */}
+        {activeTab === 'att-history' && (
+          <AttendanceHistory assignmentId={assignmentId} />
+        )}
+
       </div>
     </div>
   );
 };
+
+// ── Attendance Tab ────────────────────────────────────────────────────────────
+function AttendanceTab({ assignmentId }) {
+  const today = new Date().toISOString().split('T')[0];
+  const [data, setData]         = useState(null);
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [saved, setSaved]       = useState(false);
+  const [error, setError]       = useState(null);
+
+  useEffect(() => {
+    axios.get(`/api/faculty/courses/${assignmentId}/attendance-slots`)
+      .then(r => {
+        setData(r.data);
+        setStudents(r.data.students);
+      })
+      .catch(() => setError('Failed to load attendance data'))
+      .finally(() => setLoading(false));
+  }, [assignmentId]);
+
+  const toggle = (studentId) => {
+    setSaved(false);
+    setStudents(prev => prev.map(s =>
+      s.id !== studentId ? s : { ...s, status: s.status === 'present' ? 'absent' : 'present' }
+    ));
+  };
+
+  const markAll = (status) => {
+    setSaved(false);
+    setStudents(prev => prev.map(s => ({ ...s, status })));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // Find the currently active slot to pass its start_time
+      const activeSlot = data?.today_slots?.find(s => s.is_active);
+      await axios.post(`/api/faculty/courses/${assignmentId}/attendance`, {
+        slot_start_time: activeSlot?.start_time || null,
+        records: students.filter(s => s.status).map(s => ({ student_id: s.id, status: s.status }))
+      });
+      setSaved(true);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to save attendance');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <div className="py-16 text-center text-gray-400 text-sm">Loading...</div>;
+  if (error)   return <div className="py-16 text-center text-red-500 text-sm">{error}</div>;
+
+  const presentCount   = students.filter(s => s.status === 'present').length;
+  const absentCount    = students.filter(s => s.status === 'absent').length;
+  const unmarked       = students.filter(s => !s.status).length;
+  const hasSlotToday   = data?.today_slots?.length > 0;
+  // Allow marking if at least one slot today has started
+  const canMark        = data?.today_slots?.some(s => s.is_active);
+  // Active slot label for display
+  const activeSlot     = data?.today_slots?.find(s => s.is_current);
+  const nextSlot       = data?.today_slots?.find(s => !s.is_active);
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      {/* Course info + period status */}
+      <div className="bg-gray-50 rounded-xl border border-gray-100 p-4 space-y-3">
+        <div className="flex flex-wrap gap-4 items-center justify-between">
+          <div>
+            <p className="text-sm font-bold text-gray-900">{data.course_code} — {data.course_name}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Section: {data.section} &nbsp;·&nbsp; {today}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {!hasSlotToday ? (
+              <span className="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg">
+                No class scheduled today ({data.today_day?.toUpperCase()})
+              </span>
+            ) : (
+              data.today_slots.map(slot => (
+                <span
+                  key={slot.id}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg ${
+                    slot.is_current ? 'bg-green-100 text-green-700 ring-1 ring-green-400' :
+                    slot.is_active  ? 'bg-indigo-50 text-indigo-700' :
+                    'bg-gray-100 text-gray-400'
+                  }`}
+                >
+                  {slot.start_time}–{slot.end_time}
+                  {slot.room ? ` · ${slot.room}` : ''}
+                  {slot.is_current ? ' ● Now' : slot.is_active ? ' ✓ Started' : ' ⏳ Upcoming'}
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Lock message */}
+        {hasSlotToday && !canMark && (
+          <div className="flex items-center gap-2 text-xs font-semibold text-amber-700 bg-amber-50 px-3 py-2 rounded-lg">
+            ⏳ Attendance will unlock when the period starts
+            {nextSlot && ` at ${nextSlot.start_time}`}.
+          </div>
+        )}
+      </div>
+
+      {/* Mark controls — only shown if period has started */}
+      {hasSlotToday && canMark && students.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm font-bold">
+            <CheckCircle className="w-4 h-4" /> {presentCount} Present
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg text-sm font-bold">
+            <XCircle className="w-4 h-4" /> {absentCount} Absent
+          </div>
+          {unmarked > 0 && (
+            <div className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-sm font-bold">
+              {unmarked} Unmarked
+            </div>
+          )}
+          <div className="ml-auto flex gap-2">
+            <button onClick={() => markAll('present')} className="px-3 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-lg hover:bg-green-200 transition-colors">
+              All Present
+            </button>
+            <button onClick={() => markAll('absent')} className="px-3 py-1.5 bg-red-100 text-red-700 text-xs font-bold rounded-lg hover:bg-red-200 transition-colors">
+              All Absent
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Student list */}
+      {students.length === 0 ? (
+        <div className="py-12 text-center text-gray-400 bg-white rounded-xl border border-gray-100">
+          <Users className="w-10 h-10 mx-auto mb-2 text-gray-200" />
+          <p className="text-sm font-medium">No students found in this section.</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden divide-y divide-gray-100">
+          {students.map((s, idx) => {
+            const isPresent = s.status === 'present';
+            const isAbsent  = s.status === 'absent';
+            return (
+              <div key={s.id} className="flex items-center px-4 py-3 gap-3">
+                <span className="text-xs font-bold text-gray-300 w-5 text-right flex-shrink-0">{idx + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">{s.first_name} {s.last_name}</p>
+                  <p className="text-xs font-mono text-gray-400">{s.register_number}</p>
+                </div>
+                {/* Show toggle only if period has started, else show read-only badge */}
+                {hasSlotToday && canMark ? (
+                  <button
+                    onClick={() => toggle(s.id)}
+                    className={`w-24 py-1.5 rounded-xl text-xs font-extrabold flex-shrink-0 transition-colors ${
+                      isPresent ? 'bg-green-500 text-white' :
+                      isAbsent  ? 'bg-red-500 text-white'   :
+                      'bg-gray-100 text-gray-400 border border-dashed border-gray-300'
+                    }`}
+                  >
+                    {isPresent ? '✓ Present' : isAbsent ? '✕ Absent' : 'Tap'}
+                  </button>
+                ) : (
+                  <span className={`w-24 py-1.5 rounded-xl text-xs font-bold text-center flex-shrink-0 ${
+                    isPresent ? 'bg-green-50 text-green-700' :
+                    isAbsent  ? 'bg-red-50 text-red-700'    :
+                    'bg-gray-100 text-gray-400'
+                  }`}>
+                    {isPresent ? 'Present' : isAbsent ? 'Absent' : '—'}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Save */}
+      {hasSlotToday && canMark && students.length > 0 && (
+        <div className="flex items-center justify-end gap-4 pt-2">
+          {saved && <span className="text-sm font-semibold text-green-600">✓ Saved</span>}
+          <button
+            onClick={handleSave}
+            disabled={saving || unmarked === students.length}
+            className="flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white text-sm font-bold rounded-xl hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-40"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? 'Saving...' : `Save · ${presentCount}P ${absentCount}A`}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Attendance History ────────────────────────────────────────────────────────
+function AttendanceHistory({ assignmentId }) {
+  const [data, setData]         = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+  const [expanded, setExpanded] = useState(null); // date string of expanded row
+
+  useEffect(() => {
+    axios.get(`/api/faculty/courses/${assignmentId}/attendance-history`)
+      .then(r => setData(r.data))
+      .catch(() => setError('Failed to load attendance history'))
+      .finally(() => setLoading(false));
+  }, [assignmentId]);
+
+  if (loading) return <div className="py-16 text-center text-gray-400 text-sm">Loading...</div>;
+  if (error)   return <div className="py-16 text-center text-red-500 text-sm">{error}</div>;
+
+  const { history, course_code, course_name, section, total_students } = data;
+
+  return (
+    <div className="space-y-4 max-w-3xl">
+      {/* Header */}
+      <div className="bg-gray-50 rounded-xl border border-gray-100 p-4 flex flex-wrap gap-3 items-center justify-between">
+        <div>
+          <p className="text-sm font-bold text-gray-900">{course_code} — {course_name}</p>
+          <p className="text-xs text-gray-500 mt-0.5">Section: {section} &nbsp;·&nbsp; {history.length} class day{history.length !== 1 ? 's' : ''} recorded</p>
+        </div>
+        <span className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg">
+          {total_students} Students
+        </span>
+      </div>
+
+      {history.length === 0 ? (
+        <div className="py-16 text-center bg-white rounded-xl border border-gray-100">
+          <FileText className="w-10 h-10 mx-auto mb-2 text-gray-200" />
+          <p className="text-sm font-medium text-gray-400">No attendance recorded yet for this course.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {history.map(entry => {
+            const pct        = total_students > 0 ? Math.round((entry.present / total_students) * 100) : 0;
+            const entryKey   = `${entry.date}-${entry.hour}`;
+            const isExpanded = expanded === entryKey;
+            const barColor   = pct >= 75 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-400';
+            const dateLabel  = new Date(entry.date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+
+            return (
+              <div key={entryKey} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                {/* Summary row — click to expand */}
+                <button
+                  onClick={() => setExpanded(isExpanded ? null : entryKey)}
+                  className="w-full px-4 py-3 flex items-center gap-4 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900">{dateLabel}</p>
+                    <p className="text-xs text-indigo-600 font-semibold mt-0.5">{entry.hour_label}</p>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                        <div className={`h-1.5 rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className={`text-xs font-bold flex-shrink-0 ${pct >= 75 ? 'text-green-600' : pct >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        {pct}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="px-2.5 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-lg">{entry.present}P</span>
+                    <span className="px-2.5 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-lg">{entry.absent}A</span>
+                    <span className={`text-gray-400 text-sm transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
+                  </div>
+                </button>
+
+                {/* Expanded student list */}
+                {isExpanded && (
+                  <div className="border-t border-gray-100 divide-y divide-gray-50">
+                    {entry.records.map(r => (
+                      <div key={r.student_id} className="flex items-center px-4 py-2.5 gap-3">
+                        <span className="text-xs font-mono text-gray-400 flex-shrink-0 w-24">{r.register_number}</span>
+                        <span className="text-sm font-medium text-gray-800 flex-1 truncate">{r.name}</span>
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold flex-shrink-0 ${
+                          r.status === 'present' ? 'bg-green-50 text-green-700' :
+                          r.status === 'absent'  ? 'bg-red-50 text-red-700'    :
+                          'bg-gray-100 text-gray-400'
+                        }`}>
+                          {r.status === 'present' ? 'Present' : r.status === 'absent' ? 'Absent' : r.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

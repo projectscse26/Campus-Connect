@@ -53,6 +53,7 @@ class Course(Base):
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=False)
     code = Column(String(20), unique=True, nullable=False)  # CS601
     name = Column(String(200), nullable=False)               # Data Structures & Algorithms
+    short_name = Column(String(20), nullable=True)           # CN, DS, OS etc.
     credits = Column(Integer, nullable=False, default=3)
     course_type = Column(SQLEnum(CourseType), default=CourseType.THEORY)
     semester = Column(Integer, nullable=True)                 # Which semester this course belongs to

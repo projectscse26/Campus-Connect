@@ -13,6 +13,7 @@ class CourseBase(BaseModel):
     department_id: int
     code: str
     name: str
+    short_name: Optional[str] = None
     credits: int = 3
     course_type: CourseTypeEnum = CourseTypeEnum.theory
     semester: Optional[int] = None
@@ -24,6 +25,7 @@ class CourseUpdate(BaseModel):
     department_id: Optional[int] = None
     code: Optional[str] = None
     name: Optional[str] = None
+    short_name: Optional[str] = None
     credits: Optional[int] = None
     course_type: Optional[CourseTypeEnum] = None
     semester: Optional[int] = None
