@@ -118,6 +118,11 @@ function AppRoutes() {
             <LateManagement />
           </ProtectedRoute>
         } />
+        <Route path="/admin/announcements" element={
+          <ProtectedRoute allowedRole="admin">
+            <Announcements />
+          </ProtectedRoute>
+        } />
         
         {/* HOD Routes */}
         <Route path="/hod" element={
@@ -258,6 +263,11 @@ function AppRoutes() {
         <Route path="/faculty/class-advisor/info" element={
           <ProtectedRoute allowedRole="faculty"><CAClassInfo /></ProtectedRoute>
         } />
+        <Route path="/faculty/announcements" element={
+          <ProtectedRoute allowedRole="faculty">
+            <Announcements />
+          </ProtectedRoute>
+        } />
         
         {/* Student Routes */}
         <Route path="/student" element={
@@ -268,6 +278,11 @@ function AppRoutes() {
         <Route path="/student/discipline" element={
           <ProtectedRoute allowedRole="student">
             <StudentDiscipline />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/announcements" element={
+          <ProtectedRoute allowedRole="student">
+            <Announcements />
           </ProtectedRoute>
         } />
       </Route>
@@ -300,6 +315,11 @@ function AppRoutes() {
         <Route path="/authority/latetracker" element={
           <ProtectedRoute allowedRole="authority">
             <LateManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/authority/announcements" element={
+          <ProtectedRoute allowedRole="authority">
+            <Announcements />
           </ProtectedRoute>
         } />
         

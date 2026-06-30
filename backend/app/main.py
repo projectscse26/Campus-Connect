@@ -35,6 +35,8 @@ from app.api import courses
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
 from app.api import hod
 app.include_router(hod.router, prefix="/api/hod", tags=["HOD"])
+from app.api import announcements
+app.include_router(announcements.router, prefix="/api/announcements", tags=["Announcements"])
 
 @app.get("/")
 def read_root():
