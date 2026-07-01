@@ -26,6 +26,10 @@ class SectionResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class AssignStudentsRequest(BaseModel):
+    student_ids: list[int]
+
+
 # --- Course Assignment Schemas ---
 class CourseAssignmentCreate(BaseModel):
     faculty_id: int

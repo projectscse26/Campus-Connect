@@ -15,6 +15,7 @@ from app.models.alumni import Alumni
 from app.models.discipline import DisciplineRecord
 from app.models.late import LateRecord
 from app.models.leave import FacultyLeaveRequest, FacultyDutyArrangement, FacultyLeaveBalance
+from app.models.gatepass import GatePass, GatePassStatus
 
 # Academic
 from app.models.academic import (
@@ -24,6 +25,9 @@ from app.models.academic import (
     Enrollment,
     MentorAssignment,
 )
+
+# Mentorship
+from app.models.mentorship import MentoringMeeting, MeetingStatus, AdvisingLog
 
 # Operations
 from app.models.attendance import Attendance, AttendanceStatus, LeaveRequest, LeaveStatus, LeaveType
@@ -43,10 +47,12 @@ __all__ = [
     "CourseAssignment",
     "Enrollment",
     "MentorAssignment",
+    "MentoringMeeting", "MeetingStatus", "AdvisingLog",
     "Attendance", "AttendanceStatus",
     "LeaveRequest", "LeaveStatus", "LeaveType",
     "Grade", "GradeType",
     "LMSResource", "ResourceType",
     "Announcement",
     "TimetableSlot", "DayOfWeek",
+    "GatePass", "GatePassStatus",
 ]

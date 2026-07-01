@@ -30,15 +30,36 @@ import { Discipline as HodDiscipline } from './features/hod/Discipline';
 import { Discipline as AuthorityDiscipline } from './features/authority/Discipline';
 import { Discipline as FacultyDiscipline } from './features/faculty/Discipline';
 import { Courses as FacultyCourses } from './features/faculty/Courses';
-import { LMSManager } from './features/faculty/LMSManager';
-import { Discipline as StudentDiscipline } from './features/student/Discipline';
+import { LMSDashboard } from './features/faculty/lms/LMSDashboard';
+import { LMSResources } from './features/faculty/lms/LMSResources';
+import { LMSAssignments } from './features/faculty/lms/LMSAssignments';
+import { LMSAnnouncements as CourseAnnouncements } from './features/faculty/lms/LMSAnnouncements';
+import { LMSSyllabus } from './features/faculty/lms/LMSSyllabus';
+import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
+import { LMSAttendanceHistory } from './features/faculty/lms/LMSAttendanceHistory';
+import StudentCourses from './features/student/StudentCourses';
+import StudentCourseDetail from './features/student/StudentCourseDetail';
 import { LateTrackerDashboard } from './features/latetracker/Dashboard';
 import { LateManagement } from './features/hod/LateManagement';
 import { LeaveRequests } from './features/faculty/LeaveRequests';
 import { LeaveApply } from './features/faculty/LeaveApply';
 import { LeaveDetails } from './features/faculty/LeaveDetails';
 import { SubstituteApprovals } from './features/faculty/SubstituteApprovals';
-
+import { CADashboard } from './features/faculty/classadvisor/CADashboard';
+import { CAStudentList } from './features/faculty/classadvisor/CAStudentList';
+import { CAStudentProfile } from './features/faculty/classadvisor/CAStudentProfile';
+import { CADailyAttendance } from './features/faculty/classadvisor/CADailyAttendance';
+import { CAAttendanceSummary } from './features/faculty/classadvisor/CAAttendanceSummary';
+import { CATimetable } from './features/faculty/classadvisor/CATimetable';
+import { CASubjects } from './features/faculty/classadvisor/CASubjects';
+import { CACourseProgress } from './features/faculty/classadvisor/CACourseProgress';
+import { CAClassInfo } from './features/faculty/classadvisor/CAClassInfo';
+import { Mentorship } from './features/faculty/Mentorship';
+import { GatePass } from './features/student/GatePass';
+import { MenteeGatePasses } from './features/faculty/MenteeGatePasses';
+import { GatePassApprovals as HodGatePassApprovals } from './features/hod/GatePassApprovals';
+import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
+import { Profile } from './features/profile/Profile';
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
@@ -109,6 +130,11 @@ function AppRoutes() {
             <LateManagement />
           </ProtectedRoute>
         } />
+        <Route path="/admin/announcements" element={
+          <ProtectedRoute allowedRole="admin">
+            <Announcements />
+          </ProtectedRoute>
+        } />
         
         {/* HOD Routes */}
         <Route path="/hod" element={
@@ -171,6 +197,11 @@ function AppRoutes() {
             <HodDiscipline />
           </ProtectedRoute>
         } />
+        <Route path="/hod/gatepass" element={
+          <ProtectedRoute allowedRole="hod">
+            <HodGatePassApprovals />
+          </ProtectedRoute>
+        } />
         <Route path="/hod/latetracker" element={
           <ProtectedRoute allowedRole="hod">
             <LateManagement />
@@ -190,7 +221,37 @@ function AppRoutes() {
         } />
         <Route path="/faculty/courses/:assignmentId/lms" element={
           <ProtectedRoute allowedRole="faculty">
-            <LMSManager />
+            <LMSDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/resources" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSResources />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/assignments" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSAssignments />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/announcements" element={
+          <ProtectedRoute allowedRole="faculty">
+            <CourseAnnouncements />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/syllabus" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSSyllabus />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/attendance" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSAttendance />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/attendance-history" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSAttendanceHistory />
           </ProtectedRoute>
         } />
 
@@ -220,6 +281,49 @@ function AppRoutes() {
             <LeaveDetails />
           </ProtectedRoute>
         } />
+        {/* Class Advisor Routes */}
+        <Route path="/faculty/class-advisor" element={
+          <ProtectedRoute allowedRole="faculty"><CADashboard /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/students" element={
+          <ProtectedRoute allowedRole="faculty"><CAStudentList /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/students/:studentId" element={
+          <ProtectedRoute allowedRole="faculty"><CAStudentProfile /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/attendance" element={
+          <ProtectedRoute allowedRole="faculty"><CADailyAttendance /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/attendance-summary" element={
+          <ProtectedRoute allowedRole="faculty"><CAAttendanceSummary /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/timetable" element={
+          <ProtectedRoute allowedRole="faculty"><CATimetable /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/subjects" element={
+          <ProtectedRoute allowedRole="faculty"><CASubjects /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/progress" element={
+          <ProtectedRoute allowedRole="faculty"><CACourseProgress /></ProtectedRoute>
+        } />
+        <Route path="/faculty/class-advisor/info" element={
+          <ProtectedRoute allowedRole="faculty"><CAClassInfo /></ProtectedRoute>
+        } />
+        <Route path="/faculty/announcements" element={
+          <ProtectedRoute allowedRole="faculty">
+            <Announcements />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/mentorship" element={
+          <ProtectedRoute allowedRole="faculty">
+            <Mentorship />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/gatepass" element={
+          <ProtectedRoute allowedRole="faculty">
+            <MenteeGatePasses />
+          </ProtectedRoute>
+        } />
         
         {/* Student Routes */}
         <Route path="/student" element={
@@ -227,9 +331,24 @@ function AppRoutes() {
             <StudentDashboard />
           </ProtectedRoute>
         } />
-        <Route path="/student/discipline" element={
+        <Route path="/student/courses" element={
           <ProtectedRoute allowedRole="student">
-            <StudentDiscipline />
+            <StudentCourses />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/courses/:courseId" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentCourseDetail />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/announcements" element={
+          <ProtectedRoute allowedRole="student">
+            <Announcements />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/gatepass" element={
+          <ProtectedRoute allowedRole="student">
+            <GatePass />
           </ProtectedRoute>
         } />
       </Route>
@@ -264,8 +383,23 @@ function AppRoutes() {
             <LateManagement />
           </ProtectedRoute>
         } />
+        <Route path="/authority/announcements" element={
+          <ProtectedRoute allowedRole="authority">
+            <Announcements />
+          </ProtectedRoute>
+        } />
+        <Route path="/authority/gatepass" element={
+          <ProtectedRoute allowedRole="authority">
+            <OMGatePassApprovals />
+          </ProtectedRoute>
+        } />
         
         {/* Catch-all for sub-routes during Phase 2 (shows empty page) */}
+        <Route path="/:role/profile" element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        } />
         <Route path="/:role/*" element={
           <ProtectedRoute>
             <div className="p-8 text-center text-gray-500">

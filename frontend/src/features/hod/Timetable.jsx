@@ -251,7 +251,7 @@ export function Timetable() {
                     className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 cursor-grab active:cursor-grabbing hover:border-indigo-300 hover:shadow-md transition-all group"
                   >
                     <div className="font-semibold text-slate-800 text-sm">
-                      {assignment.course?.code || "Course"}
+                      {assignment.course?.name || "Course"}
                     </div>
                     <div className="text-xs text-slate-500 mt-1 flex items-center">
                       <div className="w-2 h-2 rounded-full bg-indigo-400 mr-2"></div>
@@ -328,7 +328,7 @@ export function Timetable() {
                               {assignment.course?.code}
                             </div>
                             <div className="text-[10px] text-slate-500 mt-1 truncate">
-                              {assignment.faculty?.last_name}
+                              {assignment.faculty?.first_name} {assignment.faculty?.last_name}
                             </div>
                             <button 
                               onClick={() => clearSlot(day.id, period.id)}
