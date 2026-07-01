@@ -38,6 +38,9 @@ app.include_router(hod.router, prefix="/api/hod", tags=["HOD"])
 from app.api import announcements
 app.include_router(announcements.router, prefix="/api/announcements", tags=["Announcements"])
 
+from app.api import gatepass
+app.include_router(gatepass.router, prefix="/api/gatepass", tags=["Gate Pass"])
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Campus Connect ERP API"}

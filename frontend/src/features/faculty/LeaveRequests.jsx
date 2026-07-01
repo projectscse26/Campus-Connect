@@ -54,21 +54,21 @@ export const LeaveRequests = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 sm:gap-0 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">My Requests</h1>
           <p className="text-sm text-gray-500 mt-1">Track and manage your institutional applications</p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <Link 
             to="/faculty/leave/substitutes" 
-            className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-xl text-sm transition-colors shadow-sm"
+            className="flex-1 sm:flex-none text-center bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-xl text-sm transition-colors shadow-sm"
           >
             Substitute Approvals
           </Link>
           <Link 
             to="/faculty/leave/apply" 
-            className="bg-[#0f172a] hover:bg-[#1e293b] text-white font-semibold py-2 px-4 rounded-xl text-sm transition-colors shadow-sm"
+            className="flex-1 sm:flex-none text-center bg-[#0f172a] hover:bg-[#1e293b] text-white font-semibold py-2 px-4 rounded-xl text-sm transition-colors shadow-sm"
           >
             + New Request
           </Link>
@@ -76,13 +76,13 @@ export const LeaveRequests = () => {
       </div>
 
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="flex items-center space-x-2">
-          <span className="text-sm font-medium text-gray-500 mr-2">Filter by:</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-gray-500 w-full sm:w-auto mb-1 sm:mb-0">Filter by:</span>
           {['All', 'Pending', 'Approved', 'Rejected'].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`flex-1 sm:flex-none px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 filter === f ? 'bg-[#0f172a] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
