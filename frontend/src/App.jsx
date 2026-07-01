@@ -54,6 +54,7 @@ import { CASubjects } from './features/faculty/classadvisor/CASubjects';
 import { CACourseProgress } from './features/faculty/classadvisor/CACourseProgress';
 import { CAClassInfo } from './features/faculty/classadvisor/CAClassInfo';
 import { Mentorship } from './features/faculty/Mentorship';
+import { Profile } from './features/profile/Profile';
 
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -365,6 +366,11 @@ function AppRoutes() {
         } />
         
         {/* Catch-all for sub-routes during Phase 2 (shows empty page) */}
+        <Route path="/:role/profile" element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        } />
         <Route path="/:role/*" element={
           <ProtectedRoute>
             <div className="p-8 text-center text-gray-500">

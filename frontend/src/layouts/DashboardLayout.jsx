@@ -3,7 +3,7 @@ import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-d
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User
 } from 'lucide-react';
 
 const ROLE_NAV_LINKS = {
@@ -38,7 +38,6 @@ const ROLE_NAV_LINKS = {
     { name: 'Dashboard', path: '/faculty', icon: LayoutDashboard },
     { name: 'My Courses', path: '/faculty/courses', icon: BookOpen },
     { name: 'Leave Requests', path: '/faculty/leave', icon: Calendar },
-    { name: 'Attendance', path: '/faculty/attendance', icon: Users },
     { name: 'Mentorship', path: '/faculty/mentorship', icon: GraduationCap },
     { name: 'Report Incident', path: '/faculty/discipline', icon: ShieldAlert },
     { name: 'Announcements', path: '/faculty/announcements', icon: Bell },
@@ -64,6 +63,29 @@ export default function DashboardLayout() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCAOpen, setIsCAOpen] = useState(location.pathname.startsWith('/faculty/class-advisor'));
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [userMenuVisible, setUserMenuVisible] = useState(false);
+  const userMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Sync visibility with open state for animation
+  useEffect(() => {
+    if (isUserMenuOpen) {
+      setUserMenuVisible(true);
+    } else {
+      const t = setTimeout(() => setUserMenuVisible(false), 150);
+      return () => clearTimeout(t);
+    }
+  }, [isUserMenuOpen]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [hasUnread, setHasUnread] = useState(false);
@@ -245,6 +267,13 @@ export default function DashboardLayout() {
         </nav>
         
         <div className="p-4 mt-auto border-t border-gray-100">
+          <button
+            onClick={() => { setIsMobileMenuOpen(false); navigate(`/${user.role}/profile`); }}
+            className="flex items-center space-x-3 w-full px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold transition-colors mb-1"
+          >
+            <User className="w-5 h-5 text-gray-400" />
+            <span className="text-[15px]">Profile</span>
+          </button>
           <button 
             onClick={logout}
             className="flex items-center space-x-3 w-full px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 font-bold transition-colors"
@@ -369,16 +398,48 @@ export default function DashboardLayout() {
               )}
             </div>
             
-            <div className="flex items-center pl-6 border-l border-gray-200 cursor-pointer group">
-              <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:scale-105 transition-transform">
-                {user.email.charAt(0).toUpperCase()}
-              </div>
-              <div className="ml-3 hidden sm:block">
-                <p className="text-[14px] font-bold text-gray-900 leading-tight">
-                  {user.name || user.email.split('@')[0]}
-                </p>
-                <p className="text-[12px] text-gray-500 font-medium capitalize">{user.role}</p>
-              </div>
+            <div className="relative flex items-center pl-6 border-l border-gray-200" ref={userMenuRef}>
+              <button
+                onClick={() => setIsUserMenuOpen(prev => !prev)}
+                className="flex items-center gap-3 cursor-pointer group focus:outline-none"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:scale-105 transition-transform">
+                  {user.email.charAt(0).toUpperCase()}
+                </div>
+                <div className="hidden sm:block text-left">
+                  <p className="text-[14px] font-bold text-gray-900 leading-tight">
+                    {user.name || user.email.split('@')[0]}
+                  </p>
+                  <p className="text-[12px] text-gray-500 font-medium capitalize">{user.role}</p>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-400 hidden sm:block transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Dropdown */}
+              {userMenuVisible && (
+                <div
+                  className={`absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 transition-all duration-150 origin-top-right ${
+                    isUserMenuOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-1'
+                  }`}
+                >
+                  <div className="px-4 py-2 border-b border-gray-100 mb-1">
+                    <p className="text-xs font-bold text-gray-900 truncate">{user.email}</p>
+                    <p className="text-xs text-gray-400 capitalize">{user.role}</p>
+                  </div>
+                  <button
+                    onClick={() => { setIsUserMenuOpen(false); navigate(`/${user.role}/profile`); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors rounded-xl"
+                  >
+                    <User className="w-4 h-4 text-gray-400" /> Profile
+                  </button>
+                  <button
+                    onClick={() => { setIsUserMenuOpen(false); logout(); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors rounded-xl"
+                  >
+                    <LogOut className="w-4 h-4" /> Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
