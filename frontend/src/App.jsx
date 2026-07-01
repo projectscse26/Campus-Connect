@@ -30,7 +30,13 @@ import { Discipline as HodDiscipline } from './features/hod/Discipline';
 import { Discipline as AuthorityDiscipline } from './features/authority/Discipline';
 import { Discipline as FacultyDiscipline } from './features/faculty/Discipline';
 import { Courses as FacultyCourses } from './features/faculty/Courses';
-import { LMSManager } from './features/faculty/LMSManager';
+import { LMSDashboard } from './features/faculty/lms/LMSDashboard';
+import { LMSResources } from './features/faculty/lms/LMSResources';
+import { LMSAssignments } from './features/faculty/lms/LMSAssignments';
+import { LMSAnnouncements as CourseAnnouncements } from './features/faculty/lms/LMSAnnouncements';
+import { LMSSyllabus } from './features/faculty/lms/LMSSyllabus';
+import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
+import { LMSAttendanceHistory } from './features/faculty/lms/LMSAttendanceHistory';
 import { Discipline as StudentDiscipline } from './features/student/Discipline';
 import { LateTrackerDashboard } from './features/latetracker/Dashboard';
 import { LateManagement } from './features/hod/LateManagement';
@@ -206,7 +212,37 @@ function AppRoutes() {
         } />
         <Route path="/faculty/courses/:assignmentId/lms" element={
           <ProtectedRoute allowedRole="faculty">
-            <LMSManager />
+            <LMSDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/resources" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSResources />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/assignments" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSAssignments />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/announcements" element={
+          <ProtectedRoute allowedRole="faculty">
+            <CourseAnnouncements />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/syllabus" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSSyllabus />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/attendance" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSAttendance />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/attendance-history" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSAttendanceHistory />
           </ProtectedRoute>
         } />
 
