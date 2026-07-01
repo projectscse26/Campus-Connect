@@ -11,8 +11,17 @@ class SimpleUserBase(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
 
+class DepartmentBasicInfo(BaseModel):
+    id: int
+    name: str
+    code: str
+    
+    model_config = ConfigDict(from_attributes=True)
+
 class StudentBasicInfo(SimpleUserBase):
     register_number: str
+    current_year: Optional[int] = None
+    department: Optional[DepartmentBasicInfo] = None
 
 class GatePassCreate(BaseModel):
     reason: str

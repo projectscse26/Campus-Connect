@@ -237,10 +237,21 @@ export const GatePass = () => {
               </div>
               
               <div className="text-center mb-6">
-                <span className="inline-block px-4 py-1.5 bg-green-100 text-green-800 font-bold rounded-full text-xs sm:text-sm uppercase tracking-wider mb-2">
+                <span className="inline-block px-4 py-1.5 bg-green-100 text-green-800 font-bold rounded-full text-xs sm:text-sm uppercase tracking-wider mb-3">
                   Approval Successful
                 </span>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mt-2">{selectedEPass.reason}</h3>
+                
+                {/* Student Details */}
+                <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 inline-block min-w-[220px] text-center shadow-sm mb-4">
+                  <p className="text-sm sm:text-base font-bold text-gray-900">
+                    {selectedEPass.student?.first_name} {selectedEPass.student?.last_name}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase mt-1 tracking-wider">
+                    {selectedEPass.student?.department?.code || 'DEPT'} • Year {selectedEPass.student?.current_year || '-'}
+                  </p>
+                </div>
+                
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">{selectedEPass.reason}</h3>
               </div>
               
               <div className="space-y-4 mb-6">

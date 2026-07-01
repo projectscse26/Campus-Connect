@@ -68,7 +68,7 @@ def get_my_gatepasses(
     
     student = get_student_profile(db, current_user.id)
     return db.query(GatePass).options(
-        joinedload(GatePass.student),
+        joinedload(GatePass.student).joinedload(Student.department),
         joinedload(GatePass.mentor),
         joinedload(GatePass.hod),
         joinedload(GatePass.om)
@@ -94,7 +94,7 @@ def get_mentor_gatepasses(
     ).subquery()
     
     return db.query(GatePass).options(
-        joinedload(GatePass.student)
+        joinedload(GatePass.student).joinedload(Student.department)
     ).filter(
         GatePass.student_id.in_(mentees),
         GatePass.status == GatePassStatus.PENDING_MENTOR,
@@ -113,7 +113,7 @@ def get_hod_gatepasses(
     faculty = get_faculty_profile(db, current_user.id)
     
     return db.query(GatePass).join(Student).options(
-        joinedload(GatePass.student)
+        joinedload(GatePass.student).joinedload(Student.department)
     ).filter(
         Student.department_id == faculty.department_id,
         GatePass.status == GatePassStatus.PENDING_HOD,
@@ -130,7 +130,7 @@ def get_om_gatepasses(
         raise HTTPException(status_code=403, detail="Only Authorities can view OM gate passes")
     
     return db.query(GatePass).options(
-        joinedload(GatePass.student)
+        joinedload(GatePass.student).joinedload(Student.department)
     ).filter(
         GatePass.status == GatePassStatus.PENDING_OM,
         GatePass.is_deleted_by_student == False
@@ -188,7 +188,7 @@ def approve_gatepass(
     
     # Reload with relationships
     return db.query(GatePass).options(
-        joinedload(GatePass.student),
+        joinedload(GatePass.student).joinedload(Student.department),
         joinedload(GatePass.mentor),
         joinedload(GatePass.hod),
         joinedload(GatePass.om)
