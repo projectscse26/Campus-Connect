@@ -39,6 +39,8 @@ import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
 import { LMSAttendanceHistory } from './features/faculty/lms/LMSAttendanceHistory';
 import StudentCourses from './features/student/StudentCourses';
 import StudentCourseDetail from './features/student/StudentCourseDetail';
+import { LMSGradebook } from './features/faculty/lms/LMSGradebook';
+import { Discipline as StudentDiscipline } from './features/student/Discipline';
 import { LateTrackerDashboard } from './features/latetracker/Dashboard';
 import { LateManagement } from './features/hod/LateManagement';
 import { LeaveRequests } from './features/faculty/LeaveRequests';
@@ -252,6 +254,11 @@ function AppRoutes() {
         <Route path="/faculty/courses/:assignmentId/lms/attendance-history" element={
           <ProtectedRoute allowedRole="faculty">
             <LMSAttendanceHistory />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/gradebook" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSGradebook />
           </ProtectedRoute>
         } />
 

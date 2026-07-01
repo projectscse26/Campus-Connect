@@ -81,12 +81,12 @@ ALTER TYPE public.dayofweek OWNER TO postgres;
 --
 
 CREATE TYPE public.gradetype AS ENUM (
-    'INTERNAL_1',
-    'INTERNAL_2',
-    'INTERNAL_3',
-    'ASSIGNMENT',
-    'LAB',
-    'EXTERNAL'
+    'internal_1',
+    'internal_2',
+    'model_exam',
+    'assignment',
+    'lab',
+    'external'
 );
 
 
