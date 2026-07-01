@@ -33,6 +33,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Leave Approvals', path: '/hod/leave', icon: Calendar },
     { name: 'Discipline', path: '/hod/discipline', icon: ShieldAlert },
     { name: 'Late Tracker', path: '/hod/latetracker', icon: Clock },
+    { name: 'Gate Pass Approvals', path: '/hod/gatepass', icon: Clock },
   ],
   faculty: [
     { name: 'Dashboard', path: '/faculty', icon: LayoutDashboard },
@@ -40,11 +41,15 @@ const ROLE_NAV_LINKS = {
     { name: 'Leave Requests', path: '/faculty/leave', icon: Calendar },
     { name: 'Mentorship', path: '/faculty/mentorship', icon: GraduationCap },
     { name: 'Report Incident', path: '/faculty/discipline', icon: ShieldAlert },
+    { name: 'Gate Pass Approvals', path: '/faculty/gatepass', icon: Clock },
     { name: 'Announcements', path: '/faculty/announcements', icon: Bell },
   ],
   student: [
     { name: 'Dashboard', path: '/student', icon: LayoutDashboard },
     { name: 'My Courses', path: '/student/courses', icon: BookOpen },
+    { name: 'Leave Tracker', path: '/student/leave', icon: Settings },
+    { name: 'Discipline', path: '/student/discipline', icon: ShieldAlert },
+    { name: 'Gate Pass', path: '/student/gatepass', icon: Clock },
     { name: 'Announcements', path: '/student/announcements', icon: Bell },
   ],
   authority: [
@@ -52,6 +57,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Analytics', path: '/authority/analytics', icon: BookOpen },
     { name: 'Discipline', path: '/authority/discipline', icon: ShieldAlert },
     { name: 'Late Tracker', path: '/authority/latetracker', icon: Clock },
+    { name: 'Gate Pass Approvals', path: '/authority/gatepass', icon: Clock },
     { name: 'Announcements', path: '/authority/announcements', icon: Bell },
   ]
 };

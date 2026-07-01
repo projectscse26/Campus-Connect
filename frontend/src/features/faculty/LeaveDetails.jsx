@@ -60,18 +60,18 @@ export const LeaveDetails = () => {
           <span className="bg-gray-800 text-white px-2 py-0.5 rounded text-xs font-bold">REQ-{request.id}</span>
           {getStatusBadge()}
         </div>
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-4 sm:gap-0">
           <div>
             <h1 className="text-3xl font-bold text-[#0f172a] tracking-tight mt-2">{request.leave_type} Application</h1>
             <p className="text-sm text-gray-500 mt-1">
               Submitted on {new Date(request.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
             </p>
           </div>
-          <div className="flex space-x-3 mt-2">
-            <button className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center">
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto mt-2">
+            <button className="flex-1 sm:flex-none justify-center bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center">
               <Edit3 className="w-4 h-4 mr-2" /> Modify
             </button>
-            <button className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center">
+            <button className="flex-1 sm:flex-none justify-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center">
               <XCircle className="w-4 h-4 mr-2" /> Withdraw
             </button>
           </div>

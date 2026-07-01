@@ -15,6 +15,7 @@ from app.models.alumni import Alumni
 from app.models.discipline import DisciplineRecord
 from app.models.late import LateRecord
 from app.models.leave import FacultyLeaveRequest, FacultyDutyArrangement, FacultyLeaveBalance
+from app.models.gatepass import GatePass, GatePassStatus
 
 # Academic
 from app.models.academic import (
@@ -53,4 +54,5 @@ __all__ = [
     "LMSResource", "ResourceType",
     "Announcement",
     "TimetableSlot", "DayOfWeek",
+    "GatePass", "GatePassStatus",
 ]

@@ -55,8 +55,11 @@ import { CASubjects } from './features/faculty/classadvisor/CASubjects';
 import { CACourseProgress } from './features/faculty/classadvisor/CACourseProgress';
 import { CAClassInfo } from './features/faculty/classadvisor/CAClassInfo';
 import { Mentorship } from './features/faculty/Mentorship';
+import { GatePass } from './features/student/GatePass';
+import { MenteeGatePasses } from './features/faculty/MenteeGatePasses';
+import { GatePassApprovals as HodGatePassApprovals } from './features/hod/GatePassApprovals';
+import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
 import { Profile } from './features/profile/Profile';
-
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
@@ -194,6 +197,11 @@ function AppRoutes() {
             <HodDiscipline />
           </ProtectedRoute>
         } />
+        <Route path="/hod/gatepass" element={
+          <ProtectedRoute allowedRole="hod">
+            <HodGatePassApprovals />
+          </ProtectedRoute>
+        } />
         <Route path="/hod/latetracker" element={
           <ProtectedRoute allowedRole="hod">
             <LateManagement />
@@ -311,6 +319,11 @@ function AppRoutes() {
             <Mentorship />
           </ProtectedRoute>
         } />
+        <Route path="/faculty/gatepass" element={
+          <ProtectedRoute allowedRole="faculty">
+            <MenteeGatePasses />
+          </ProtectedRoute>
+        } />
         
         {/* Student Routes */}
         <Route path="/student" element={
@@ -331,6 +344,11 @@ function AppRoutes() {
         <Route path="/student/announcements" element={
           <ProtectedRoute allowedRole="student">
             <Announcements />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/gatepass" element={
+          <ProtectedRoute allowedRole="student">
+            <GatePass />
           </ProtectedRoute>
         } />
       </Route>
@@ -368,6 +386,11 @@ function AppRoutes() {
         <Route path="/authority/announcements" element={
           <ProtectedRoute allowedRole="authority">
             <Announcements />
+          </ProtectedRoute>
+        } />
+        <Route path="/authority/gatepass" element={
+          <ProtectedRoute allowedRole="authority">
+            <OMGatePassApprovals />
           </ProtectedRoute>
         } />
         
