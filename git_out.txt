@@ -1,0 +1,4 @@
+=== Unstage temp files ===
+
+=== Stash all changes (staged + unstaged + untracked) ===
+warning: in the working copy of 'frontend/npm_install.txt', LF will be replaced by CRLF the next time Git touches it

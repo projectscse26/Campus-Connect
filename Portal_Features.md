@@ -1578,7 +1578,6 @@ Export CSV
 Assessment Types
 CIA 1
 CIA 2
-CIA 3
 Model Exam
 Retest
 Workflow
