@@ -48,7 +48,7 @@ pip install -r requirements.txt
 #### Database Setup (PostgreSQL)
 1. Install PostgreSQL (v14+) on your machine.
 2. Create a new database named `campus_connect` using pgAdmin or the `psql` CLI.
-3. In the `backend` folder, create a file named `.env` and strictly use this format (replace username/password with your local postgres credentials):
+3. In the `backend` folder, creates a file named `.env` and strictly use this format (replace username/password with your local postgres credentials):
 
 ```env
 DATABASE_URL=postgresql://<username>:<password>@localhost:5432/campus_connect

@@ -12,7 +12,7 @@ from app.models.department import Department
 from app.models.academic import CourseAssignment, Section, MentorAssignment
 from app.models.attendance import Attendance, AttendanceStatus
 from app.models.student import Student
-from app.models.grade import Grade
+from app.models.grade import Grade, GradeType, GRADE_MAX_MARKS, GRADE_PASS_MARKS
 from app.models.mentorship import AdvisingLog
 from app.models.lms import LMSResource, ResourceType, Announcement, TimetableSlot
 from app.schemas.faculty import (
@@ -769,3 +769,328 @@ def delete_faculty(
         
     db.commit()
     return None
+
+
+# ── Grade Book Endpoints ──────────────────────────────────────────────────────
+
+def _get_assignment_for_faculty(assignment_id: int, faculty: Faculty, db: Session) -> CourseAssignment:
+    """Helper: fetch and validate a CourseAssignment belongs to this faculty."""
+    assignment = db.query(CourseAssignment).options(
+        joinedload(CourseAssignment.course),
+        joinedload(CourseAssignment.section)
+    ).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+    return assignment
+
+
+@router.get("/courses/{assignment_id}/gradebook")
+def get_gradebook(
+    assignment_id: int,
+    grade_type: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Returns the student roster with existing marks for the given grade_type.
+    Query param: grade_type — one of internal_1, internal_2, model_exam
+    """
+    faculty = _get_faculty_profile(current_user, db)
+    assignment = _get_assignment_for_faculty(assignment_id, faculty, db)
+
+    # Validate grade type
+    try:
+        gt = GradeType(grade_type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid grade_type '{grade_type}'")
+
+    # Student roster via section
+    students = db.query(Student).filter(
+        Student.section_id == assignment.section_id,
+        Student.is_active == True
+    ).order_by(Student.register_number).all()
+
+    student_ids = [s.id for s in students]
+
+    # Existing grades for this course + grade_type
+    existing_grades = db.query(Grade).filter(
+        Grade.course_id == assignment.course_id,
+        Grade.grade_type == gt.value,
+        Grade.student_id.in_(student_ids),
+        Grade.academic_year == assignment.academic_year,
+        Grade.semester == assignment.semester,
+    ).all()
+    grade_map = {g.student_id: g for g in existing_grades}
+
+    max_marks = GRADE_MAX_MARKS.get(gt, 100)
+    pass_mark = GRADE_PASS_MARKS.get(gt)
+
+    roster = []
+    for s in students:
+        g = grade_map.get(s.id)
+        retest_eligible = None
+        if pass_mark is not None and g:
+            retest_eligible = g.is_absent or (
+                g.marks_obtained is not None and float(g.marks_obtained) < pass_mark
+            )
+        roster.append({
+            "student_id": s.id,
+            "register_number": s.register_number,
+            "first_name": s.first_name,
+            "last_name": s.last_name,
+            "grade_id": g.id if g else None,
+            "marks_obtained": float(g.marks_obtained) if g and g.marks_obtained is not None else None,
+            "is_absent": g.is_absent if g else False,
+            "remarks": g.remarks if g else "",
+            "is_published": g.is_published if g else False,
+            "retest_eligible": retest_eligible,
+        })
+
+    return {
+        "course_name": assignment.course.name,
+        "course_code": assignment.course.code,
+        "section": f"{assignment.section.year} Year {assignment.section.name}" if assignment.section else "",
+        "academic_year": assignment.academic_year,
+        "semester": assignment.semester,
+        "grade_type": gt.value,
+        "max_marks": max_marks,
+        "pass_mark": pass_mark,
+        "is_published": all(g.is_published for g in existing_grades) if existing_grades else False,
+        "roster": roster,
+    }
+
+
+@router.post("/courses/{assignment_id}/gradebook")
+def save_grades(
+    assignment_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Bulk upsert grades for a course assignment.
+    payload: {
+        grade_type: str,
+        entries: [{ student_id, marks_obtained, is_absent, remarks }]
+    }
+    Creates new Grade rows or updates existing ones (draft, not published).
+    """
+    faculty = _get_faculty_profile(current_user, db)
+    assignment = _get_assignment_for_faculty(assignment_id, faculty, db)
+
+    try:
+        gt = GradeType(payload.get("grade_type", ""))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid grade_type")
+
+    max_marks = GRADE_MAX_MARKS.get(gt, 100)
+    entries = payload.get("entries", [])
+
+    saved = 0
+    for entry in entries:
+        student_id = entry.get("student_id")
+        is_absent = bool(entry.get("is_absent", False))
+        raw_marks = entry.get("marks_obtained")
+        remarks = entry.get("remarks", "")
+
+        # Validate marks range
+        marks = None
+        if not is_absent and raw_marks is not None:
+            try:
+                marks = float(raw_marks)
+                if marks < 0 or marks > max_marks:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Marks {marks} out of range for {gt.value} (max {max_marks})"
+                    )
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="Invalid marks value")
+
+        existing = db.query(Grade).filter(
+            Grade.course_id == assignment.course_id,
+            Grade.grade_type == gt.value,
+            Grade.student_id == student_id,
+            Grade.academic_year == assignment.academic_year,
+            Grade.semester == assignment.semester,
+        ).first()
+
+        if existing:
+            existing.marks_obtained = marks
+            existing.is_absent = is_absent
+            existing.max_marks = max_marks
+            existing.remarks = remarks
+            existing.graded_by_id = faculty.id
+        else:
+            db.add(Grade(
+                student_id=student_id,
+                course_id=assignment.course_id,
+                grade_type=gt.value,
+                marks_obtained=marks,
+                max_marks=max_marks,
+                is_absent=is_absent,
+                academic_year=assignment.academic_year,
+                semester=assignment.semester,
+                graded_by_id=faculty.id,
+                remarks=remarks,
+                is_published=False,
+            ))
+        saved += 1
+
+    db.commit()
+    return {"message": f"Saved {saved} grade entries", "saved": saved}
+
+
+@router.post("/courses/{assignment_id}/gradebook/publish")
+def publish_grades(
+    assignment_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Publish grades for a specific grade_type — makes them visible to students.
+    payload: { grade_type: str }
+    """
+    faculty = _get_faculty_profile(current_user, db)
+    assignment = _get_assignment_for_faculty(assignment_id, faculty, db)
+
+    try:
+        gt = GradeType(payload.get("grade_type", ""))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid grade_type")
+
+    updated = db.query(Grade).filter(
+        Grade.course_id == assignment.course_id,
+        Grade.grade_type == gt.value,
+        Grade.academic_year == assignment.academic_year,
+        Grade.semester == assignment.semester,
+    ).all()
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="No grades found to publish for this assessment")
+
+    for g in updated:
+        g.is_published = True
+
+    db.commit()
+    return {"message": f"Published {len(updated)} grades for {gt.value}"}
+
+
+@router.get("/courses/{assignment_id}/gradebook/export")
+def export_grades_csv(
+    assignment_id: int,
+    grade_type: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Export grades as CSV for a given grade_type.
+    Returns CSV text as plain response.
+    """
+    from fastapi.responses import StreamingResponse
+
+    faculty = _get_faculty_profile(current_user, db)
+    assignment = _get_assignment_for_faculty(assignment_id, faculty, db)
+
+    try:
+        gt = GradeType(grade_type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid grade_type '{grade_type}'")
+
+    students = db.query(Student).filter(
+        Student.section_id == assignment.section_id,
+        Student.is_active == True
+    ).order_by(Student.register_number).all()
+
+    student_ids = [s.id for s in students]
+    grades = db.query(Grade).filter(
+        Grade.course_id == assignment.course_id,
+        Grade.grade_type == gt.value,
+        Grade.student_id.in_(student_ids),
+        Grade.academic_year == assignment.academic_year,
+        Grade.semester == assignment.semester,
+    ).all()
+    grade_map = {g.student_id: g for g in grades}
+
+    max_marks = GRADE_MAX_MARKS.get(gt, 100)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Register Number", "First Name", "Last Name",
+        f"Marks Obtained (Max {max_marks})", "Absent", "Remarks", "Published"
+    ])
+    for s in students:
+        g = grade_map.get(s.id)
+        writer.writerow([
+            s.register_number,
+            s.first_name,
+            s.last_name,
+            float(g.marks_obtained) if g and g.marks_obtained is not None else "",
+            "Yes" if g and g.is_absent else "No",
+            g.remarks if g else "",
+            "Yes" if g and g.is_published else "No",
+        ])
+
+    output.seek(0)
+    filename = f"{assignment.course.code}_{gt.value}_{assignment.academic_year}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+# ── Student-facing Grade API (read-only, published grades only) ───────────────
+
+@router.get("/courses/{assignment_id}/gradebook/student/{student_id}")
+def get_student_grades(
+    assignment_id: int,
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Returns published grades for a student in a course.
+    Accessible by the student themselves or the faculty teaching the course.
+    """
+    assignment = db.query(CourseAssignment).options(
+        joinedload(CourseAssignment.course)
+    ).filter(CourseAssignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+
+    # Only the student themselves or the faculty teaching this course can view
+    if current_user.role == "student":
+        student = db.query(Student).filter(Student.user_id == current_user.id).first()
+        if not student or student.id != student_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    elif current_user.role in ["faculty", "hod"]:
+        faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+        if not faculty or assignment.faculty_id != faculty.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    else:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    grades = db.query(Grade).filter(
+        Grade.course_id == assignment.course_id,
+        Grade.student_id == student_id,
+        Grade.academic_year == assignment.academic_year,
+        Grade.semester == assignment.semester,
+        Grade.is_published == True,
+    ).all()
+
+    return [
+        {
+            "grade_type": g.grade_type.value,
+            "marks_obtained": float(g.marks_obtained) if g.marks_obtained is not None else None,
+            "max_marks": float(g.max_marks),
+            "is_absent": g.is_absent,
+            "remarks": g.remarks,
+        }
+        for g in grades
+    ]

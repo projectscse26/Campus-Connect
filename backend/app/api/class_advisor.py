@@ -233,15 +233,32 @@ def get_student_profile(
     enrollments = db.query(Enrollment).options(
         joinedload(Enrollment.course)
     ).filter(Enrollment.student_id == student.id).all()
+    
+    enrolled_subjects_map = {}
+    for e in enrollments:
+        if e.course:
+            enrolled_subjects_map[e.course.id] = e.course
+
+    if student.section_id:
+        assignments = db.query(CourseAssignment).options(
+            joinedload(CourseAssignment.course)
+        ).filter(
+            CourseAssignment.section_id == student.section_id,
+            CourseAssignment.semester == student.current_semester,
+            CourseAssignment.is_active == True
+        ).all()
+        for a in assignments:
+            if a.course:
+                enrolled_subjects_map[a.course.id] = a.course
 
     enrolled_subjects = [
         EnrolledSubject(
-            id=e.course.id,
-            code=e.course.code,
-            name=e.course.name,
-            credits=e.course.credits
+            id=course.id,
+            code=course.code,
+            name=course.name,
+            credits=course.credits
         )
-        for e in enrollments if e.course
+        for course in enrolled_subjects_map.values()
     ]
 
     return CAStudentProfileResponse(

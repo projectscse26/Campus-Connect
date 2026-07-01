@@ -37,6 +37,9 @@ import { LMSAnnouncements as CourseAnnouncements } from './features/faculty/lms/
 import { LMSSyllabus } from './features/faculty/lms/LMSSyllabus';
 import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
 import { LMSAttendanceHistory } from './features/faculty/lms/LMSAttendanceHistory';
+import StudentCourses from './features/student/StudentCourses';
+import StudentCourseDetail from './features/student/StudentCourseDetail';
+import { LMSGradebook } from './features/faculty/lms/LMSGradebook';
 import { Discipline as StudentDiscipline } from './features/student/Discipline';
 import { LateTrackerDashboard } from './features/latetracker/Dashboard';
 import { LateManagement } from './features/hod/LateManagement';
@@ -54,7 +57,11 @@ import { CASubjects } from './features/faculty/classadvisor/CASubjects';
 import { CACourseProgress } from './features/faculty/classadvisor/CACourseProgress';
 import { CAClassInfo } from './features/faculty/classadvisor/CAClassInfo';
 import { Mentorship } from './features/faculty/Mentorship';
-
+import { GatePass } from './features/student/GatePass';
+import { MenteeGatePasses } from './features/faculty/MenteeGatePasses';
+import { GatePassApprovals as HodGatePassApprovals } from './features/hod/GatePassApprovals';
+import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
+import { Profile } from './features/profile/Profile';
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
@@ -192,6 +199,11 @@ function AppRoutes() {
             <HodDiscipline />
           </ProtectedRoute>
         } />
+        <Route path="/hod/gatepass" element={
+          <ProtectedRoute allowedRole="hod">
+            <HodGatePassApprovals />
+          </ProtectedRoute>
+        } />
         <Route path="/hod/latetracker" element={
           <ProtectedRoute allowedRole="hod">
             <LateManagement />
@@ -242,6 +254,11 @@ function AppRoutes() {
         <Route path="/faculty/courses/:assignmentId/lms/attendance-history" element={
           <ProtectedRoute allowedRole="faculty">
             <LMSAttendanceHistory />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/gradebook" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSGradebook />
           </ProtectedRoute>
         } />
 
@@ -309,6 +326,11 @@ function AppRoutes() {
             <Mentorship />
           </ProtectedRoute>
         } />
+        <Route path="/faculty/gatepass" element={
+          <ProtectedRoute allowedRole="faculty">
+            <MenteeGatePasses />
+          </ProtectedRoute>
+        } />
         
         {/* Student Routes */}
         <Route path="/student" element={
@@ -316,14 +338,24 @@ function AppRoutes() {
             <StudentDashboard />
           </ProtectedRoute>
         } />
-        <Route path="/student/discipline" element={
+        <Route path="/student/courses" element={
           <ProtectedRoute allowedRole="student">
-            <StudentDiscipline />
+            <StudentCourses />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/courses/:courseId" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentCourseDetail />
           </ProtectedRoute>
         } />
         <Route path="/student/announcements" element={
           <ProtectedRoute allowedRole="student">
             <Announcements />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/gatepass" element={
+          <ProtectedRoute allowedRole="student">
+            <GatePass />
           </ProtectedRoute>
         } />
       </Route>
@@ -363,8 +395,18 @@ function AppRoutes() {
             <Announcements />
           </ProtectedRoute>
         } />
+        <Route path="/authority/gatepass" element={
+          <ProtectedRoute allowedRole="authority">
+            <OMGatePassApprovals />
+          </ProtectedRoute>
+        } />
         
         {/* Catch-all for sub-routes during Phase 2 (shows empty page) */}
+        <Route path="/:role/profile" element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        } />
         <Route path="/:role/*" element={
           <ProtectedRoute>
             <div className="p-8 text-center text-gray-500">

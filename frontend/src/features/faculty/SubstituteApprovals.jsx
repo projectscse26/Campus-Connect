@@ -66,27 +66,27 @@ export const SubstituteApprovals = () => {
               
               <div className="mt-4 space-y-3">
                 {req.arrangements.map(arr => (
-                  <div key={arr.id} className="bg-[#f8fbfd] border border-blue-100 rounded-lg p-4 flex justify-between items-center">
+                  <div key={arr.id} className="bg-[#f8fbfd] border border-blue-100 rounded-lg p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
                     <div>
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Subject & Class</p>
                       <p className="text-sm font-bold text-gray-800">{arr.subject} — {arr.class_section}</p>
                       <p className="text-xs text-gray-500 mt-1 flex items-center"><Clock className="w-3.5 h-3.5 mr-1"/> Period: {arr.period}</p>
                     </div>
                     {arr.status === 'pending' ? (
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-2 w-full sm:w-auto">
                         <button 
                           onClick={() => handleAction(arr.id, 'accepted')}
                           disabled={actionLoading === arr.id}
-                          className="bg-green-600 hover:bg-green-700 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-colors flex items-center"
+                          className="flex-1 sm:flex-none justify-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 sm:py-1.5 px-3 rounded-lg text-sm sm:text-xs transition-colors flex items-center"
                         >
-                          <CheckCircle className="w-3.5 h-3.5 mr-1" /> Accept
+                          <CheckCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5 mr-1" /> Accept
                         </button>
                         <button 
                           onClick={() => handleAction(arr.id, 'rejected')}
                           disabled={actionLoading === arr.id}
-                          className="bg-red-50 hover:bg-red-100 text-red-600 font-bold py-1.5 px-3 rounded-lg text-xs transition-colors flex items-center border border-red-200"
+                          className="flex-1 sm:flex-none justify-center bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2 sm:py-1.5 px-3 rounded-lg text-sm sm:text-xs transition-colors flex items-center border border-red-200"
                         >
-                          <XCircle className="w-3.5 h-3.5 mr-1" /> Decline
+                          <XCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5 mr-1" /> Decline
                         </button>
                       </div>
                     ) : arr.status === 'accepted' ? (
