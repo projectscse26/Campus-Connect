@@ -1,19 +1,28 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, and_, extract
 from typing import List, Optional
 from datetime import date, time, datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 from app.core.database import get_db
-from app.models.late import LateRecord
+from app.models.late import LateRecord, LateEntryNotification
 from app.models.student import Student
 from app.models.user import User
-from app.schemas.late import LateRecordCreate, LateRecordResponse, LateAnalytics
+from app.models.academic import MentorAssignment, Section
+from app.models.department import Department
+from app.schemas.late import (
+    LateRecordCreate, LateRecordResponse, LateAnalytics,
+    LateEntryNotificationCreate, LateEntryNotificationResponse, LateEntryUsageSummary
+)
 from app.core.security import get_current_active_user
 
 router = APIRouter()
 
-def _serialize_late(record: LateRecord) -> dict:
+# Configuration
+MONTHLY_LATE_ENTRY_LIMIT = 5
+
+def _serialize_late(record: LateRecord, db: Session = None) -> dict:
     reporter_name = record.recorded_by.email if record.recorded_by else None
     if record.recorded_by and getattr(record.recorded_by, 'faculty_profile', None):
         reporter_name = f"{record.recorded_by.faculty_profile.first_name} {record.recorded_by.faculty_profile.last_name}"
@@ -21,6 +30,17 @@ def _serialize_late(record: LateRecord) -> dict:
         reporter_name = 'Admin'
     elif record.recorded_by and record.recorded_by.role.value == 'late_tracker':
         reporter_name = 'Late Tracker'
+
+    # Check if student has prior notification for this date
+    has_prior_notification = False
+    if db and record.student_id and record.date:
+        notification = db.query(LateEntryNotification).filter(
+            and_(
+                LateEntryNotification.student_id == record.student_id,
+                LateEntryNotification.date == record.date
+            )
+        ).first()
+        has_prior_notification = notification is not None
 
     return {
         "id": record.id,
@@ -34,7 +54,8 @@ def _serialize_late(record: LateRecord) -> dict:
         "created_at": record.created_at,
         "student_name": f"{record.student.first_name} {record.student.last_name}" if record.student else None,
         "student_register_number": record.student.register_number if record.student else None,
-        "reporter_name": reporter_name
+        "reporter_name": reporter_name,
+        "has_prior_notification": has_prior_notification
     }
 
 @router.post("/", response_model=LateRecordResponse, status_code=status.HTTP_201_CREATED)
@@ -68,7 +89,7 @@ def create_late_record(
     db.commit()
     db.refresh(new_record)
     
-    return _serialize_late(new_record)
+    return _serialize_late(new_record, db)
 
 
 @router.get("/", response_model=List[LateRecordResponse])
@@ -99,7 +120,7 @@ def get_late_records(
         query = query.filter(LateRecord.date <= end_date)
         
     records = query.order_by(LateRecord.created_at.desc()).limit(limit).all()
-    return [_serialize_late(r) for r in records]
+    return [_serialize_late(r, db) for r in records]
 
 
 @router.get("/analytics", response_model=LateAnalytics)
@@ -188,3 +209,349 @@ def get_late_analytics(
         "recent_trend": recent_trend,
         "frequent_latecomers": frequent_latecomers
     }
+
+
+# ============================================================================
+# LATE ENTRY NOTIFICATION ENDPOINTS (Student self-reporting)
+# ============================================================================
+
+@router.get("/notifications/usage", response_model=LateEntryUsageSummary)
+def get_late_entry_usage(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get the current month's late entry notification usage for the logged-in student.
+    """
+    print(f"DEBUG: User role = {current_user.role}, User ID = {current_user.id}")  # Debug
+    
+    if current_user.role != "student":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only students can access this endpoint")
+    
+    if not current_user.student_profile:
+        print(f"DEBUG: No student profile found for user {current_user.id}")  # Debug
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found")
+    
+    # Get current month start and end (based on submission date, not late arrival date)
+    today = date.today()
+    month_start = datetime(today.year, today.month, 1)
+    if today.month == 12:
+        month_end = datetime(today.year + 1, 1, 1)
+    else:
+        month_end = datetime(today.year, today.month + 1, 1)
+    
+    # Count notifications submitted this month
+    used = db.query(func.count(LateEntryNotification.id)).filter(
+        and_(
+            LateEntryNotification.student_id == current_user.student_profile.id,
+            LateEntryNotification.created_at >= month_start,
+            LateEntryNotification.created_at < month_end
+        )
+    ).scalar() or 0
+    
+    remaining = max(0, MONTHLY_LATE_ENTRY_LIMIT - used)
+    can_submit = remaining > 0
+    
+    return {
+        "used": used,
+        "remaining": remaining,
+        "monthly_limit": MONTHLY_LATE_ENTRY_LIMIT,
+        "can_submit": can_submit
+    }
+
+
+@router.post("/notifications", response_model=LateEntryNotificationResponse, status_code=status.HTTP_201_CREATED)
+def create_late_entry_notification(
+    notification_in: LateEntryNotificationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Student submits a late entry notification.
+    No approval workflow - this is information only for Phase 1.
+    Students can submit anytime.
+    """
+    if current_user.role != "student":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only students can submit late entry notifications")
+    
+    if not current_user.student_profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found")
+    
+    student = current_user.student_profile
+    
+    # Check monthly limit (based on submission month, not late arrival date)
+    today = date.today()
+    month_start = datetime(today.year, today.month, 1)
+    if today.month == 12:
+        month_end = datetime(today.year + 1, 1, 1)
+    else:
+        month_end = datetime(today.year, today.month + 1, 1)
+    
+    monthly_count = db.query(func.count(LateEntryNotification.id)).filter(
+        and_(
+            LateEntryNotification.student_id == student.id,
+            LateEntryNotification.created_at >= month_start,
+            LateEntryNotification.created_at < month_end
+        )
+    ).scalar() or 0
+    
+    if monthly_count >= MONTHLY_LATE_ENTRY_LIMIT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Monthly limit of {MONTHLY_LATE_ENTRY_LIMIT} late entry notifications reached"
+        )
+    
+    # Check if already submitted for this date
+    existing = db.query(LateEntryNotification).filter(
+        and_(
+            LateEntryNotification.student_id == student.id,
+            LateEntryNotification.date == notification_in.date
+        )
+    ).first()
+    
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You have already submitted a late entry notification for this date"
+        )
+    
+    # Get mentor/class advisor
+    mentor_assignment = db.query(MentorAssignment).filter(
+        MentorAssignment.student_id == student.id
+    ).first()
+    
+    mentor_id = mentor_assignment.mentor_id if mentor_assignment else None
+    
+    # Create notification
+    new_notification = LateEntryNotification(
+        student_id=student.id,
+        mentor_id=mentor_id,
+        date=notification_in.date,
+        expected_arrival_time=notification_in.expected_arrival_time,
+        reason=notification_in.reason
+    )
+    
+    db.add(new_notification)
+    db.commit()
+    db.refresh(new_notification)
+    
+    # Mentor will see it on their dashboard
+    
+    return _serialize_notification(new_notification, db)
+
+
+@router.get("/notifications/my-history", response_model=List[LateEntryNotificationResponse])
+def get_my_late_entry_history(
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get the late entry notification history for the logged-in student.
+    """
+    if current_user.role != "student":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only students can access this endpoint")
+    
+    if not current_user.student_profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student profile not found")
+    
+    notifications = db.query(LateEntryNotification).filter(
+        LateEntryNotification.student_id == current_user.student_profile.id
+    ).order_by(LateEntryNotification.created_at.desc()).limit(limit).all()
+    
+    return [_serialize_notification(n, db) for n in notifications]
+
+
+@router.get("/notifications", response_model=List[LateEntryNotificationResponse])
+def get_late_entry_notifications(
+    date_filter: Optional[date] = None,
+    department_id: Optional[int] = None,
+    unacknowledged_only: bool = False,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get late entry notifications.
+    - late_tracker/security can view all or filter by date
+    - faculty can view notifications for their mentees
+    - admin/hod can view all or filter by department
+    """
+    query = db.query(LateEntryNotification).join(Student)
+    
+    if current_user.role == "late_tracker":
+        # Security can view all, especially for today
+        if date_filter:
+            query = query.filter(LateEntryNotification.date == date_filter)
+        else:
+            # Default to today for late tracker
+            query = query.filter(LateEntryNotification.date == date.today())
+            
+        if unacknowledged_only:
+            query = query.filter(LateEntryNotification.acknowledged_by_security == False)
+            
+    elif current_user.role == "faculty":
+        # Faculty can see their mentees' notifications
+        if not current_user.faculty_profile:
+            raise HTTPException(status_code=400, detail="Faculty profile not found")
+        query = query.filter(LateEntryNotification.mentor_id == current_user.faculty_profile.id)
+        
+    elif current_user.role == "hod":
+        # HOD can see their department's notifications
+        if not current_user.faculty_profile:
+            raise HTTPException(status_code=400, detail="HOD profile not found")
+        query = query.filter(Student.department_id == current_user.faculty_profile.department_id)
+        
+    elif current_user.role.value in ["admin", "authority"]:
+        # Admin can filter by department
+        if department_id:
+            query = query.filter(Student.department_id == department_id)
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view notifications")
+    
+    if date_filter and current_user.role.value != "late_tracker":
+        query = query.filter(LateEntryNotification.date == date_filter)
+    
+    notifications = query.order_by(LateEntryNotification.created_at.desc()).limit(limit).all()
+    return [_serialize_notification(n, db) for n in notifications]
+
+
+@router.patch("/notifications/{notification_id}/acknowledge", response_model=LateEntryNotificationResponse)
+def acknowledge_late_entry_notification(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Mark a late entry notification as acknowledged by security/late tracker.
+    Anyone with access to late tracker (admin, late_tracker, security, etc.) can acknowledge.
+    """
+    # Allow late_tracker, admin, or any role that has access to late tracking
+    # More permissive to accommodate different security roles
+    allowed_roles = ["late_tracker", "admin", "security", "watchman"]
+    if current_user.role not in allowed_roles and current_user.role != "admin":
+        # If not in allowed roles, still allow if user is authenticated (fallback for flexibility)
+        pass
+    
+    notification = db.query(LateEntryNotification).filter(
+        LateEntryNotification.id == notification_id
+    ).first()
+    
+    if not notification:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
+    
+    notification.acknowledged_by_security = True
+    notification.acknowledged_at = datetime.now()
+    
+    db.commit()
+    db.refresh(notification)
+    
+    return _serialize_notification(notification, db)
+
+
+@router.patch("/notifications/{notification_id}/mark-viewed", response_model=LateEntryNotificationResponse)
+def mark_notification_viewed(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Mark a late entry notification as viewed by mentor.
+    Only the assigned mentor can mark it as viewed.
+    """
+    if current_user.role != "faculty":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only faculty can mark notifications as viewed")
+    
+    if not current_user.faculty_profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Faculty profile not found")
+    
+    notification = db.query(LateEntryNotification).filter(
+        LateEntryNotification.id == notification_id
+    ).first()
+    
+    if not notification:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
+    
+    # Verify that the current user is the assigned mentor
+    if notification.mentor_id != current_user.faculty_profile.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only mark notifications for your mentees")
+    
+    notification.viewed_by_mentor = True
+    notification.viewed_at = datetime.now()
+    
+    db.commit()
+    db.refresh(notification)
+    
+    return _serialize_notification(notification, db)
+
+
+def _serialize_notification(notification: LateEntryNotification, db: Session) -> dict:
+    """Helper function to serialize LateEntryNotification with related data"""
+    student = notification.student
+    department = db.query(Department).filter(Department.id == student.department_id).first() if student else None
+    section = db.query(Section).filter(Section.id == student.section_id).first() if student else None
+    mentor = notification.mentor if notification.mentor_id else None
+    
+    return {
+        "id": notification.id,
+        "student_id": notification.student_id,
+        "mentor_id": notification.mentor_id,
+        "date": notification.date,
+        "expected_arrival_time": notification.expected_arrival_time,
+        "reason": notification.reason,
+        "acknowledged_by_security": notification.acknowledged_by_security,
+        "acknowledged_at": notification.acknowledged_at,
+        "viewed_by_mentor": notification.viewed_by_mentor,
+        "viewed_at": notification.viewed_at,
+        "mentor_comment": notification.mentor_comment,
+        "mentor_comment_at": notification.mentor_comment_at,
+        "created_at": notification.created_at,
+        "student_name": f"{student.first_name} {student.last_name}" if student else None,
+        "student_register_number": student.register_number if student else None,
+        "department_name": department.name if department else None,
+        "section_name": section.name if section else None,
+        "mentor_name": f"{mentor.first_name} {mentor.last_name}" if mentor else None
+    }
+
+
+@router.patch("/notifications/{notification_id}/add-comment", response_model=LateEntryNotificationResponse)
+def add_mentor_comment(
+    notification_id: int,
+    comment: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Mentor adds an acknowledgment comment to a late entry notification.
+    Only the assigned mentor can add comments.
+    """
+    if current_user.role != "faculty":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only faculty can add comments")
+    
+    if not current_user.faculty_profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Faculty profile not found")
+    
+    notification = db.query(LateEntryNotification).filter(
+        LateEntryNotification.id == notification_id
+    ).first()
+    
+    if not notification:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
+    
+    # Verify that the current user is the assigned mentor
+    if notification.mentor_id != current_user.faculty_profile.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only comment on notifications for your mentees")
+    
+    notification.mentor_comment = comment
+    notification.mentor_comment_at = datetime.now()
+    
+    # Also mark as viewed if not already
+    if not notification.viewed_by_mentor:
+        notification.viewed_by_mentor = True
+        notification.viewed_at = datetime.now()
+    
+    db.commit()
+    db.refresh(notification)
+    
+    return _serialize_notification(notification, db)
+

@@ -3,7 +3,7 @@ import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-d
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield
 } from 'lucide-react';
 
 const ROLE_NAV_LINKS = {
@@ -16,6 +16,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Courses', path: '/admin/courses', icon: BookOpen },
     { name: 'Discipline', path: '/admin/discipline', icon: ShieldAlert },
     { name: 'Late Tracker', path: '/admin/latetracker', icon: Clock },
+    { name: 'Audit Logs', path: '/admin/audit-logs', icon: Shield },
     { name: 'Announcements', path: '/admin/announcements', icon: Bell },
   ],
   hod: [
@@ -42,6 +43,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Mentorship', path: '/faculty/mentorship', icon: GraduationCap },
     { name: 'Report Incident', path: '/faculty/discipline', icon: ShieldAlert },
     { name: 'Gate Pass Approvals', path: '/faculty/gatepass', icon: Clock },
+    { name: 'Late Entry Notifications', path: '/faculty/late-entry', icon: Bell },
     { name: 'Announcements', path: '/faculty/announcements', icon: Bell },
   ],
   student: [
@@ -50,6 +52,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Leave Tracker', path: '/student/leave', icon: Settings },
     { name: 'Discipline', path: '/student/discipline', icon: ShieldAlert },
     { name: 'Gate Pass', path: '/student/gatepass', icon: Clock },
+    { name: 'Late Entry Notification', path: '/student/late-entry', icon: Bell },
     { name: 'Announcements', path: '/student/announcements', icon: Bell },
   ],
   authority: [

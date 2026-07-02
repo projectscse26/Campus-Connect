@@ -47,6 +47,7 @@ import { LeaveRequests } from './features/faculty/LeaveRequests';
 import { LeaveApply } from './features/faculty/LeaveApply';
 import { LeaveDetails } from './features/faculty/LeaveDetails';
 import { SubstituteApprovals } from './features/faculty/SubstituteApprovals';
+import LateEntryNotifications from './features/faculty/LateEntryNotifications';
 import { CADashboard } from './features/faculty/classadvisor/CADashboard';
 import { CAStudentList } from './features/faculty/classadvisor/CAStudentList';
 import { CAStudentProfile } from './features/faculty/classadvisor/CAStudentProfile';
@@ -62,6 +63,8 @@ import { MenteeGatePasses } from './features/faculty/MenteeGatePasses';
 import { GatePassApprovals as HodGatePassApprovals } from './features/hod/GatePassApprovals';
 import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
 import { Profile } from './features/profile/Profile';
+import LateEntryNotification from './features/student/LateEntryNotification';
+import { AuditLogs } from './features/admin/AuditLogs';
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
@@ -130,6 +133,11 @@ function AppRoutes() {
         <Route path="/admin/latetracker" element={
           <ProtectedRoute allowedRole="admin">
             <LateManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/audit-logs" element={
+          <ProtectedRoute allowedRole="admin">
+            <AuditLogs />
           </ProtectedRoute>
         } />
         <Route path="/admin/announcements" element={
@@ -331,6 +339,11 @@ function AppRoutes() {
             <MenteeGatePasses />
           </ProtectedRoute>
         } />
+        <Route path="/faculty/late-entry" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LateEntryNotifications />
+          </ProtectedRoute>
+        } />
         
         {/* Student Routes */}
         <Route path="/student" element={
@@ -356,6 +369,16 @@ function AppRoutes() {
         <Route path="/student/gatepass" element={
           <ProtectedRoute allowedRole="student">
             <GatePass />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/late-entry" element={
+          <ProtectedRoute allowedRole="student">
+            <LateEntryNotification />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/discipline" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentDiscipline />
           </ProtectedRoute>
         } />
       </Route>

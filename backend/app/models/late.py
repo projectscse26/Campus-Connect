@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Time, DateTime, ForeignKey, Text, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Date, Time, DateTime, ForeignKey, Text, Enum as SQLEnum, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -22,3 +22,36 @@ class LateRecord(Base):
     # Relationships
     student = relationship("Student", backref="late_records")
     recorded_by = relationship("User", backref="recorded_lates")
+
+
+class LateEntryNotification(Base):
+    """
+    Student-submitted late entry notifications (Phase 1: information only, no approval workflow)
+    """
+    __tablename__ = "late_entry_notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
+    mentor_id = Column(Integer, ForeignKey("faculty.id"), nullable=True)  # Class Advisor/Mentor
+    
+    date = Column(Date, nullable=False)  # Date of expected late arrival
+    expected_arrival_time = Column(Time, nullable=False)
+    reason = Column(Text, nullable=False)
+    
+    # Track if watchman has seen this notification
+    acknowledged_by_security = Column(Boolean, default=False)
+    acknowledged_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Track if mentor has viewed this notification
+    viewed_by_mentor = Column(Boolean, default=False)
+    viewed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Mentor acknowledgment comment
+    mentor_comment = Column(Text, nullable=True)
+    mentor_comment_at = Column(DateTime(timezone=True), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    student = relationship("Student", backref="late_entry_notifications")
+    mentor = relationship("Faculty", backref="late_entry_notifications")
