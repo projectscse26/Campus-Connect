@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { FileText, BookOpen, Layers, Settings, Users, ArrowLeft } from 'lucide-react';
+import { FileText, BookOpen, Layers, Settings, Users, ArrowLeft, ClipboardList } from 'lucide-react';
 
 export const LMSDashboard = () => {
   const { assignmentId } = useParams();
@@ -88,6 +88,15 @@ export const LMSDashboard = () => {
       border: 'border-indigo-100',
       hover: 'hover:border-indigo-300 hover:shadow-indigo-100',
       path: `/faculty/courses/${assignmentId}/lms/attendance-history`
+    },
+    {
+      title: 'Grade Book',
+      description: 'Enter CIA, Model Exam, and Retest marks. Save drafts and publish to students.',
+      icon: <ClipboardList className="w-8 h-8 text-teal-600" />,
+      bg: 'bg-teal-50',
+      border: 'border-teal-100',
+      hover: 'hover:border-teal-300 hover:shadow-teal-100',
+      path: `/faculty/courses/${assignmentId}/lms/gradebook`
     }
   ];
 
