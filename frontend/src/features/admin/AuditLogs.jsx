@@ -342,12 +342,7 @@ export const AuditLogs = () => {
         {/* ── Header ── */}
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-extrabold text-gray-900">Audit Logs</h1>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                <Shield className="w-3.5 h-3.5" /> Admin Only
-              </span>
-            </div>
+            <h1 className="text-3xl font-extrabold text-gray-900">Audit Logs</h1>
             <p className="text-sm text-gray-500 mt-2">
               Live operational trail — every action by every user appears here in real time.
             </p>
