@@ -683,3 +683,339 @@ def get_results_summary(
         {"course_code": "CS202", "course_name": "Digital Electronics", "pass_percentage": 88.5},
         {"course_code": "CS301", "course_name": "Operating Systems", "pass_percentage": 91.0},
     ]
+
+from sqlalchemy import func
+from datetime import datetime, timedelta, date
+
+@router.get("/attendance-analytics", response_model=dict)
+def get_attendance_analytics(
+    academic_year: Optional[str] = None,
+    semester: Optional[int] = None,
+    section_id: Optional[int] = None,
+    faculty_id: Optional[int] = None,
+    target_date: Optional[date] = None,
+    time_scale: Optional[str] = "Daily",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    from app.schemas.attendance import (
+        OverviewStats, DonutData, TrendData, SectionComparison,
+        HeatmapData, FacultyAttendanceStats, RiskDistribution,
+        LiveStatus, StudentTableData, AttendanceAnalyticsResponse
+    )
+    from app.models.attendance import Attendance, AttendanceStatus
+    from app.models.student import Student
+    from app.models.faculty import Faculty
+    
+    department, _ = get_hod_department(current_user, db)
+    t_date = target_date or date.today()
+    
+    # ---------------------------------------------------------
+    # 0. Base Queries (Students & Faculty)
+    # ---------------------------------------------------------
+    students_query = db.query(Student).filter(Student.department_id == department.id, Student.is_active == True)
+    if section_id:
+        students_query = students_query.filter(Student.section_id == section_id)
+        
+    all_students = students_query.all()
+    dept_student_ids = [s.id for s in all_students]
+    
+    from app.models.faculty import Faculty
+    from app.models.leave import FacultyLeaveRequest, LeaveStatus as FacLeaveStatus
+    from app.models.academic import CourseAssignment, Section
+    
+    dept_faculty = db.query(Faculty).filter(Faculty.department_id == department.id, Faculty.is_active == True).all()
+    faculty_ids = [f.id for f in dept_faculty]
+    total_faculty = len(dept_faculty)
+
+    # ---------------------------------------------------------
+    # 1. Overview Stats & Donuts
+    # ---------------------------------------------------------
+    students_present = 0
+    students_absent = 0
+    today_att = []
+    
+    if dept_student_ids:
+        today_att = db.query(Attendance).filter(
+            Attendance.student_id.in_(dept_student_ids),
+            Attendance.date == t_date
+        ).all()
+        
+        student_day_status = {}
+        for att in today_att:
+            if att.status == AttendanceStatus.ABSENT:
+                student_day_status[att.student_id] = "absent"
+            else:
+                if student_day_status.get(att.student_id) != "absent":
+                    student_day_status[att.student_id] = "present"
+                    
+        students_present = sum(1 for status in student_day_status.values() if status == "present")
+        students_absent = sum(1 for status in student_day_status.values() if status == "absent")
+        
+    faculty_absent = 0
+    if faculty_ids:
+        faculty_absent = db.query(FacultyLeaveRequest).filter(
+            FacultyLeaveRequest.faculty_id.in_(faculty_ids),
+            FacultyLeaveRequest.status == "approved",
+            FacultyLeaveRequest.from_date <= t_date,
+            FacultyLeaveRequest.to_date >= t_date
+        ).count()
+        
+    faculty_present = total_faculty - faculty_absent
+    
+    student_total = students_present + students_absent
+    student_attendance_percentage = (students_present / student_total * 100) if student_total > 0 else 0.0
+    faculty_attendance_percentage = (faculty_present / total_faculty * 100) if total_faculty > 0 else 0.0
+
+    overview = OverviewStats(
+        students_present=students_present,
+        students_absent=students_absent,
+        faculty_present=faculty_present,
+        faculty_absent=faculty_absent,
+        student_attendance_percentage=round(student_attendance_percentage, 1),
+        faculty_attendance_percentage=round(faculty_attendance_percentage, 1),
+        trend_indicator="stable"
+    )
+    
+    student_donut = [
+        DonutData(name="Present", value=students_present, color="#10b981"),
+        DonutData(name="Absent", value=students_absent, color="#ef4444")
+    ]
+    
+    faculty_donut = [
+        DonutData(name="Present", value=faculty_present, color="#3b82f6"),
+        DonutData(name="Absent", value=faculty_absent, color="#f59e0b")
+    ]
+    
+    # ---------------------------------------------------------
+    # 2. Trends (10 points)
+    # ---------------------------------------------------------
+    trends = []
+    step_days = 1 if time_scale == "Daily" else (7 if time_scale == "Weekly" else 30)
+    start_date = t_date - timedelta(days=9 * step_days)
+    
+    trend_attendances = []
+    if dept_student_ids:
+        trend_attendances = db.query(Attendance).filter(
+            Attendance.student_id.in_(dept_student_ids),
+            Attendance.date >= start_date,
+            Attendance.date <= t_date
+        ).all()
+        
+    trend_faculty_leaves = []
+    if faculty_ids:
+        trend_faculty_leaves = db.query(FacultyLeaveRequest).filter(
+            FacultyLeaveRequest.faculty_id.in_(faculty_ids),
+            FacultyLeaveRequest.status == "approved",
+            FacultyLeaveRequest.from_date <= t_date,
+            FacultyLeaveRequest.to_date >= start_date
+        ).all()
+        
+    for i in range(9, -1, -1):
+        target = t_date - timedelta(days=i * step_days)
+        
+        # Students
+        day_atts = [a for a in trend_attendances if a.date == target]
+        s_day_status = {}
+        for att in day_atts:
+            if att.status == AttendanceStatus.ABSENT:
+                s_day_status[att.student_id] = "absent"
+            else:
+                if s_day_status.get(att.student_id) != "absent":
+                    s_day_status[att.student_id] = "present"
+                    
+        p_count = sum(1 for st in s_day_status.values() if st == "present")
+        a_count = sum(1 for st in s_day_status.values() if st == "absent")
+        tot = p_count + a_count
+        s_pct = (p_count / tot * 100) if tot > 0 else 0.0
+        
+        # Faculty
+        f_abs = sum(1 for l in trend_faculty_leaves if l.from_date <= target <= l.to_date)
+        f_pres = total_faculty - f_abs
+        f_pct = (f_pres / total_faculty * 100) if total_faculty > 0 else 0.0
+        
+        trends.append(TrendData(
+            date=str(target),
+            present=p_count,
+            absent=a_count,
+            percentage=round(s_pct, 1),
+            faculty_percentage=round(f_pct, 1)
+        ))
+        
+    # ---------------------------------------------------------
+    # 3. Detailed Student Records (Moved up for reuse)
+    # ---------------------------------------------------------
+    attendance_by_student = {s.id: {"present": 0, "absent": 0} for s in all_students}
+    if dept_student_ids:
+        all_att = db.query(Attendance).filter(Attendance.student_id.in_(dept_student_ids)).all()
+        for att in all_att:
+            if att.status in [AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.ON_DUTY]:
+                attendance_by_student[att.student_id]["present"] += 1
+            else:
+                attendance_by_student[att.student_id]["absent"] += 1
+                
+    student_table = []
+    for s in all_students:
+        counts = attendance_by_student[s.id]
+        total_p = counts["present"]
+        total_a = counts["absent"]
+        total_days = total_p + total_a
+        pct = (total_p / total_days * 100.0) if total_days > 0 else 0.0
+        
+        if total_days == 0:
+            status = "Safe"
+        elif pct >= 85:
+            status = "Safe"
+        elif pct >= 75:
+            status = "Warning"
+        else:
+            status = "Critical"
+            
+        sec_name = s.section.name if s.section else f"Year {s.current_year or 'N/A'}"
+        
+        student_table.append(
+            StudentTableData(
+                student_id=s.id,
+                register_number=s.register_number,
+                name=f"{s.first_name} {s.last_name}",
+                year=s.current_year or 1,
+                section=s.section.name if s.section else 'N/A',
+                total_present=total_p,
+                total_absent=total_a,
+                percentage=round(pct, 1),
+                status=status
+            )
+        )
+        
+    # ---------------------------------------------------------
+    # 4. Section Comparison & Risk Distribution
+    # ---------------------------------------------------------
+    section_stats = {}
+    risk_stats = {}
+    
+    for st in student_table:
+        s_obj = next((s for s in all_students if s.id == st.student_id), None)
+        year = s_obj.current_year if s_obj else 1
+        
+        # Risk
+        if year not in risk_stats:
+            risk_stats[year] = {"safe": 0, "warning": 0, "critical": 0}
+            
+        if (st.total_present + st.total_absent) == 0 or st.percentage >= 85.0:
+            risk_stats[year]["safe"] += 1
+        elif st.percentage >= 75.0:
+            risk_stats[year]["warning"] += 1
+        else:
+            risk_stats[year]["critical"] += 1
+            
+        # Section
+        sec = st.section
+        if sec not in section_stats:
+            section_stats[sec] = {"year": year, "total_p": 0, "total_a": 0, "below_75": 0}
+            
+        section_stats[sec]["total_p"] += st.total_present
+        section_stats[sec]["total_a"] += st.total_absent
+        if st.percentage < 75.0 and (st.total_present + st.total_absent) > 0:
+            section_stats[sec]["below_75"] += 1
+            
+    section_comparison = []
+    for sec_name, stats in section_stats.items():
+        tot = stats["total_p"] + stats["total_a"]
+        pct = (stats["total_p"] / tot * 100) if tot > 0 else 0.0
+        section_comparison.append(SectionComparison(
+            year=stats["year"] or 1,
+            section_name=sec_name,
+            percentage=round(pct, 1),
+            students_below_75=stats["below_75"]
+        ))
+        
+    risk_distribution = [
+        RiskDistribution(year=y, safe=r["safe"], warning=r["warning"], critical=r["critical"])
+        for y, r in risk_stats.items()
+    ]
+    
+    # ---------------------------------------------------------
+    # 5. Heatmap (Last 30 Days)
+    # ---------------------------------------------------------
+    heatmap_start = t_date - timedelta(days=30)
+    heatmap_atts = []
+    if dept_student_ids:
+        heatmap_atts = db.query(Attendance).filter(
+            Attendance.student_id.in_(dept_student_ids),
+            Attendance.status == AttendanceStatus.ABSENT,
+            Attendance.date >= heatmap_start,
+            Attendance.date <= t_date
+        ).all()
+        
+    heatmap_counts = {}
+    for att in heatmap_atts:
+        day_name = att.date.strftime("%A")
+        period = att.hour or 1
+        key = (day_name, period)
+        heatmap_counts[key] = heatmap_counts.get(key, 0) + 1
+        
+    heatmap = [HeatmapData(day=d, period=p, absent_count=c) for (d, p), c in heatmap_counts.items()]
+    if not heatmap:
+        heatmap = [HeatmapData(day="Monday", period=1, absent_count=0)]
+        
+    # ---------------------------------------------------------
+    # 6. Faculty Stats
+    # ---------------------------------------------------------
+    dept_pct = sum(sc.percentage for sc in section_comparison) / len(section_comparison) if section_comparison else 0.0
+    faculty_stats = []
+    
+    for f in dept_faculty:
+        assignments = db.query(CourseAssignment).filter(CourseAssignment.faculty_id == f.id).count()
+        leaves_taken = db.query(FacultyLeaveRequest).filter(
+            FacultyLeaveRequest.faculty_id == f.id,
+            FacultyLeaveRequest.status == "approved"
+        ).count()
+        
+        faculty_stats.append(FacultyAttendanceStats(
+            faculty_name=f"{f.first_name} {f.last_name}",
+            classes_handled=assignments,
+            avg_student_attendance=round(dept_pct, 1),
+            absentee_count=leaves_taken
+        ))
+        
+    # ---------------------------------------------------------
+    # 7. Live Status & Insights
+    # ---------------------------------------------------------
+    live_status = LiveStatus(
+        ongoing_classes=len(set(a.course_id for a in today_att)) if today_att else 0,
+        marked_classes=len(set(a.course_id for a in today_att)) if today_att else 0,
+        present_now=students_present,
+        absent_now=students_absent
+    )
+    
+    insights = []
+    if section_comparison:
+        lowest_sec = min(section_comparison, key=lambda x: x.percentage)
+        insights.append(f"{lowest_sec.section_name} has the lowest overall attendance at {lowest_sec.percentage}%.")
+    
+    total_critical = sum(r.critical for r in risk_distribution)
+    if total_critical > 0:
+        insights.append(f"{total_critical} students are currently in the critical risk zone (<75%) across the department.")
+    else:
+        insights.append("Great job! 0 students are currently in the critical risk zone.")
+        
+    if faculty_absent > 0:
+        insights.append(f"{faculty_absent} faculty members are on leave today.")
+    else:
+        insights.append("All faculty members are present today.")
+    
+    response = AttendanceAnalyticsResponse(
+        overview=overview,
+        student_donut=student_donut,
+        faculty_donut=faculty_donut,
+        trends=trends,
+        section_comparison=section_comparison,
+        heatmap=heatmap,
+        faculty_stats=faculty_stats,
+        risk_distribution=risk_distribution,
+        live_status=live_status,
+        student_table=student_table,
+        insights=insights
+    )
+    
+    return response.model_dump()

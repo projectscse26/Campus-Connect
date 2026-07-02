@@ -37,7 +37,7 @@ class FacultyLeaveRequest(Base):
     reason = Column(String(500), nullable=False)
     attachment_url = Column(String(500), nullable=True)
     
-    status = Column(SQLEnum(LeaveStatus), default=LeaveStatus.PENDING_SUBSTITUTE)
+    status = Column(SQLEnum(LeaveStatus, values_callable=lambda obj: [e.value for e in obj]), default=LeaveStatus.PENDING_SUBSTITUTE)
     
     # Audit tracking
     hod_approved_by = Column(Integer, ForeignKey("faculty.id"), nullable=True) # HOD is a faculty
@@ -63,7 +63,7 @@ class FacultyDutyArrangement(Base):
     class_section = Column(String(50), nullable=False)
     period = Column(String(50), nullable=False)
     
-    status = Column(SQLEnum(ArrangementStatus), default=ArrangementStatus.PENDING)
+    status = Column(SQLEnum(ArrangementStatus, values_callable=lambda obj: [e.value for e in obj]), default=ArrangementStatus.PENDING)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
