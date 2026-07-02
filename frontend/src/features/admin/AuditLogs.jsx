@@ -202,18 +202,21 @@ export const AuditLogs = () => {
       if (moduleFilter) params.append('module',        moduleFilter);
       if (roleFilter)   params.append('role',          roleFilter);
 
-      const res = await axios.get(`/api/audit-logs?${params}`);
+      const res = await axios.get(`/api/audit-logs?${params}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setLogs(res.data.logs);        // REST fetch is authoritative — replaces list
       setTotal(res.data.total);
       setTotalPages(res.data.total_pages);
       setError(null);
     } catch (err) {
+      console.error('[AuditLogs] Fetch error:', err);
       setError(err.response?.data?.detail || 'Failed to load audit logs');
     } finally {
       setLoading(false);
       setFiltering(false);
     }
-  }, [page, searchTerm, statusFilter, moduleFilter, roleFilter]);
+  }, [page, searchTerm, statusFilter, moduleFilter, roleFilter, token]);
 
   useEffect(() => {
     fetchLogs({ initial: logs.length === 0 });
@@ -342,12 +345,7 @@ export const AuditLogs = () => {
         {/* ── Header ── */}
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-extrabold text-gray-900">Audit Logs</h1>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                <Shield className="w-3.5 h-3.5" /> Admin Only
-              </span>
-            </div>
+            <h1 className="text-3xl font-extrabold text-gray-900">Audit Logs</h1>
             <p className="text-sm text-gray-500 mt-2">
               Live operational trail — every action by every user appears here in real time.
             </p>

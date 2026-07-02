@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Clock, Search, User as UserIcon, Calendar, CheckCircle2, CheckCircle, X, AlertCircle, ChevronRight, ChevronDown, Plus, LogOut } from 'lucide-react';
+import { Clock, Search, User as UserIcon, Calendar, CheckCircle2, CheckCircle, X, AlertCircle, ChevronRight, ChevronDown, Plus, LogOut, Bell, Info } from 'lucide-react';
 import axios from 'axios';
 
 // Custom Dropdown Component
@@ -58,6 +58,7 @@ export const LateTrackerDashboard = () => {
   const [error, setError] = useState(null);
   const [actionStatus, setActionStatus] = useState('Not Informed');
   const [recentRecords, setRecentRecords] = useState([]);
+  const [lateNotifications, setLateNotifications] = useState([]);
   
   const [departments, setDepartments] = useState([]);
   const [students, setStudents] = useState([]);
@@ -70,14 +71,19 @@ export const LateTrackerDashboard = () => {
   React.useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [deptRes, studentsRes, recordsRes] = await Promise.all([
-          axios.get('/api/departments'),
-          axios.get('/api/students?limit=1000'),
-          axios.get('/api/late?limit=5')
+        const token = localStorage.getItem("token");
+        const [deptRes, studentsRes, recordsRes, notificationsRes] = await Promise.all([
+          axios.get('/api/departments', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('/api/students?limit=1000', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('/api/late?limit=5', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('/api/late/notifications?date_filter=' + new Date().toISOString().split('T')[0], { 
+            headers: { Authorization: `Bearer ${token}` } 
+          })
         ]);
         setDepartments(deptRes.data);
         setStudents(studentsRes.data);
         setRecentRecords(recordsRes.data);
+        setLateNotifications(notificationsRes.data);
       } catch (err) {
         console.error("Failed to fetch initial data:", err);
       }
@@ -107,6 +113,11 @@ export const LateTrackerDashboard = () => {
   const availableYears = [...new Set(students.map(s => s.current_year))].filter(Boolean).sort();
   const availableSections = [...new Set(students.map(s => s.section?.name))].filter(Boolean).sort();
 
+  // Check if student has a late entry notification for today
+  const getStudentNotification = (studentId) => {
+    return lateNotifications.find(n => n.student_id === studentId);
+  };
+
   const searchFilteredStudents = students.filter(s => 
     studentSearch && (
       s.register_number.toLowerCase().includes(studentSearch.toLowerCase()) ||
@@ -129,15 +140,24 @@ export const LateTrackerDashboard = () => {
     setSuccessMessage('');
 
     try {
+      const token = localStorage.getItem("token");
       await axios.post('/api/late', {
         student_id: selectedStudent.id,
         action_status: actionStatus
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       setSuccessMessage(`Late record for ${selectedStudent.first_name} ${selectedStudent.last_name} submitted successfully.`);
       
-      // Refresh recent records
-      const recordsRes = await axios.get('/api/late?limit=5');
+      // Refresh recent records and notifications
+      const [recordsRes, notificationsRes] = await Promise.all([
+        axios.get('/api/late?limit=5', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('/api/late/notifications?date_filter=' + new Date().toISOString().split('T')[0], { 
+          headers: { Authorization: `Bearer ${token}` } 
+        })
+      ]);
       setRecentRecords(recordsRes.data);
+      setLateNotifications(notificationsRes.data);
 
       setTimeout(() => {
         setIsModalOpen(false);
@@ -148,6 +168,43 @@ export const LateTrackerDashboard = () => {
       setError(err.response?.data?.detail || "Failed to submit record.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Quick action to add informed student to late records
+  const handleQuickAddToLateRecords = async (notification) => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      // Step 1: Add to late records
+      await axios.post('/api/late', {
+        student_id: notification.student_id,
+        action_status: 'Informed',
+        reason: notification.reason
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Step 2: Mark notification as acknowledged by security
+      await axios.patch(
+        `/api/late/notifications/${notification.id}/acknowledge`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Step 3: Refresh data
+      const [recordsRes, notificationsRes] = await Promise.all([
+        axios.get('/api/late?limit=5', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('/api/late/notifications?date_filter=' + new Date().toISOString().split('T')[0], { 
+          headers: { Authorization: `Bearer ${token}` } 
+        })
+      ]);
+      setRecentRecords(recordsRes.data);
+      setLateNotifications(notificationsRes.data);
+
+      alert(`✓ ${notification.student_name} added to late records and marked as arrived`);
+    } catch (err) {
+      alert('Failed to add to late records: ' + (err.response?.data?.detail || 'Unknown error'));
     }
   };
 
@@ -212,6 +269,140 @@ export const LateTrackerDashboard = () => {
           <Plus className="w-5 h-5 mr-2" /> Start Tracking
         </button>
       </div>
+
+      {/* Today's Late Entry Notifications */}
+      {lateNotifications.length > 0 && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm border border-blue-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-blue-100 bg-white/50 backdrop-blur-sm flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                <Bell className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Pre-Informed Students (Today)</h3>
+                <p className="text-sm text-gray-600">Students who submitted late entry notifications</p>
+              </div>
+            </div>
+            <span className="px-3 py-1.5 bg-blue-600 text-white text-sm font-bold rounded-lg">
+              {lateNotifications.length}
+            </span>
+          </div>
+          <div className="p-4 sm:p-6 space-y-3">
+            {lateNotifications.map((notification) => (
+              <div 
+                key={notification.id} 
+                className="bg-white rounded-xl p-4 border border-blue-100 hover:border-blue-200 hover:shadow-md transition-all"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  {/* Student Info */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-base uppercase flex-shrink-0 shadow-md">
+                      {notification.student_name?.[0] || 'S'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-base font-bold text-gray-900 truncate">
+                        {notification.student_name}
+                      </div>
+                      <div className="text-sm font-semibold text-gray-600">
+                        {notification.student_register_number}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {notification.department_name}
+                        {notification.section_name && ` • Section ${notification.section_name}`}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mentor & Time Info */}
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    {/* Mentor Info */}
+                    {notification.mentor_name && (
+                      <div className="bg-purple-50 rounded-lg px-3 py-2 border border-purple-100">
+                        <div className="text-xs text-purple-600 font-semibold uppercase tracking-wide mb-0.5">
+                          Mentor Informed
+                        </div>
+                        <div className="text-sm font-bold text-purple-900">
+                          {notification.mentor_name}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Expected Arrival */}
+                    <div className="bg-orange-50 rounded-lg px-3 py-2 border border-orange-100">
+                      <div className="text-xs text-orange-600 font-semibold uppercase tracking-wide mb-0.5">
+                        Expected At
+                      </div>
+                      <div className="text-sm font-bold text-orange-900 flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        {new Date(`2000-01-01T${notification.expected_arrival_time}`).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className="flex items-center">
+                      {notification.acknowledged_by_security ? (
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                          Arrived
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
+                          <Clock className="w-3.5 h-3.5 mr-1" />
+                          Pending
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reason */}
+                {notification.reason && (
+                  <div className="mt-3 pt-3 border-t border-blue-50">
+                    <div className="flex items-start gap-2">
+                      <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="text-xs text-blue-600 font-semibold uppercase tracking-wide">Reason: </span>
+                        <span className="text-sm text-gray-700">{notification.reason}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Submitted Time */}
+                <div className="mt-2 text-xs text-gray-400">
+                  Submitted: {new Date(notification.created_at).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </div>
+
+                {/* Quick Action Button - Add to Late Records */}
+                {!notification.acknowledged_by_security && (
+                  <div className="mt-4 pt-3 border-t border-blue-100">
+                    <button
+                      onClick={() => handleQuickAddToLateRecords(notification)}
+                      className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white text-sm font-bold rounded-lg transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Add to Late Records (Informed)
+                    </button>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Quick action: Record this student as late with "Informed" status
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {recentRecords.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-8">

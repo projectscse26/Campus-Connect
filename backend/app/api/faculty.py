@@ -51,6 +51,71 @@ def get_my_courses(
     return assignments
 
 
+@router.get("/{faculty_id}/workload")
+def get_faculty_workload(
+    faculty_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get workload (assigned courses) for a specific faculty member.
+    """
+    if current_user.role not in ["admin", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins and HODs can view faculty workload")
+    
+    faculty = db.query(Faculty).filter(Faculty.id == faculty_id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty not found")
+    
+    # Get all course assignments for this faculty
+    assignments = db.query(CourseAssignment).options(
+        joinedload(CourseAssignment.course),
+        joinedload(CourseAssignment.section)
+    ).filter(
+        CourseAssignment.faculty_id == faculty_id,
+        CourseAssignment.is_active == True
+    ).order_by(
+        CourseAssignment.semester.asc()
+    ).all()
+    
+    # Import TimetableSlot model
+    from app.models.lms import TimetableSlot
+    
+    # Build flat course list and count timetable periods
+    courses = []
+    total_hours = 0
+    
+    for assignment in assignments:
+        # Count timetable slots (periods) for this course assignment
+        slot_count = db.query(TimetableSlot).filter(
+            TimetableSlot.course_assignment_id == assignment.id
+        ).count()
+        
+        total_hours += slot_count
+        
+        courses.append({
+            "id": assignment.id,
+            "course_code": assignment.course.code,
+            "course_name": assignment.course.name,
+            "credits": assignment.course.credits,
+            "periods": slot_count,
+            "course_type": assignment.course.course_type,
+            "semester": assignment.semester,
+            "section": f"{assignment.section.year} Year {assignment.section.name}" if assignment.section else "N/A"
+        })
+    
+    return {
+        "faculty_id": faculty.id,
+        "faculty_name": f"{faculty.first_name} {faculty.last_name}",
+        "employee_id": faculty.employee_id,
+        "designation": faculty.designation,
+        "department_id": faculty.department_id,
+        "courses": courses,
+        "total_active_courses": len(assignments),
+        "total_hours": total_hours
+    }
+
+
 # ── Mentorship Endpoints (from development) ───────────────────────────────────
 
 def _get_faculty_profile(current_user: User, db: Session) -> Faculty:

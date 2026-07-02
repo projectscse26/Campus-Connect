@@ -155,7 +155,9 @@ async def websocket_audit_logs(websocket: WebSocket, token: Optional[str] = Quer
 
 def require_admin(current_user: User = Depends(get_current_active_user)):
     """Dependency to enforce admin-only access"""
-    if current_user.role != UserRole.ADMIN:
+    # Handle both enum and string comparison
+    user_role = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
+    if user_role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
