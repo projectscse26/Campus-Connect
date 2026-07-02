@@ -12,7 +12,7 @@ from app.models.department import Department
 from app.models.academic import CourseAssignment, Section, MentorAssignment
 from app.models.attendance import Attendance, AttendanceStatus
 from app.models.student import Student
-from app.models.grade import Grade, GradeType, GRADE_MAX_MARKS, GRADE_PASS_MARKS
+from app.models.grade import Grade, GradeType
 from app.models.mentorship import AdvisingLog
 from app.models.lms import LMSResource, ResourceType, Announcement, TimetableSlot
 from app.schemas.faculty import (
@@ -24,6 +24,157 @@ from app.schemas.faculty import (
 from app.core.security import get_current_active_user, get_password_hash
 
 router = APIRouter()
+
+@router.get("/me/dashboard")
+def get_faculty_dashboard(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get comprehensive dashboard data for faculty including courses, students, analytics, and timetable.
+    """
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only faculty can access this")
+    
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+    
+    from app.models.lms import TimetableSlot
+    from app.models.academic import Course
+    from datetime import date as date_type, datetime, time as time_type
+    
+    # Get active course assignments
+    assignments = db.query(CourseAssignment).options(
+        joinedload(CourseAssignment.course),
+        joinedload(CourseAssignment.section)
+    ).filter(
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).all()
+    
+    # Calculate total students
+    total_students = 0
+    for assignment in assignments:
+        if assignment.section:
+            student_count = db.query(Student).filter(
+                Student.section_id == assignment.section_id,
+                Student.is_active == True
+            ).count()
+            total_students += student_count
+    
+    # Get today's timetable slots
+    DAY_MAP = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}
+    today_name = DAY_MAP[date_type.today().weekday()]
+    now_time = datetime.now().time()
+    
+    today_classes = []
+    upcoming_classes = []
+    
+    for assignment in assignments:
+        slots = db.query(TimetableSlot).filter(
+            TimetableSlot.course_assignment_id == assignment.id
+        ).all()
+        
+        for slot in slots:
+            slot_day = slot.day.value if hasattr(slot.day, 'value') else slot.day
+            if slot_day == today_name:
+                is_current = slot.start_time <= now_time <= slot.end_time
+                is_upcoming = slot.start_time > now_time
+                
+                class_info = {
+                    "course_name": assignment.course.name,
+                    "course_code": assignment.course.code,
+                    "start_time": slot.start_time.strftime("%H:%M"),
+                    "end_time": slot.end_time.strftime("%H:%M"),
+                    "room": slot.room,
+                    "section": f"{assignment.section.year} Year {assignment.section.name}" if assignment.section else "N/A",
+                    "is_current": is_current
+                }
+                
+                if is_current or is_upcoming:
+                    today_classes.append(class_info)
+                    if is_upcoming and len(upcoming_classes) < 3:
+                        upcoming_classes.append(class_info)
+    
+    # Sort today's classes by start time
+    today_classes.sort(key=lambda x: x["start_time"])
+    
+    # Calculate attendance trajectory (last 7 days)
+    from datetime import timedelta
+    trajectory = []
+    for i in range(6, -1, -1):
+        check_date = date_type.today() - timedelta(days=i)
+        attendance_count = db.query(Attendance).filter(
+            Attendance.marked_by_id == faculty.id,
+            Attendance.date == check_date,
+            Attendance.status == AttendanceStatus.PRESENT
+        ).count()
+        
+        trajectory.append({
+            "date": check_date.strftime("%b %d"),
+            "count": attendance_count
+        })
+    
+    # Calculate pending evaluations (grades not entered)
+    pending_evaluations = 0
+    for assignment in assignments:
+        if assignment.section:
+            students_in_section = db.query(Student).filter(
+                Student.section_id == assignment.section_id,
+                Student.is_active == True
+            ).count()
+            
+            graded_count = db.query(Grade).filter(
+                Grade.course_id == assignment.course_id,
+                Grade.graded_by_id == faculty.id
+            ).count()
+            
+            pending_evaluations += max(0, students_in_section - graded_count)
+    
+    # Calculate average class performance
+    total_marks = 0
+    grade_count = 0
+    for assignment in assignments:
+        grades = db.query(Grade).filter(
+            Grade.course_id == assignment.course_id,
+            Grade.graded_by_id == faculty.id,
+            Grade.marks_obtained != None
+        ).all()
+        
+        for grade in grades:
+            if grade.max_marks and grade.marks_obtained:
+                percentage = (float(grade.marks_obtained) / float(grade.max_marks)) * 100
+                total_marks += percentage
+                grade_count += 1
+    
+    avg_performance = round(total_marks / grade_count) if grade_count > 0 else 0
+    
+    # Get recent announcements count
+    recent_announcements = db.query(Announcement).filter(
+        Announcement.posted_by_id == current_user.id
+    ).count()
+    
+    return {
+        "assigned_courses": len(assignments),
+        "total_students": total_students,
+        "pending_evaluations": pending_evaluations,
+        "class_performance": avg_performance,
+        "today_classes": today_classes,
+        "upcoming_classes": upcoming_classes,
+        "attendance_trajectory": trajectory,
+        "recent_announcements": recent_announcements,
+        "courses": [
+            {
+                "id": a.id,
+                "course_name": a.course.name,
+                "course_code": a.course.code,
+                "section": f"{a.section.year} Year {a.section.name}" if a.section else "N/A"
+            }
+            for a in assignments
+        ]
+    }
+
 
 @router.get("/me/courses", response_model=List[CourseAssignmentFacultyResponse])
 def get_my_courses(
@@ -891,8 +1042,8 @@ def get_gradebook(
     ).all()
     grade_map = {g.student_id: g for g in existing_grades}
 
-    max_marks = GRADE_MAX_MARKS.get(gt, 100)
-    pass_mark = GRADE_PASS_MARKS.get(gt)
+    max_marks = 100  # Default max marks
+    pass_mark = 40  # Default pass mark (40%)
 
     roster = []
     for s in students:
@@ -952,7 +1103,7 @@ def save_grades(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid grade_type")
 
-    max_marks = GRADE_MAX_MARKS.get(gt, 100)
+    max_marks = 100  # Default max marks
     entries = payload.get("entries", [])
 
     saved = 0
@@ -1081,7 +1232,7 @@ def export_grades_csv(
     ).all()
     grade_map = {g.student_id: g for g in grades}
 
-    max_marks = GRADE_MAX_MARKS.get(gt, 100)
+    max_marks = 100  # Default max marks
 
     output = io.StringIO()
     writer = csv.writer(output)
