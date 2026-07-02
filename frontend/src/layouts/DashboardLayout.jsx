@@ -3,7 +3,7 @@ import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-d
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield, Award
 } from 'lucide-react';
 
 const ROLE_NAV_LINKS = {
@@ -49,6 +49,7 @@ const ROLE_NAV_LINKS = {
   student: [
     { name: 'Dashboard', path: '/student', icon: LayoutDashboard },
     { name: 'My Courses', path: '/student/courses', icon: BookOpen },
+    { name: 'My Marks', path: '/student/marks', icon: Award },
     { name: 'Leave Tracker', path: '/student/leave', icon: Calendar },
     { name: 'Discipline', path: '/student/discipline', icon: ShieldAlert },
     { name: 'Gate Pass', path: '/student/gatepass', icon: Clock },

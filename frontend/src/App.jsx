@@ -39,6 +39,7 @@ import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
 import { LMSAttendanceHistory } from './features/faculty/lms/LMSAttendanceHistory';
 import StudentCourses from './features/student/StudentCourses';
 import StudentCourseDetail from './features/student/StudentCourseDetail';
+import StudentMarks from './features/student/StudentMarks';
 import { LMSGradebook } from './features/faculty/lms/LMSGradebook';
 import { Discipline as StudentDiscipline } from './features/student/Discipline';
 import { LateTrackerDashboard } from './features/latetracker/Dashboard';
@@ -370,6 +371,11 @@ function AppRoutes() {
         <Route path="/student/courses/:courseId" element={
           <ProtectedRoute allowedRole="student">
             <StudentCourseDetail />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/marks" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentMarks />
           </ProtectedRoute>
         } />
         <Route path="/student/announcements" element={

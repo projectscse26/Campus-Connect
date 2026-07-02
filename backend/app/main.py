@@ -44,10 +44,11 @@ app.include_router(student_portal.router, prefix="/api/student-portal", tags=["S
 from app.api import gatepass
 app.include_router(gatepass.router, prefix="/api/gatepass", tags=["Gate Pass"])
 
-from app.api import audit_logs
+from app.api import retest
+app.include_router(retest.router, prefix="/api/retest", tags=["Retest Marks"])
+
 from app.middleware.audit_middleware import AuditLoggingMiddleware
 app.add_middleware(AuditLoggingMiddleware)
-app.include_router(audit_logs.router, prefix="/api/audit-logs", tags=["Audit Logs"])
 
 @app.get("/")
 def read_root():

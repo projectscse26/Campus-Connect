@@ -93,6 +93,16 @@ const FEATURES = [
     bgColor: 'bg-emerald-50/60',
     accentBar: 'from-emerald-400 to-teal-400',
   },
+  {
+    id: 'marks',
+    title: 'My Marks',
+    description: 'Your published assessment marks and retest results.',
+    icon: Award,
+    accentColor: 'text-amber-600',
+    bgColor: 'bg-amber-50/60',
+    accentBar: 'from-amber-400 to-yellow-400',
+    lightBg: 'bg-amber-50',
+  },
 ];
 
 const formatDate = (iso) => {
@@ -566,8 +576,142 @@ const AttendanceTab = ({ courseId }) => {
 };
 
 // ─────────────────────────────────────────────────────────
-// MAIN: Student Course Detail
+// TAB: MY MARKS (published grades + retest — own data only)
 // ─────────────────────────────────────────────────────────
+const GRADE_LABELS = {
+  internal_1: 'CIA 1',
+  internal_2: 'CIA 2',
+  model_exam: 'Model Exam',
+  assignment: 'Assignment',
+  lab:        'Lab',
+  external:   'External',
+};
+
+const PASS_MARKS = { internal_1: 25, internal_2: 25, model_exam: 30 };
+
+const MarksTab = ({ courseId }) => {
+  const [grades, setGrades]   = useState(null);
+  const [retests, setRetests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    // Find the assignment_id for this course so we can call /gradebook/student/:id
+    // Use the retest endpoint directly for retest marks — it is already student-scoped
+    Promise.all([
+      // Published grades via retest router (student-scoped, no assignment_id needed)
+      import('axios').then(({ default: axios }) =>
+        axios.get('/api/retest/my-grades/' + courseId, { headers })
+          .catch(() => ({ data: [] }))
+      ),
+      // Own retest marks (backend already filters to logged-in student only)
+      import('axios').then(({ default: axios }) =>
+        axios.get('/api/retest/my-marks', { headers })
+          .catch(() => ({ data: [] }))
+      ),
+    ]).then(([gradesRes, retestRes]) => {
+      setGrades(gradesRes.data || []);
+      // Filter retest marks to only this course
+      const allRetests = retestRes.data || [];
+      setRetests(allRetests.filter(r => String(r.course_id) === String(courseId)));
+    }).catch(e => {
+      setError(e.response?.data?.detail || 'Failed to load marks');
+    }).finally(() => setLoading(false));
+  }, [courseId]);
+
+  if (loading) return <SectionLoading />;
+  if (error)   return <SectionError message={error} />;
+
+  // Build a map of grade_type → retest
+  const retestMap = {};
+  retests.forEach(r => { if (r.grade_type) retestMap[r.grade_type] = r; });
+
+  if (!grades || grades.length === 0) {
+    return (
+      <EmptyState icon={Award} title="No Marks Published Yet"
+        description="Your faculty hasn't published marks for this course yet. Check back after assessments." />
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {grades.map(g => {
+        const passmark = PASS_MARKS[g.grade_type];
+        const passed = !g.is_absent && g.marks_obtained != null && (passmark == null || g.marks_obtained >= passmark);
+        const failed = !passed;
+        const retest = retestMap[g.grade_type];
+
+        return (
+          <div key={g.grade_type} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className={`h-1 ${passed ? 'bg-emerald-400' : 'bg-red-400'}`} />
+            <div className="p-5">
+              {/* Assessment name + status */}
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-[15px] font-bold text-gray-900">
+                  {GRADE_LABELS[g.grade_type] || g.grade_type}
+                </h4>
+                {g.is_absent
+                  ? <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-500">Absent</span>
+                  : passed
+                    ? <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Pass</span>
+                    : <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-600">Fail</span>
+                }
+              </div>
+
+              {/* Marks display */}
+              <div className="flex items-end gap-1 mb-1">
+                <span className={`text-[36px] font-extrabold leading-none ${g.is_absent ? 'text-gray-300' : passed ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {g.is_absent ? '—' : (g.marks_obtained ?? '—')}
+                </span>
+                <span className="text-[16px] font-bold text-gray-300 mb-1">/ {g.max_marks}</span>
+              </div>
+
+              {passmark != null && (
+                <p className="text-[12px] text-gray-400 font-medium mb-3">Pass mark: {passmark}</p>
+              )}
+
+              {/* Progress bar */}
+              {!g.is_absent && g.marks_obtained != null && (
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${passed ? 'bg-emerald-400' : 'bg-red-400'}`}
+                    style={{ width: `${Math.min(100, (g.marks_obtained / g.max_marks) * 100)}%` }}
+                  />
+                </div>
+              )}
+
+              {g.remarks && (
+                <p className="text-[12px] text-gray-500 italic mt-1">Remarks: {g.remarks}</p>
+              )}
+
+              {/* Retest result — only shown if faculty has published it */}
+              {retest && (
+                <div className="mt-4 pt-4 border-t border-orange-100 bg-orange-50 -mx-5 -mb-5 px-5 pb-5 rounded-b-2xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[12px] font-bold text-orange-700 uppercase tracking-wider">Retest Result</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-200 text-orange-800">Published</span>
+                  </div>
+                  <div className="flex items-end gap-1">
+                    <span className="text-[28px] font-extrabold leading-none text-orange-600">
+                      {retest.retest_marks != null ? retest.retest_marks : '—'}
+                    </span>
+                    <span className="text-[14px] font-bold text-orange-300 mb-0.5">/ {retest.max_marks}</span>
+                  </div>
+                  {retest.remarks && (
+                    <p className="text-[12px] text-orange-600 italic mt-1">{retest.remarks}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 const StudentCourseDetail = () => {
   const { courseId }   = useParams();
   const location       = useLocation();
