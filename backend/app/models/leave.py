@@ -4,7 +4,7 @@ Campus Connect ERP — Faculty Leave Models
 Defines the tables for Faculty Leave Requests, Balances, and Duty Arrangements.
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, Enum as SQLEnum, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -71,6 +71,52 @@ class FacultyDutyArrangement(Base):
     # Relationships
     leave_request = relationship("FacultyLeaveRequest", back_populates="arrangements")
     substitute_faculty = relationship("Faculty", foreign_keys=[substitute_faculty_id])
+
+
+class StudentLeaveStatus(str, enum.Enum):
+    PENDING_MENTOR        = "pending_mentor"
+    PENDING_CLASS_ADVISOR = "pending_class_advisor"
+    PENDING_HOD           = "pending_hod"
+    APPROVED              = "approved"
+    REJECTED              = "rejected"
+    WITHDRAWN             = "withdrawn"
+
+
+class StudentLeaveRequest(Base):
+    __tablename__ = "student_leave_requests"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    student_id    = Column(Integer, ForeignKey("students.id"), nullable=False)
+    from_date     = Column(Date, nullable=False)
+    to_date       = Column(Date, nullable=False)
+    duration_days = Column(Integer, nullable=False)
+    reason        = Column(String(1000), nullable=False)
+
+    status = Column(SQLEnum(StudentLeaveStatus), default=StudentLeaveStatus.PENDING_MENTOR, nullable=False)
+
+    # Approval trail — order: Mentor → Class Advisor → HOD
+    mentor_id          = Column(Integer, ForeignKey("faculty.id"), nullable=True)
+    mentor_remarks     = Column(String(500), nullable=True)
+    mentor_actioned_at = Column(DateTime(timezone=True), nullable=True)
+
+    class_advisor_id          = Column(Integer, ForeignKey("faculty.id"), nullable=True)
+    class_advisor_remarks     = Column(String(500), nullable=True)
+    class_advisor_actioned_at = Column(DateTime(timezone=True), nullable=True)
+
+    hod_id          = Column(Integer, ForeignKey("faculty.id"), nullable=True)
+    hod_remarks     = Column(String(500), nullable=True)
+    hod_actioned_at = Column(DateTime(timezone=True), nullable=True)
+
+    rejection_reason = Column(String(500), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    student       = relationship("Student", back_populates="leave_requests")
+    mentor        = relationship("Faculty", foreign_keys=[mentor_id])
+    class_advisor = relationship("Faculty", foreign_keys=[class_advisor_id])
+    hod           = relationship("Faculty", foreign_keys=[hod_id])
 
 
 class FacultyLeaveBalance(Base):

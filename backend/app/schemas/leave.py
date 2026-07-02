@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date, datetime
-from app.models.leave import LeaveStatus, ArrangementStatus
+from app.models.leave import LeaveStatus, ArrangementStatus, StudentLeaveStatus
 
 class FacultyDutyArrangementBase(BaseModel):
     substitute_faculty_id: int
@@ -64,6 +64,46 @@ class FacultyLeaveBalanceBase(BaseModel):
 class FacultyLeaveBalanceResponse(FacultyLeaveBalanceBase):
     id: int
     faculty_id: int
+
+    class Config:
+        from_attributes = True
+
+
+# ── Student Leave Schemas ──────────────────────────────────────────────────
+
+class StudentLeaveRequestCreate(BaseModel):
+    from_date: date
+    to_date: date
+    reason: str
+
+class StudentLeaveRequestResponse(BaseModel):
+    id: int
+    student_id: int
+    from_date: date
+    to_date: date
+    duration_days: int
+    reason: str
+    status: StudentLeaveStatus
+
+    # Approval trail — order: Mentor → Class Advisor → HOD
+    mentor_id: Optional[int] = None
+    mentor_name: Optional[str] = None
+    mentor_remarks: Optional[str] = None
+    mentor_actioned_at: Optional[datetime] = None
+
+    class_advisor_id: Optional[int] = None
+    class_advisor_name: Optional[str] = None
+    class_advisor_remarks: Optional[str] = None
+    class_advisor_actioned_at: Optional[datetime] = None
+
+    hod_id: Optional[int] = None
+    hod_name: Optional[str] = None
+    hod_remarks: Optional[str] = None
+    hod_actioned_at: Optional[datetime] = None
+
+    rejection_reason: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

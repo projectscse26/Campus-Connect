@@ -89,5 +89,5 @@ class Student(Base):
     mentor_assignment = relationship("MentorAssignment", back_populates="student", uselist=False)
     enrollments = relationship("Enrollment", back_populates="student")
     attendance_records = relationship("Attendance", back_populates="student")
-    leave_requests = relationship("LeaveRequest", back_populates="student")
+    leave_requests = relationship("StudentLeaveRequest", back_populates="student")
     grades = relationship("Grade", back_populates="student")

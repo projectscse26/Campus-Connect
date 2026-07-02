@@ -57,10 +57,13 @@ import { CATimetable } from './features/faculty/classadvisor/CATimetable';
 import { CASubjects } from './features/faculty/classadvisor/CASubjects';
 import { CACourseProgress } from './features/faculty/classadvisor/CACourseProgress';
 import { CAClassInfo } from './features/faculty/classadvisor/CAClassInfo';
+import { CALeaveRequests } from './features/faculty/classadvisor/CALeaveRequests';
 import { Mentorship } from './features/faculty/Mentorship';
 import { GatePass } from './features/student/GatePass';
+import { StudentLeave } from './features/student/StudentLeave';
 import { MenteeGatePasses } from './features/faculty/MenteeGatePasses';
 import { GatePassApprovals as HodGatePassApprovals } from './features/hod/GatePassApprovals';
+import { StudentLeaveApprovals } from './features/hod/StudentLeaveApprovals';
 import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
 import { Profile } from './features/profile/Profile';
 import LateEntryNotification from './features/student/LateEntryNotification';
@@ -212,6 +215,11 @@ function AppRoutes() {
             <HodGatePassApprovals />
           </ProtectedRoute>
         } />
+        <Route path="/hod/leave" element={
+          <ProtectedRoute allowedRole="hod">
+            <StudentLeaveApprovals />
+          </ProtectedRoute>
+        } />
         <Route path="/hod/latetracker" element={
           <ProtectedRoute allowedRole="hod">
             <LateManagement />
@@ -324,6 +332,9 @@ function AppRoutes() {
         <Route path="/faculty/class-advisor/info" element={
           <ProtectedRoute allowedRole="faculty"><CAClassInfo /></ProtectedRoute>
         } />
+        <Route path="/faculty/class-advisor/leave" element={
+          <ProtectedRoute allowedRole="faculty"><CALeaveRequests /></ProtectedRoute>
+        } />
         <Route path="/faculty/announcements" element={
           <ProtectedRoute allowedRole="faculty">
             <Announcements />
@@ -379,6 +390,11 @@ function AppRoutes() {
         <Route path="/student/discipline" element={
           <ProtectedRoute allowedRole="student">
             <StudentDiscipline />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/leave" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentLeave />
           </ProtectedRoute>
         } />
       </Route>
