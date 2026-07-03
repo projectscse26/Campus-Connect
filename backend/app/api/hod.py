@@ -663,13 +663,125 @@ def get_attendance_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
+    from datetime import date
+    from app.models.attendance import Attendance, AttendanceStatus
+    from app.models.student import Student
+    from app.models.academic import Section, CourseAssignment
+
     department, _ = get_hod_department(current_user, db)
-    # Mock data for UI demonstration
-    return [
-        {"section_id": 1, "section_name": "II CSE A", "average_attendance": 85.5, "low_attendance_count": 3},
-        {"section_id": 2, "section_name": "II CSE B", "average_attendance": 92.0, "low_attendance_count": 0},
-        {"section_id": 3, "section_name": "III CSE A", "average_attendance": 78.4, "low_attendance_count": 5},
-    ]
+    today = date.today()
+
+    # Get all active sections in the HOD's department
+    sections = db.query(Section).filter(
+        Section.department_id == department.id,
+        Section.is_active == True
+    ).all()
+
+    year_mapping = {
+        1: "I Year",
+        2: "II Year",
+        3: "III Year",
+        4: "IV Year"
+    }
+
+    year_breakdown = {}
+    for y_name in year_mapping.values():
+        year_breakdown[y_name] = {
+            "sections": [],
+            "totalRate": 0
+        }
+
+    total_present_all = 0
+    total_absent_all = 0
+    any_marked_today = False
+
+    for section in sections:
+        year_str = year_mapping.get(section.year, f"{section.year} Year")
+        if year_str not in year_breakdown:
+            year_breakdown[year_str] = {
+                "sections": [],
+                "totalRate": 0
+            }
+
+        students = db.query(Student).filter(
+            Student.section_id == section.id,
+            Student.is_active == True
+        ).all()
+        student_ids = [s.id for s in students]
+
+        if not student_ids:
+            continue
+
+        # Get homeroom course_id
+        homeroom_course_id = None
+        assignment = db.query(CourseAssignment).filter(
+            CourseAssignment.section_id == section.id,
+            CourseAssignment.is_active == True
+        ).order_by(CourseAssignment.id).first()
+        if assignment:
+            homeroom_course_id = assignment.course_id
+
+        # Query attendance for today
+        attendance_records = db.query(Attendance).filter(
+            Attendance.student_id.in_(student_ids),
+            Attendance.date == today
+        )
+        if homeroom_course_id:
+            homeroom_records = attendance_records.filter(Attendance.course_id == homeroom_course_id).all()
+            if homeroom_records:
+                records = homeroom_records
+            else:
+                records = attendance_records.all()
+        else:
+            records = attendance_records.all()
+
+        is_marked = len(records) > 0
+        if is_marked:
+            any_marked_today = True
+
+        present_count = 0
+        absent_count = 0
+
+        # Unique status per student
+        student_status = {}
+        for r in records:
+            if r.student_id not in student_status:
+                student_status[r.student_id] = r.status
+
+        for s in students:
+            status = student_status.get(s.id)
+            if status in [AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.ON_DUTY]:
+                present_count += 1
+                total_present_all += 1
+            elif status == AttendanceStatus.ABSENT:
+                absent_count += 1
+                total_absent_all += 1
+
+        year_breakdown[year_str]["sections"].append({
+            "name": f"{year_str.split()[0]} {section.name}", # e.g. "III A"
+            "present": present_count,
+            "absent": absent_count,
+            "is_marked": is_marked
+        })
+
+    # Calculate total rates
+    for year_str, data in year_breakdown.items():
+        yr_present = sum(s["present"] for s in data["sections"])
+        yr_absent = sum(s["absent"] for s in data["sections"])
+        if yr_present + yr_absent > 0:
+            data["totalRate"] = int(round((yr_present / (yr_present + yr_absent)) * 100))
+        else:
+            data["totalRate"] = 0
+
+    overall_rate = 0
+    if total_present_all + total_absent_all > 0:
+        overall_rate = int(round((total_present_all / (total_present_all + total_absent_all)) * 100))
+
+    return {
+        "overallRate": overall_rate,
+        "isMarkedToday": any_marked_today,
+        "yearBreakdown": year_breakdown
+    }
 
 @router.get("/results-summary")
 def get_results_summary(
@@ -1019,3 +1131,68 @@ def get_attendance_analytics(
     )
     
     return response.model_dump()
+
+@router.get("/faculty-attendance")
+def get_faculty_attendance(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    from datetime import date
+    from app.models.leave import FacultyLeaveRequest
+    from app.models.faculty import Faculty
+
+    department, _ = get_hod_department(current_user, db)
+    today = date.today()
+
+    # Get all faculty in HOD's department
+    faculty_members = db.query(Faculty).filter(
+        Faculty.department_id == department.id,
+        Faculty.is_active == True
+    ).all()
+    faculty_ids = [f.id for f in faculty_members]
+
+    # Get leave requests for today
+    leaves = db.query(FacultyLeaveRequest).filter(
+        FacultyLeaveRequest.faculty_id.in_(faculty_ids),
+        FacultyLeaveRequest.from_date <= today,
+        FacultyLeaveRequest.to_date >= today
+    ).all()
+
+    on_leave_list = []
+    absent_list = []
+    present_list = []
+
+    faculty_status = {}
+
+    for leave in leaves:
+        status_str = str(leave.status.value) if hasattr(leave.status, 'value') else str(leave.status)
+        status_lower = status_str.lower()
+        if 'approved' in status_lower:
+            faculty_status[leave.faculty_id] = "on_leave"
+        elif 'rejected' in status_lower:
+            faculty_status[leave.faculty_id] = "absent"
+
+    for f in faculty_members:
+        status = faculty_status.get(f.id)
+        name = f"Dr. {f.first_name} {f.last_name}" if "HOD" not in f.designation else f"{f.first_name} {f.last_name}"
+        if status == "on_leave":
+            on_leave_list.append(name)
+        elif status == "absent":
+            absent_list.append(name)
+        else:
+            present_list.append(name)
+
+    # In case there are no records at all and we want to provide some realistic mock fallback if empty:
+    # Actually, the user says "Do NOT use dummy, hardcoded, or randomly generated data. Retrieve the actual records."
+    # Since we seeded real records in the database, we return the actual lists!
+    # But wait, what if the lists are empty? It's fine to show actual database records (which means 0 absent, 1 on leave).
+    # That is correct and adheres strictly to the rule.
+    
+    return {
+        "presentCount": len(present_list),
+        "absentCount": len(absent_list),
+        "onLeaveCount": len(on_leave_list),
+        "presentFaculty": present_list,
+        "absentFaculty": absent_list,
+        "onLeaveFaculty": on_leave_list
+    }
