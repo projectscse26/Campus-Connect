@@ -40,6 +40,8 @@ class Student(Base):
     batch = Column(String(20), nullable=False)             # e.g., "2023-2027"
     current_year = Column(Integer, nullable=True)          # 1, 2, 3, 4
     current_semester = Column(Integer, nullable=True)      # 1-8
+    admission_date = Column(Date, nullable=True)
+    admission_type = Column(String(50), nullable=True)     # CENTAC / MANAGEMENT
 
     # --- Contact Details ---
     college_email = Column(String(255), unique=True, nullable=False)

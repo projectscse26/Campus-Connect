@@ -213,6 +213,8 @@ const StudentProfile = ({ profile, onUpdate }) => {
         <InfoRow label="Current Year"     value={profile.current_year ? `Year ${profile.current_year}` : null} />
         <InfoRow label="Current Semester" value={profile.current_semester ? `Semester ${profile.current_semester}` : null} />
         <InfoRow label="Section"          value={profile.section_name} />
+        <InfoRow label="Admission Date"   value={profile.admission_date} />
+        <InfoRow label="Admission Type"   value={profile.admission_type} />
         <InfoRow label="Class Advisor"    value={profile.class_advisor} />
         <InfoRow label="Mentor"           value={profile.mentor} />
         <InfoRow label="Student Status"   value={profile.is_active ? 'Active' : 'Inactive'} />
