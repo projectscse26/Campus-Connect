@@ -35,6 +35,7 @@ export const CADashboard = () => {
     { label: 'Subjects',           path: '/faculty/class-advisor/subjects',            icon: BookOpen,      bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-100' },
     { label: 'Course Progress',    path: '/faculty/class-advisor/progress',            icon: TrendingUp,    bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-100' },
     { label: 'Class Info',         path: '/faculty/class-advisor/info',                icon: Info,          bg: 'bg-gray-50',   text: 'text-gray-700',   border: 'border-gray-200' },
+    { label: 'Leave Requests',     path: '/faculty/class-advisor/leave',               icon: CalendarDays,  bg: 'bg-blue-50',   text: 'text-blue-700',   border: 'border-blue-100' },
   ];
 
   return (
