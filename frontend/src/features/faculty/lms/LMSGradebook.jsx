@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowLeft, BookOpen, Download, Send, Save,
-  CheckCircle, AlertCircle, ChevronDown,
+  CheckCircle, AlertCircle, ChevronDown, RefreshCw,
 } from 'lucide-react';
 
 // ── Assessment config ─────────────────────────────────────────────────────────
@@ -48,6 +48,13 @@ export const LMSGradebook = () => {
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast]           = useState(null); // { msg, type }
 
+  // ── Retest state ───────────────────────────────────────────────────────────
+  const [retestData, setRetestData]         = useState(null);   // eligible list from API
+  const [retestRows, setRetestRows]         = useState([]);     // local editable copy
+  const [retestLoading, setRetestLoading]   = useState(false);
+  const [retestSaving, setRetestSaving]     = useState(false);
+  const [retestPublishing, setRetestPublishing] = useState(false);
+
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
@@ -74,7 +81,104 @@ export const LMSGradebook = () => {
     fetchGradebook(assessment.value);
   }, [assessment, fetchGradebook]);
 
-  // ── Handle cell changes ────────────────────────────────────────────────────
+  // ── Fetch retest eligible list ─────────────────────────────────────────────
+  const fetchRetest = useCallback(async (gradeType) => {
+    setRetestLoading(true);
+    setRetestData(null);
+    setRetestRows([]);
+    try {
+      const res = await axios.get(
+        `/api/retest/courses/${assignmentId}/eligible`,
+        { params: { grade_type: gradeType } }
+      );
+      setRetestData(res.data);
+      setRetestRows(
+        res.data.eligible_students.map(s => ({
+          ...s,
+          _retest_marks:   s.retest_marks ?? '',
+          _retest_remarks: s.retest_remarks ?? '',
+          _dirty: false,
+        }))
+      );
+    } catch (err) {
+      if (err.response?.status !== 400) {
+        showToast('Failed to load retest data', 'error');
+      }
+    } finally {
+      setRetestLoading(false);
+    }
+  }, [assignmentId]);
+
+  // Load retest section only after grades are published
+  useEffect(() => {
+    if (rows.some(r => r.is_published)) {
+      fetchRetest(assessment.value);
+    } else {
+      setRetestData(null);
+      setRetestRows([]);
+    }
+  }, [data, rows, assessment.value, fetchRetest]);
+
+  // ── Retest cell handlers ───────────────────────────────────────────────────
+  const handleRetestMarks = (idx, value) => {
+    setRetestRows(prev => prev.map((r, i) =>
+      i === idx ? { ...r, _retest_marks: value, _dirty: true } : r
+    ));
+  };
+
+  const handleRetestRemarks = (idx, value) => {
+    setRetestRows(prev => prev.map((r, i) =>
+      i === idx ? { ...r, _retest_remarks: value, _dirty: true } : r
+    ));
+  };
+
+  // ── Save retest draft ──────────────────────────────────────────────────────
+  const handleRetestSave = async () => {
+    setRetestSaving(true);
+    try {
+      await axios.post(`/api/retest/courses/${assignmentId}/save`, {
+        grade_type: assessment.value,
+        entries: retestRows.map(r => ({
+          student_id:     r.student_id,
+          grade_id:       r.grade_id,
+          marks_obtained: r._retest_marks === '' ? null : Number(r._retest_marks),
+          remarks:        r._retest_remarks || '',
+        })),
+      });
+      showToast('Retest marks saved as draft');
+      fetchRetest(assessment.value);
+    } catch (err) {
+      showToast(err.response?.data?.detail || 'Retest save failed', 'error');
+    } finally {
+      setRetestSaving(false);
+    }
+  };
+
+  // ── Publish retest marks ───────────────────────────────────────────────────
+  const handleRetestPublish = async () => {
+    if (!window.confirm(`Publish retest marks for ${assessment.label}? Each student will see only their own mark.`)) return;
+    setRetestPublishing(true);
+    try {
+      await axios.post(`/api/retest/courses/${assignmentId}/save`, {
+        grade_type: assessment.value,
+        entries: retestRows.map(r => ({
+          student_id:     r.student_id,
+          grade_id:       r.grade_id,
+          marks_obtained: r._retest_marks === '' ? null : Number(r._retest_marks),
+          remarks:        r._retest_remarks || '',
+        })),
+      });
+      await axios.post(`/api/retest/courses/${assignmentId}/publish`, {
+        grade_type: assessment.value,
+      });
+      showToast('Retest marks published — each student sees only their own');
+      fetchRetest(assessment.value);
+    } catch (err) {
+      showToast(err.response?.data?.detail || 'Retest publish failed', 'error');
+    } finally {
+      setRetestPublishing(false);
+    }
+  };
   const handleMarks = (idx, value) => {
     setRows(prev => prev.map((r, i) =>
       i === idx ? { ...r, marks_obtained: value === '' ? null : Number(value), is_absent: false, _dirty: true } : r
@@ -149,6 +253,8 @@ export const LMSGradebook = () => {
   };
 
   const isPublished = data?.is_published ?? false;
+  // Show retest section if at least some grades are published (even if not all students have entries)
+  const hasAnyPublished = isPublished || (rows.some(r => r.is_published));
   const dirtyCount  = rows.filter(r => r._dirty).length;
 
   return (
@@ -202,10 +308,10 @@ export const LMSGradebook = () => {
           </button>
           <button
             onClick={handlePublish}
-            disabled={publishing || isPublished}
+            disabled={publishing}
             className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-40 text-white text-sm font-semibold px-3 py-2 rounded-lg transition-colors"
           >
-            <Send className="w-4 h-4" /> {publishing ? 'Publishing...' : isPublished ? 'Published' : 'Publish'}
+            <Send className="w-4 h-4" /> {publishing ? 'Publishing...' : isPublished ? 'Re-Publish' : 'Publish'}
           </button>
         </div>
       </div>
@@ -345,6 +451,134 @@ export const LMSGradebook = () => {
           ))}
         </div>
       )}
+
+      {/* ── Retest Marks Section — visible only after main grades are published ── */}
+      {rows.some(r => r.is_published) && assessment.pass != null && (
+        <div className="bg-white rounded-xl border border-orange-200 shadow-sm overflow-hidden">
+
+          {/* Retest header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 bg-orange-50 border-b border-orange-100">
+            <div>
+              <h2 className="text-base font-bold text-orange-800 flex items-center gap-2">
+                <RefreshCw className="w-4 h-4" />
+                Retest Marks — {assessment.label}
+              </h2>
+              <p className="text-xs text-orange-600 mt-0.5">
+                Only failed / absent students appear here. After publishing, each student sees only their own mark.
+              </p>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <button
+                onClick={() => fetchRetest(assessment.value)}
+                className="flex items-center gap-1.5 border border-orange-300 bg-white text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-orange-50 transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Refresh
+              </button>
+              <button
+                onClick={handleRetestSave}
+                disabled={retestSaving || retestRows.filter(r => r._dirty).length === 0}
+                className="flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <Save className="w-3.5 h-3.5" />
+                {retestSaving ? 'Saving…' : `Save${retestRows.filter(r => r._dirty).length ? ` (${retestRows.filter(r => r._dirty).length})` : ''}`}
+              </button>
+              <button
+                onClick={handleRetestPublish}
+                disabled={retestPublishing || retestRows.length === 0 || retestRows.every(r => r.retest_published)}
+                className="flex items-center gap-1.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-40 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {retestPublishing ? 'Publishing…' : retestRows.every(r => r.retest_published) ? 'All Published' : 'Publish Retest'}
+              </button>
+            </div>
+          </div>
+
+          {/* Retest table */}
+          {retestLoading ? (
+            <div className="flex justify-center items-center h-24">
+              <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-orange-500" />
+            </div>
+          ) : retestRows.length === 0 ? (
+            <div className="text-center py-10 text-gray-400 text-sm">
+              {retestData ? 'No students eligible for retest — everyone passed!' : 'Loading…'}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="px-4 py-3 text-left font-bold text-gray-600 w-10">#</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-600">Reg. No.</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-600">Name</th>
+                    <th className="px-4 py-3 text-center font-bold text-gray-600">Original</th>
+                    <th className="px-4 py-3 text-center font-bold text-gray-600">
+                      Retest Marks <span className="font-normal text-gray-400">/ {assessment.max}</span>
+                    </th>
+                    <th className="px-4 py-3 text-center font-bold text-gray-600">Status</th>
+                    <th className="px-4 py-3 text-left font-bold text-gray-600 hidden md:table-cell">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {retestRows.map((row, idx) => (
+                    <tr
+                      key={row.student_id}
+                      className={`hover:bg-orange-50/30 transition-colors ${row._dirty ? 'bg-orange-50/50' : ''}`}
+                    >
+                      <td className="px-4 py-3 text-gray-400 text-xs">{idx + 1}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-700">{row.register_number}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{row.first_name} {row.last_name}</td>
+                      <td className="px-4 py-3 text-center">
+                        {row.original_absent
+                          ? <Badge color="gray">Absent</Badge>
+                          : <span className="font-mono text-sm text-red-600">{row.original_marks ?? '—'}</span>}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {row.retest_published ? (
+                          <span className="font-mono text-sm text-gray-700">
+                            {row.retest_marks != null ? row.retest_marks : '—'}
+                          </span>
+                        ) : (
+                          <input
+                            type="number"
+                            min={0}
+                            max={assessment.max}
+                            step={0.5}
+                            value={row._retest_marks}
+                            onChange={e => handleRetestMarks(idx, e.target.value)}
+                            className="w-20 text-center border border-orange-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                            placeholder="—"
+                          />
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {row.retest_published
+                          ? <Badge color="green">Published</Badge>
+                          : row.retest_id
+                            ? <Badge color="yellow">Draft</Badge>
+                            : <Badge color="gray">Not entered</Badge>}
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        {row.retest_published ? (
+                          <span className="text-xs text-gray-500">{row.retest_remarks || '—'}</span>
+                        ) : (
+                          <input
+                            type="text"
+                            value={row._retest_remarks}
+                            onChange={e => handleRetestRemarks(idx, e.target.value)}
+                            placeholder="Optional note…"
+                            className="w-full border border-orange-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-orange-300"
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 };

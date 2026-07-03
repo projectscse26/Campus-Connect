@@ -242,7 +242,7 @@ export const StudentDashboard = () => {
         />
       </div>
 
-      {/* Quick Link — My Courses */}
+      {/* Quick Links — My Courses + My Marks */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-[20px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 p-6 sm:p-8">
           <h3 className="text-[16px] font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -260,13 +260,22 @@ export const StudentDashboard = () => {
               You have <span className="font-bold text-gray-800">{courseCount}</span> course{courseCount !== 1 ? 's' : ''} enrolled for Semester {profile?.current_semester}.
             </p>
           )}
-          <Link
-            to="/student/courses"
-            className="inline-flex items-center gap-2 mt-2 text-[13px] font-bold text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 px-4 py-2.5 rounded-xl transition-colors"
-          >
-            View All Courses
-            <ChevronRight className="w-4 h-4" />
-          </Link>
+          <div className="flex flex-wrap gap-3 mt-2">
+            <Link
+              to="/student/courses"
+              className="inline-flex items-center gap-2 text-[13px] font-bold text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 px-4 py-2.5 rounded-xl transition-colors"
+            >
+              View All Courses
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+            <Link
+              to="/student/marks"
+              className="inline-flex items-center gap-2 text-[13px] font-bold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-4 py-2.5 rounded-xl transition-colors"
+            >
+              <Award className="w-4 h-4" />
+              My Marks
+            </Link>
+          </div>
         </div>
 
         {/* Student Info Card */}
