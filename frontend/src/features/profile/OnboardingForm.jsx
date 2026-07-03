@@ -15,11 +15,12 @@ const Input = ({ label, name, type = 'text', required = false, form, onChange })
   const isNumeric = type === 'tel' || type === 'number';
   
   const handleLocalChange = (e) => {
-    if (isNumeric) {
-      // Remove any non-numeric characters (allow + for country code if needed, but let's strictly restrict to digits for now)
-      e.target.value = e.target.value.replace(/[^0-9]/g, '');
+    if (type === 'tel') {
+      const val = e.target.value.replace(/[^0-9+]/g, '');
+      onChange({ target: { name: e.target.name, value: val } });
+    } else {
+      onChange(e);
     }
-    onChange(e);
   };
 
   return (
@@ -28,9 +29,8 @@ const Input = ({ label, name, type = 'text', required = false, form, onChange })
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <input
-        type={type === 'tel' ? 'text' : type} // Use text with inputMode for better cross-browser strictness
-        inputMode={isNumeric ? 'numeric' : undefined}
-        pattern={isNumeric ? '[0-9]*' : undefined}
+        type={type === 'tel' ? 'text' : type} 
+        inputMode={type === 'tel' ? 'numeric' : (type === 'number' ? 'decimal' : undefined)}
         name={name}
         value={form[name] || ''}
         onChange={handleLocalChange}
