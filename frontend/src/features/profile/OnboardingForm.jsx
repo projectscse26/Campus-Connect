@@ -94,6 +94,8 @@ export default function OnboardingForm({ profile, onComplete }) {
     nationality: profile.nationality || 'Indian',
     community: profile.community || '',
     religion: profile.religion || '',
+    admission_date: profile.admission_date || '',
+    admission_type: profile.admission_type || '',
     address_line1: profile.address_line1 || '',
     address_line2: profile.address_line2 || '',
     city: profile.city || '',
@@ -175,6 +177,12 @@ export default function OnboardingForm({ profile, onComplete }) {
           <Input form={form} onChange={handleChange} label="Nationality" name="nationality" required />
           <Input form={form} onChange={handleChange} label="Community" name="community" required />
           <Input form={form} onChange={handleChange} label="Religion" name="religion" required />
+          {profile.role === 'student' && (
+            <>
+              <Input form={form} onChange={handleChange} label="Admission Date" name="admission_date" type="date" required />
+              <Select form={form} onChange={handleChange} label="Admission Type" name="admission_type" required options={['CENTAC', 'MANAGEMENT']} />
+            </>
+          )}
         </Section>
 
         <Section title="Address Details" icon={MapPin}>
@@ -203,7 +211,7 @@ export default function OnboardingForm({ profile, onComplete }) {
               <Input form={form} onChange={handleChange} label="10th Total Marks" name="tenth_marks" type="number" required />
               <Input form={form} onChange={handleChange} label="10th Percentage" name="tenth_percentage" type="number" required />
               
-              <Input form={form} onChange={handleChange} label="12th / Diploma College" name="twelfth_school" required />
+              <Input form={form} onChange={handleChange} label="12th / Diploma Institution Name" name="twelfth_school" required />
               <Input form={form} onChange={handleChange} label="12th Board" name="twelfth_board" required />
               <Input form={form} onChange={handleChange} label="12th Total Marks" name="twelfth_marks" type="number" required />
               <Input form={form} onChange={handleChange} label="12th Percentage" name="twelfth_percentage" type="number" required />
