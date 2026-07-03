@@ -22,7 +22,7 @@ import { FacultyAssignment } from './features/hod/FacultyAssignment';
 import { MentorAssignment } from './features/hod/MentorAssignment';
 import { Timetable } from './features/hod/Timetable';
 import { Announcements } from './features/hod/Announcements';
-import { AttendanceMonitor } from './features/hod/AttendanceMonitor';
+import { AdvancedAttendanceMonitor } from './features/hod/AdvancedAttendanceMonitor';
 import { ResultsMonitor } from './features/hod/ResultsMonitor';
 import { Reports } from './features/hod/Reports';
 import { Discipline as AdminDiscipline } from './features/admin/Discipline';
@@ -193,7 +193,7 @@ function AppRoutes() {
         } />
         <Route path="/hod/attendance" element={
           <ProtectedRoute allowedRole="hod">
-            <AttendanceMonitor />
+            <AdvancedAttendanceMonitor />
           </ProtectedRoute>
         } />
         <Route path="/hod/results" element={
