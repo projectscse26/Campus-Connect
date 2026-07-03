@@ -14,7 +14,6 @@ export const AdvancedAttendanceMonitor = () => {
   const [loading, setLoading] = useState(true);
 
   // Filters state
-  const [academicYear, setAcademicYear] = useState('2023-2024');
   const [semester, setSemester] = useState('');
   const [section, setSection] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -31,25 +30,13 @@ export const AdvancedAttendanceMonitor = () => {
 
   useEffect(() => {
     fetchData();
-  }, [academicYear, semester, section, date, timeScale]);
+  }, [semester, section, date, timeScale]);
 
-  // Auto-adjust date when academic year changes
-  useEffect(() => {
-    if (academicYear) {
-      const startYear = parseInt(academicYear.split('-')[0]);
-      const currentYear = new Date(date).getFullYear();
-      if (currentYear !== startYear && currentYear !== startYear + 1) {
-        // Automatically jump to Sept 1st of the selected academic year
-        setDate(`${startYear}-09-01`);
-      }
-    }
-  }, [academicYear]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (academicYear) params.append('academic_year', academicYear);
       if (semester) params.append('semester', semester);
       if (section) params.append('section_id', section);
       if (date) params.append('target_date', date);
@@ -130,23 +117,16 @@ export const AdvancedAttendanceMonitor = () => {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:hidden">
-        <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-sm flex items-center">
+      <div className="flex gap-4 print:hidden">
+        <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-sm flex items-center w-full max-w-xs">
             <span className="text-xs font-bold text-gray-500 ml-2 mr-2">DATE</span>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium" />
-        </div>
-        <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-sm flex items-center">
-            <span className="text-xs font-bold text-gray-500 ml-2 mr-2">ACADEMIC YR</span>
-            <select value={academicYear} onChange={e => setAcademicYear(e.target.value)} className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium">
-              <option>2023-2024</option>
-              <option>2024-2025</option>
-            </select>
         </div>
       </div>
 
       {/* Smart Insights */}
       {insights && insights.length > 0 && (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-5 print:hidden">
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-5 mb-6 print:hidden">
           <h3 className="text-rose-800 font-bold flex items-center mb-2">
             <Activity className="w-5 h-5 mr-2" /> Smart Attendance Insights
           </h3>
@@ -157,21 +137,25 @@ export const AdvancedAttendanceMonitor = () => {
       )}
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { title: "Student Avg %", value: overview.student_attendance_percentage + "%", icon: Users, trend: overview.trend_indicator },
-          { title: "Students Present", value: overview.students_present, icon: UserCheck, trend: 'stable' },
-          { title: "Faculty Avg %", value: overview.faculty_attendance_percentage + "%", icon: Users, trend: 'stable' },
-          { title: "Faculty Present", value: overview.faculty_present, icon: UserCheck, trend: 'stable' },
+          { title: "Total Students", value: overview.total_students_dept, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { title: "Total Faculty", value: overview.total_faculty_dept, icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+          { title: "Total Boys", value: overview.total_boys_dept, icon: Users, color: 'text-cyan-600', bg: 'bg-cyan-50' },
+          { title: "Total Girls", value: overview.total_girls_dept, icon: Users, color: 'text-pink-600', bg: 'bg-pink-50' },
+          { title: "Boys Present", value: (live_status.marked_classes > 0) ? overview.boys_present : "Not Marked", icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { title: "Girls Present", value: (live_status.marked_classes > 0) ? overview.girls_present : "Not Marked", icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { title: "Boys Absent", value: (live_status.marked_classes > 0) ? overview.boys_absent : "Not Marked", icon: Activity, color: 'text-rose-600', bg: 'bg-rose-50' },
+          { title: "Girls Absent", value: (live_status.marked_classes > 0) ? overview.girls_absent : "Not Marked", icon: Activity, color: 'text-rose-600', bg: 'bg-rose-50' },
         ].map((stat, i) => (
-          <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+          <div key={i} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{stat.title}</p>
-                <h3 className="text-3xl font-black text-gray-900 mt-1">{stat.value}</h3>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{stat.title}</p>
+                <h3 className={`font-black text-gray-900 mt-1 ${typeof stat.value === 'string' ? 'text-lg' : 'text-2xl'}`}>{stat.value}</h3>
               </div>
-              <div className={`p-2 rounded-xl ${stat.trend === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'}`}>
-                <stat.icon className="w-5 h-5" />
+              <div className={`p-2 rounded-xl ${stat.bg} ${stat.color}`}>
+                <stat.icon className="w-4 h-4" />
               </div>
             </div>
           </div>

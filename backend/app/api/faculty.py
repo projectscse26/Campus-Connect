@@ -324,6 +324,11 @@ def save_course_attendance(
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
+    from app.models.department import Department
+    department = db.query(Department).filter(Department.id == assignment.course.department_id).first()
+    if department and department.attendance_closed:
+        raise HTTPException(status_code=400, detail="Attendance marking is currently locked by the HOD.")
+
     today = date_type.today()
     now_time = datetime.now().time()
     records = payload.get("records", [])

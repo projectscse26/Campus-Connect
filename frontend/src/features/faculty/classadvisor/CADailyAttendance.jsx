@@ -245,6 +245,9 @@ export const CADailyAttendance = () => {
               <button onClick={() => markAll('absent')} className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors">
                 Mark All Absent
               </button>
+              <button onClick={() => markAll('holiday')} className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 text-purple-700 rounded hover:bg-purple-50 transition-colors">
+                Mark Holiday
+              </button>
             </div>
           )}
         </div>
@@ -261,6 +264,7 @@ export const CADailyAttendance = () => {
             {students.map((s, idx) => {
               const isPresent = s.status === 'present';
               const isAbsent = s.status === 'absent';
+              const isHoliday = s.status === 'holiday';
 
               return (
                 <div key={s.student_id} className="flex items-center px-6 py-4 hover:bg-gray-50 transition-colors">
@@ -292,14 +296,25 @@ export const CADailyAttendance = () => {
                       >
                         Absent
                       </button>
+                      <button
+                        onClick={() => setStatus(s.student_id, 'holiday')}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                          isHoliday 
+                            ? 'bg-white text-purple-700 shadow-sm border border-gray-200' 
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        Holiday
+                      </button>
                     </div>
                   ) : (
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
                       isPresent ? 'bg-green-50 text-green-700 border-green-200' :
                       isAbsent  ? 'bg-red-50 text-red-700 border-red-200' :
+                      isHoliday ? 'bg-purple-50 text-purple-700 border-purple-200' :
                       'bg-gray-50 text-gray-500 border-gray-200'
                     }`}>
-                      {s.status ? (isPresent ? 'Present' : 'Absent') : 'Not Marked'}
+                      {s.status ? (isPresent ? 'Present' : isAbsent ? 'Absent' : 'Holiday') : 'Not Marked'}
                     </span>
                   )}
                 </div>

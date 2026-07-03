@@ -21,6 +21,8 @@ class Department(Base):
     hod_id = Column(Integer, ForeignKey("faculty.id"), nullable=True)  # Nullable until HOD is assigned
     vision = Column(String(500), nullable=True)
     mission = Column(String(500), nullable=True)
+    current_sem_start_date = Column(DateTime(timezone=True), nullable=True)
+    attendance_closed = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

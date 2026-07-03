@@ -10,6 +10,14 @@ class OverviewStats(BaseModel):
     student_attendance_percentage: float
     faculty_attendance_percentage: float
     trend_indicator: str  # "up", "down", "stable"
+    total_students_dept: int
+    total_faculty_dept: int
+    total_boys_dept: int
+    total_girls_dept: int
+    boys_present: int
+    girls_present: int
+    boys_absent: int
+    girls_absent: int
 
 class DonutData(BaseModel):
     name: str
