@@ -163,9 +163,6 @@ export const LMSAttendance = () => {
               <button onClick={() => markAll('absent')} className="flex-1 sm:flex-none px-4 py-2 bg-red-100 text-red-700 text-sm font-bold rounded-xl hover:bg-red-200 transition-colors">
                 Mark All Absent
               </button>
-              <button onClick={() => markAll('holiday')} className="flex-1 sm:flex-none px-4 py-2 bg-purple-100 text-purple-700 text-sm font-bold rounded-xl hover:bg-purple-200 transition-colors">
-                Mark Holiday
-              </button>
             </div>
           </div>
         )}
