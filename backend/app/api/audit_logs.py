@@ -195,7 +195,7 @@ def get_audit_logs(
     query = db.query(AuditLog)
     
     # Apply filters
-    conditions = []
+    conditions = [AuditLog.method != "GET"]
     
     if search:
         search_pattern = f"%{search}%"

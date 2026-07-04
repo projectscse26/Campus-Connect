@@ -254,6 +254,14 @@ def update_student(
         if db.query(Student).filter(Student.register_number == update_data["register_number"]).first():
             raise HTTPException(status_code=400, detail="Register Number already in use")
             
+    if "college_email" in update_data and update_data["college_email"] != db_student.college_email:
+        if db.query(User).filter(User.email == update_data["college_email"]).first():
+            raise HTTPException(status_code=400, detail="Email already in use")
+        
+        db_user = db.query(User).filter(User.id == db_student.user_id).first()
+        if db_user:
+            db_user.email = update_data["college_email"]
+            
     for field, value in update_data.items():
         setattr(db_student, field, value)
         
