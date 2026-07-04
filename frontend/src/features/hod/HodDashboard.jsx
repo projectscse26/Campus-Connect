@@ -200,6 +200,12 @@ export const HodDashboard = () => {
     onLeaveFaculty: []
   });
 
+  const [deptSettings, setDeptSettings] = useState({
+    current_sem_start_date: '',
+    attendance_closed: false
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
   const greeting = useMemo(() => getGreeting(), []);
 
   // Compute date condition based on override
@@ -218,7 +224,7 @@ export const HodDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [dashRes, annRes, leaveRes, gpRes, discRes, resSummary, facRes, secRes, attSummaryRes, facAttendanceRes] = await Promise.allSettled([
+      const [dashRes, annRes, leaveRes, gpRes, discRes, resSummary, facRes, secRes, attSummaryRes, facAttendanceRes, settingsRes] = await Promise.allSettled([
         axios.get('/api/hod/dashboard'),
         axios.get('/api/announcements'),
         axios.get('/api/leave/requests'),
@@ -228,7 +234,8 @@ export const HodDashboard = () => {
         axios.get('/api/hod/faculty'),
         axios.get('/api/hod/sections'),
         axios.get('/api/hod/attendance-summary'),
-        axios.get('/api/hod/faculty-attendance')
+        axios.get('/api/hod/faculty-attendance'),
+        axios.get('/api/hod/department-settings')
       ]);
 
       if (dashRes.status === 'fulfilled') {
@@ -246,6 +253,15 @@ export const HodDashboard = () => {
       if (secRes.status === 'fulfilled') setSections(secRes.value.data || []);
       if (attSummaryRes.status === 'fulfilled') setStudentAttendanceSummary(attSummaryRes.value.data || {});
       if (facAttendanceRes.status === 'fulfilled') setFacultyAttendanceSummary(facAttendanceRes.value.data || {});
+      
+      if (settingsRes.status === 'fulfilled') {
+        setDeptSettings({
+          current_sem_start_date: settingsRes.value.data.current_sem_start_date 
+            ? settingsRes.value.data.current_sem_start_date.split('T')[0] 
+            : '',
+          attendance_closed: settingsRes.value.data.attendance_closed || false
+        });
+      }
 
     } catch (err) {
       console.error(err);
@@ -259,7 +275,24 @@ export const HodDashboard = () => {
     fetchData();
   }, []);
 
-  // ── Derived KPI Statistics ────────────────────────────────────
+  const handleSaveSettings = async () => {
+    try {
+      setIsSavingSettings(true);
+      await axios.put('/api/hod/department-settings', {
+        current_sem_start_date: deptSettings.current_sem_start_date ? new Date(deptSettings.current_sem_start_date).toISOString() : null,
+        attendance_closed: deptSettings.attendance_closed
+      });
+      // show success, could use toast if available
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save settings');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  // ── Modals State ──────────────────────────────────────────────
   const pendingLeaves = useMemo(() => {
     return leaveRequests.filter(req => req.status === 'pending_hod');
   }, [leaveRequests]);
@@ -490,6 +523,54 @@ export const HodDashboard = () => {
             </button>
           </div>
 
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════
+          SEMESTER CONFIGURATION
+      ═══════════════════════════════════════════════════════════ */}
+      <div className="bg-white rounded-[28px] p-6 border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.01)] text-left flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div>
+          <h3 className="font-extrabold text-slate-800 text-sm mb-1 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
+              <CalendarDays className="w-4 h-4 text-violet-600" />
+            </span>
+            Semester Settings & Attendance Controls
+          </h3>
+          <p className="text-xs text-slate-500 font-medium ml-10">Configure your department's working dates and instantly lock attendance marking.</p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+          {/* Start Date Picker */}
+          <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100 w-full sm:w-auto">
+            <span className="text-xs font-bold text-slate-600 px-2 whitespace-nowrap">Sem Start:</span>
+            <input
+              type="date"
+              className="bg-white text-sm font-bold text-slate-700 px-3 py-1.5 rounded-lg border-none focus:ring-2 focus:ring-primary-500 w-full sm:w-auto"
+              value={deptSettings.current_sem_start_date}
+              onChange={(e) => setDeptSettings(prev => ({ ...prev, current_sem_start_date: e.target.value }))}
+            />
+          </div>
+
+          {/* Attendance Lock Toggle */}
+          <div className="flex items-center gap-3 bg-rose-50/50 p-2 rounded-xl border border-rose-100 w-full sm:w-auto px-4 cursor-pointer" onClick={() => setDeptSettings(prev => ({ ...prev, attendance_closed: !prev.attendance_closed }))}>
+            <span className={`text-xs font-bold ${deptSettings.attendance_closed ? 'text-rose-600' : 'text-slate-600'}`}>
+              {deptSettings.attendance_closed ? "Attendance Locked" : "Attendance Open"}
+            </span>
+            <div className={`relative w-10 h-5 transition-colors duration-300 ease-in-out rounded-full ${deptSettings.attendance_closed ? 'bg-rose-500' : 'bg-slate-300'}`}>
+              <div className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-300 ease-in-out ${deptSettings.attendance_closed ? 'transform translate-x-5' : ''}`} />
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <button
+            onClick={handleSaveSettings}
+            disabled={isSavingSettings}
+            className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white px-5 py-2 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary-600/20"
+          >
+            {isSavingSettings ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+            Save 
+          </button>
         </div>
       </div>
 

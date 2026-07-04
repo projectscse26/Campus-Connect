@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { GraduationCap, Plus, X, Search, FileUp, Edit2, Trash2, ArrowUpRight, ChevronRight, Folder, Calendar, Building2, ChevronDown } from 'lucide-react';
+import { GraduationCap, Plus, X, Search, FileUp, Edit2, Trash2, ArrowUpRight, ChevronRight, Folder, Calendar, Building2, ChevronDown, CheckCircle2 } from 'lucide-react';
 
 export const Students = () => {
   const [students, setStudents] = useState([]);
@@ -17,6 +17,7 @@ export const Students = () => {
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [isPromoting, setIsPromoting] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [editingUserId, setEditingUserId] = useState(null);
   const fileInputRef = useRef(null);
   
   // Custom dropdown state
@@ -48,6 +49,12 @@ export const Students = () => {
   const [formError, setFormError] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
 
+  // Password Reset state
+  const [resetPasswordText, setResetPasswordText] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
+  const [resetPasswordError, setResetPasswordError] = useState(null);
+
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -76,6 +83,7 @@ export const Students = () => {
   const handleOpenModal = (stu = null) => {
     if (stu) {
       setEditingId(stu.id);
+      setEditingUserId(stu.user_id);
       setFormData({
         first_name: stu.first_name,
         last_name: stu.last_name,
@@ -89,6 +97,7 @@ export const Students = () => {
       });
     } else {
       setEditingId(null);
+      setEditingUserId(null);
 
       // Derive batch and semester from the current drill-down context
       const currentYear = new Date().getFullYear();
@@ -150,6 +159,28 @@ export const Students = () => {
       setFormError(err.response?.data?.detail || 'Failed to save student member');
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordText || resetPasswordText.length < 6) {
+      setResetPasswordError("Password must be at least 6 characters.");
+      return;
+    }
+    
+    setIsResettingPassword(true);
+    setResetPasswordError(null);
+    try {
+      await axios.post(`/api/admin/users/${editingUserId}/reset-password`, {
+        new_password: resetPasswordText
+      });
+      setResetPasswordSuccess(true);
+      setResetPasswordText('');
+      setTimeout(() => setResetPasswordSuccess(false), 3000);
+    } catch (err) {
+      setResetPasswordError(err.response?.data?.detail || 'Failed to reset password');
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -574,6 +605,33 @@ export const Students = () => {
                 </div>
               </form>
             </div>
+
+            {editingId && (
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <h3 className="text-sm font-bold text-gray-900 mb-3">Password Management</h3>
+                <div className="flex items-start sm:items-center flex-col sm:flex-row gap-3">
+                  <div className="flex-1 w-full">
+                    <input 
+                      type="text" 
+                      placeholder="New Temporary Password"
+                      value={resetPasswordText}
+                      onChange={(e) => setResetPasswordText(e.target.value)}
+                      className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    disabled={isResettingPassword || !resetPasswordText || resetPasswordText.length < 6}
+                    className="w-full sm:w-auto px-4 py-2 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {isResettingPassword ? 'Resetting...' : 'Reset Password'}
+                  </button>
+                </div>
+                {resetPasswordError && <p className="text-red-500 text-xs font-bold mt-2">{resetPasswordError}</p>}
+                {resetPasswordSuccess && <p className="text-green-600 text-xs font-bold mt-2 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1" /> Password reset successfully!</p>}
+              </div>
+            )}
 
             <div className="p-6 border-t border-gray-100 flex justify-end space-x-3 shrink-0 bg-white">
               <button 

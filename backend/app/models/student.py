@@ -40,6 +40,8 @@ class Student(Base):
     batch = Column(String(20), nullable=False)             # e.g., "2023-2027"
     current_year = Column(Integer, nullable=True)          # 1, 2, 3, 4
     current_semester = Column(Integer, nullable=True)      # 1-8
+    admission_date = Column(Date, nullable=True)
+    admission_type = Column(String(50), nullable=True)     # CENTAC / MANAGEMENT
 
     # --- Contact Details ---
     college_email = Column(String(255), unique=True, nullable=False)
@@ -61,6 +63,8 @@ class Student(Base):
     city = Column(String(100), nullable=True)
     state = Column(String(100), nullable=True)
     pincode = Column(String(10), nullable=True)
+
+    religion = Column(String(100), nullable=True)
 
     # --- 10th Standard Details ---
     tenth_school = Column(String(255), nullable=True)
@@ -86,8 +90,8 @@ class Student(Base):
     user = relationship("User", back_populates="student_profile")
     department = relationship("Department", back_populates="students")
     section = relationship("Section", back_populates="students")
-    mentor_assignment = relationship("MentorAssignment", back_populates="student", uselist=False)
-    enrollments = relationship("Enrollment", back_populates="student")
-    attendance_records = relationship("Attendance", back_populates="student")
-    leave_requests = relationship("StudentLeaveRequest", back_populates="student")
-    grades = relationship("Grade", back_populates="student")
+    mentor_assignment = relationship("MentorAssignment", back_populates="student", uselist=False, cascade="all, delete-orphan")
+    enrollments = relationship("Enrollment", back_populates="student", cascade="all, delete-orphan")
+    attendance_records = relationship("Attendance", back_populates="student", cascade="all, delete-orphan")
+    leave_requests = relationship("StudentLeaveRequest", back_populates="student", cascade="all, delete-orphan")
+    grades = relationship("Grade", back_populates="student", cascade="all, delete-orphan")

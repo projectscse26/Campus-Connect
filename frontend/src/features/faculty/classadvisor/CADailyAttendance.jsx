@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { CalendarDays, Save, CheckCircle2, AlertCircle, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, Save, CheckCircle2, AlertCircle, Users, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 
 const CustomDatePicker = ({ selectedDate, onChange, maxDate }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,7 +40,7 @@ const CustomDatePicker = ({ selectedDate, onChange, maxDate }) => {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)}></div>
-          <div className="absolute top-full right-0 sm:left-auto sm:right-0 mt-2 w-[280px] bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute top-full left-0 sm:left-auto sm:right-0 mt-2 w-[280px] bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-4">
               <button onClick={handlePrev} className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"><ChevronLeft className="w-4 h-4 text-gray-600" /></button>
               <span className="text-sm font-bold text-gray-900">{monthName}</span>
@@ -141,6 +141,31 @@ export const CADailyAttendance = () => {
   const unmarked     = students.filter(s => !s.status).length;
   const totalStudents = students.length;
 
+  const handleWhatsAppShare = () => {
+    const absentees = students.filter(s => s.status === 'absent');
+    const parts = [
+      '*Daily Attendance Report*',
+      `Date: ${selectedDate.split('-').reverse().join('-')}`,
+      '',
+      `Total Students: ${totalStudents}`,
+      `Present: ${presentCount}`,
+      `Absent: ${absentCount}`,
+      ''
+    ];
+
+    if (absentees.length > 0) {
+      parts.push('*Absentees:*');
+      absentees.forEach((s, idx) => {
+        parts.push(`${idx + 1}. ${s.first_name} ${s.last_name} (${s.register_number})`);
+      });
+    } else {
+      parts.push('No absentees today! 🎉');
+    }
+
+    const message = parts.join('\n');
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="max-w-4xl mx-auto pb-24 space-y-6">
       
@@ -220,6 +245,9 @@ export const CADailyAttendance = () => {
               <button onClick={() => markAll('absent')} className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors">
                 Mark All Absent
               </button>
+              <button onClick={() => markAll('holiday')} className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 text-purple-700 rounded hover:bg-purple-50 transition-colors">
+                Mark Holiday
+              </button>
             </div>
           )}
         </div>
@@ -236,6 +264,7 @@ export const CADailyAttendance = () => {
             {students.map((s, idx) => {
               const isPresent = s.status === 'present';
               const isAbsent = s.status === 'absent';
+              const isHoliday = s.status === 'holiday';
 
               return (
                 <div key={s.student_id} className="flex items-center px-6 py-4 hover:bg-gray-50 transition-colors">
@@ -267,14 +296,25 @@ export const CADailyAttendance = () => {
                       >
                         Absent
                       </button>
+                      <button
+                        onClick={() => setStatus(s.student_id, 'holiday')}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                          isHoliday 
+                            ? 'bg-white text-purple-700 shadow-sm border border-gray-200' 
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        Holiday
+                      </button>
                     </div>
                   ) : (
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
                       isPresent ? 'bg-green-50 text-green-700 border-green-200' :
                       isAbsent  ? 'bg-red-50 text-red-700 border-red-200' :
+                      isHoliday ? 'bg-purple-50 text-purple-700 border-purple-200' :
                       'bg-gray-50 text-gray-500 border-gray-200'
                     }`}>
-                      {s.status ? (isPresent ? 'Present' : 'Absent') : 'Not Marked'}
+                      {s.status ? (isPresent ? 'Present' : isAbsent ? 'Absent' : 'Holiday') : 'Not Marked'}
                     </span>
                   )}
                 </div>
@@ -286,29 +326,40 @@ export const CADailyAttendance = () => {
 
       {/* Action Footer */}
       {isToday && totalStudents > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div className="text-sm text-gray-600">
+        <div className="fixed bottom-0 left-0 right-0 p-3 sm:p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+            <div className="text-sm text-gray-600 w-full sm:w-auto text-center sm:text-left">
               <span className="font-semibold text-gray-900">{unmarked}</span> students left to mark.
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-4 w-full sm:w-auto">
               {saved && (
-                <span className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-3 py-1.5 rounded-md">
-                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                  Successfully saved
-                </span>
+                <>
+                  <span className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-2 sm:px-3 py-1.5 rounded-md">
+                    <CheckCircle2 className="w-4 h-4 mr-1 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Successfully saved</span>
+                    <span className="sm:hidden">Saved</span>
+                  </span>
+                  <button
+                    onClick={handleWhatsAppShare}
+                    className="flex items-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-medium bg-[#25D366] text-white hover:bg-[#20bd5a] transition-all shadow-sm flex-1 sm:flex-none justify-center"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1.5 fill-current" />
+                    <span className="hidden sm:inline">Share to WhatsApp</span>
+                    <span className="sm:hidden">WhatsApp</span>
+                  </button>
+                </>
               )}
               <button
                 onClick={handleSave}
                 disabled={saving || saved}
-                className={`flex items-center px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm font-medium transition-all flex-1 sm:flex-none justify-center ${
                   saved 
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
                 }`}
               >
-                <Save className="w-4 h-4 mr-2" />
-                {saving ? 'Saving...' : saved ? 'Saved' : 'Save Attendance'}
+                <Save className="w-4 h-4 mr-1.5 sm:mr-2" />
+                {saving ? 'Saving...' : saved ? 'Saved' : 'Save'}
               </button>
             </div>
           </div>

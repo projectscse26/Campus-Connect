@@ -93,7 +93,7 @@ def get_my_profile(current_user: User = Depends(get_current_active_user), db: Se
                 "college_email": f.college_email, "personal_email": f.personal_email,
                 "phone": f.phone, "alternate_phone": f.alternate_phone,
                 "gender": f.gender, "date_of_birth": str(f.date_of_birth) if f.date_of_birth else None,
-                "blood_group": f.blood_group, "nationality": f.nationality,
+                "blood_group": f.blood_group, "nationality": f.nationality, "religion": f.religion,
                 "qualification": f.qualification, "specialization": f.specialization,
                 "experience_years": f.experience_years,
                 "date_of_joining": str(f.date_of_joining) if f.date_of_joining else None,
@@ -168,7 +168,9 @@ def get_my_profile(current_user: User = Depends(get_current_active_user), db: Se
                 "college_email": s.college_email, "personal_email": s.personal_email,
                 "phone": s.phone, "gender": s.gender,
                 "date_of_birth": str(s.date_of_birth) if s.date_of_birth else None,
-                "blood_group": s.blood_group, "nationality": s.nationality, "community": s.community,
+                "blood_group": s.blood_group, "nationality": s.nationality, "community": s.community, "religion": s.religion,
+                "admission_date": str(s.admission_date) if s.admission_date else None,
+                "admission_type": s.admission_type,
                 "batch": s.batch, "current_year": s.current_year, "current_semester": s.current_semester,
                 "department_name": dept.name if dept else None,
                 "department_code": dept.code if dept else None,
@@ -226,11 +228,22 @@ def update_my_profile(
         s = db.query(Student).filter(Student.user_id == current_user.id).first()
         if not s:
             raise HTTPException(status_code=404, detail="Student profile not found")
-        editable = ["personal_email", "phone", "blood_group",
-                    "address_line1", "city", "state", "pincode"]
+        editable = [
+            "personal_email", "phone", "blood_group",
+            "address_line1", "address_line2", "city", "state", "pincode",
+            "gender", "date_of_birth", "nationality", "community", "religion",
+            "admission_date", "admission_type",
+            "father_name", "father_phone", "father_occupation",
+            "mother_name", "mother_phone", "mother_occupation", "annual_income",
+            "tenth_school", "tenth_board", "tenth_marks", "tenth_percentage",
+            "twelfth_school", "twelfth_board", "twelfth_marks", "twelfth_percentage"
+        ]
         for field in editable:
-            if field in payload and payload[field] is not None:
-                setattr(s, field, payload[field])
+            if field in payload:
+                val = payload[field]
+                if val == "":
+                    val = None
+                setattr(s, field, val)
         db.commit()
         return {"message": "Profile updated successfully"}
 
@@ -238,11 +251,19 @@ def update_my_profile(
         f = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
         if not f:
             raise HTTPException(status_code=404, detail="Faculty profile not found")
-        editable = ["personal_email", "phone", "alternate_phone", "blood_group",
-                    "address_line1", "city", "state", "pincode"]
+        editable = [
+            "personal_email", "phone", "alternate_phone", "blood_group",
+            "address_line1", "address_line2", "city", "state", "pincode",
+            "gender", "date_of_birth", "nationality", "community", "religion",
+            "designation", "qualification", "specialization", 
+            "experience_years", "date_of_joining", "employment_type"
+        ]
         for field in editable:
-            if field in payload and payload[field] is not None:
-                setattr(f, field, payload[field])
+            if field in payload:
+                val = payload[field]
+                if val == "":
+                    val = None
+                setattr(f, field, val)
         db.commit()
         return {"message": "Profile updated successfully"}
 

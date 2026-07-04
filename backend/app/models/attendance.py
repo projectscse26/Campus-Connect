@@ -23,6 +23,7 @@ class AttendanceStatus(str, enum.Enum):
     ABSENT = "absent"
     ON_DUTY = "on_duty"
     LATE = "late"
+    HOLIDAY = "holiday"
 
 
 class Attendance(Base):

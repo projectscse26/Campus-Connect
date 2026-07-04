@@ -70,6 +70,36 @@ def hod_dashboard(
         assignment_count=assignment_count
     )
 
+# ── Department Settings ───────────────────────────────
+
+from app.schemas.department import DepartmentResponse, DepartmentSettingsUpdate
+
+@router.get("/department-settings", response_model=DepartmentResponse)
+def get_department_settings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    department, _ = get_hod_department(current_user, db)
+    return department
+
+@router.put("/department-settings", response_model=DepartmentResponse)
+def update_department_settings(
+    settings: DepartmentSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    department, _ = get_hod_department(current_user, db)
+    
+    if settings.current_sem_start_date is not None:
+        department.current_sem_start_date = settings.current_sem_start_date
+    if settings.attendance_closed is not None:
+        department.attendance_closed = settings.attendance_closed
+        
+    db.commit()
+    db.refresh(department)
+    return department
+
+
 
 # ── Faculty (read-only for HOD) ──────────────────────────
 
@@ -845,7 +875,17 @@ def get_attendance_analytics(
     # ---------------------------------------------------------
     students_present = 0
     students_absent = 0
+    boys_present = 0
+    girls_present = 0
+    boys_absent = 0
+    girls_absent = 0
     today_att = []
+    
+    # Pre-calculate department total regardless of filters
+    total_students_dept = db.query(Student).filter(Student.department_id == department.id, Student.is_active == True).count()
+    
+    total_boys_dept = sum(1 for s in all_students if (s.gender or "").lower() == "male")
+    total_girls_dept = sum(1 for s in all_students if (s.gender or "").lower() == "female")
     
     if dept_student_ids:
         today_att = db.query(Attendance).filter(
@@ -864,6 +904,18 @@ def get_attendance_analytics(
         students_present = sum(1 for status in student_day_status.values() if status == "present")
         students_absent = sum(1 for status in student_day_status.values() if status == "absent")
         
+        student_gender = {s.id: (s.gender or "").lower() for s in all_students}
+        for sid, status in student_day_status.items():
+            gender = student_gender.get(sid, "")
+            if status == "present":
+                if gender == "male": boys_present += 1
+                elif gender == "female": girls_present += 1
+        # The user wants absentees to be calculated against the total department population.
+        # So anyone not explicitly marked present is considered absent.
+        students_absent = len(all_students) - students_present
+        boys_absent = total_boys_dept - boys_present
+        girls_absent = total_girls_dept - girls_present
+        
     faculty_absent = 0
     if faculty_ids:
         faculty_absent = db.query(FacultyLeaveRequest).filter(
@@ -875,10 +927,9 @@ def get_attendance_analytics(
         
     faculty_present = total_faculty - faculty_absent
     
-    student_total = students_present + students_absent
+    student_total = len(all_students)
     student_attendance_percentage = (students_present / student_total * 100) if student_total > 0 else 0.0
     faculty_attendance_percentage = (faculty_present / total_faculty * 100) if total_faculty > 0 else 0.0
-
     overview = OverviewStats(
         students_present=students_present,
         students_absent=students_absent,
@@ -886,7 +937,15 @@ def get_attendance_analytics(
         faculty_absent=faculty_absent,
         student_attendance_percentage=round(student_attendance_percentage, 1),
         faculty_attendance_percentage=round(faculty_attendance_percentage, 1),
-        trend_indicator="stable"
+        trend_indicator="stable",
+        total_students_dept=total_students_dept,
+        total_faculty_dept=total_faculty,
+        total_boys_dept=total_boys_dept,
+        total_girls_dept=total_girls_dept,
+        boys_present=boys_present,
+        girls_present=girls_present,
+        boys_absent=boys_absent,
+        girls_absent=girls_absent
     )
     
     student_donut = [
@@ -937,8 +996,8 @@ def get_attendance_analytics(
                     s_day_status[att.student_id] = "present"
                     
         p_count = sum(1 for st in s_day_status.values() if st == "present")
-        a_count = sum(1 for st in s_day_status.values() if st == "absent")
-        tot = p_count + a_count
+        tot = len(all_students)
+        a_count = tot - p_count
         s_pct = (p_count / tot * 100) if tot > 0 else 0.0
         
         # Faculty
@@ -957,13 +1016,26 @@ def get_attendance_analytics(
     # ---------------------------------------------------------
     # 3. Detailed Student Records (Moved up for reuse)
     # ---------------------------------------------------------
+    from app.core.config import get_settings
+    settings = get_settings()
+    if department.current_sem_start_date:
+        sem_start_date = department.current_sem_start_date.date()
+    else:
+        sem_start_date = datetime.strptime(settings.SEM_START_DATE, "%Y-%m-%d").date()
+
     attendance_by_student = {s.id: {"present": 0, "absent": 0} for s in all_students}
     if dept_student_ids:
-        all_att = db.query(Attendance).filter(Attendance.student_id.in_(dept_student_ids)).all()
+        all_att = db.query(Attendance).filter(
+            Attendance.student_id.in_(dept_student_ids),
+            Attendance.date >= sem_start_date,
+            Attendance.date <= t_date
+        ).all()
         for att in all_att:
+            if att.status == AttendanceStatus.HOLIDAY:
+                continue
             if att.status in [AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.ON_DUTY]:
                 attendance_by_student[att.student_id]["present"] += 1
-            else:
+            elif att.status == AttendanceStatus.ABSENT:
                 attendance_by_student[att.student_id]["absent"] += 1
                 
     student_table = []

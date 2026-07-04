@@ -324,6 +324,11 @@ def save_course_attendance(
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
+    from app.models.department import Department
+    department = db.query(Department).filter(Department.id == assignment.course.department_id).first()
+    if department and department.attendance_closed:
+        raise HTTPException(status_code=400, detail="Attendance marking is currently locked by the HOD.")
+
     today = date_type.today()
     now_time = datetime.now().time()
     records = payload.get("records", [])
@@ -772,6 +777,14 @@ def update_faculty(
     if "employee_id" in update_data and update_data["employee_id"] != db_faculty.employee_id:
         if db.query(Faculty).filter(Faculty.employee_id == update_data["employee_id"]).first():
             raise HTTPException(status_code=400, detail="Employee ID already in use")
+
+    if "college_email" in update_data and update_data["college_email"] != db_faculty.college_email:
+        if db.query(User).filter(User.email == update_data["college_email"]).first():
+            raise HTTPException(status_code=400, detail="Email already in use")
+        
+        db_user_update = db.query(User).filter(User.id == db_faculty.user_id).first()
+        if db_user_update:
+            db_user_update.email = update_data["college_email"]
 
     # Handle designation/role changes
     old_designation = (db_faculty.designation or "").upper()

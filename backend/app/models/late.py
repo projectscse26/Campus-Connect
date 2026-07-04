@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Date, Time, DateTime, ForeignKey, Text, Enum as SQLEnum, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 from app.core.database import Base
 from app.models.discipline import ActionStatus
@@ -20,7 +20,7 @@ class LateRecord(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
-    student = relationship("Student", backref="late_records")
+    student = relationship("Student", backref=backref("late_records", cascade="all, delete-orphan"))
     recorded_by = relationship("User", backref="recorded_lates")
 
 
@@ -53,5 +53,5 @@ class LateEntryNotification(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
-    student = relationship("Student", backref="late_entry_notifications")
+    student = relationship("Student", backref=backref("late_entry_notifications", cascade="all, delete-orphan"))
     mentor = relationship("Faculty", backref="late_entry_notifications")

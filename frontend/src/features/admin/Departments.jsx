@@ -7,11 +7,11 @@ export const Departments = () => {
   const [faculty, setFaculty] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDept, setEditingDept] = useState(null);
-  
+
   // Form state
   const [formData, setFormData] = useState({ name: '', code: '', vision: '' });
   const [formError, setFormError] = useState(null);
@@ -24,8 +24,8 @@ export const Departments = () => {
     try {
       setLoading(true);
       const [deptRes, facRes] = await Promise.all([
-        axios.get('/api/departments'),
-        axios.get('/api/faculty')
+        axios.get('/api/departments/'),
+        axios.get('/api/faculty/')
       ]);
       setDepartments(deptRes.data);
       setFaculty(facRes.data);
@@ -68,7 +68,7 @@ export const Departments = () => {
       if (editingDept) {
         await axios.put(`/api/departments/${editingDept.id}`, formData);
       } else {
-        await axios.post('/api/departments', formData);
+        await axios.post('/api/departments/', formData);
       }
       await fetchDepartments();
       handleCloseModal();
@@ -90,8 +90,8 @@ export const Departments = () => {
     }
   };
 
-  const filteredDepartments = departments.filter(d => 
-    d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredDepartments = departments.filter(d =>
+    d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     d.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -108,7 +108,7 @@ export const Departments = () => {
             <p className="text-sm text-gray-500 font-medium">Manage academic departments</p>
           </div>
         </div>
-        <button 
+        <button
           onClick={() => handleOpenModal()}
           className="flex items-center px-5 py-2.5 bg-primary-600 text-white text-sm font-bold rounded-xl hover:bg-primary-700 transition-colors shadow-sm"
         >
@@ -122,8 +122,8 @@ export const Departments = () => {
         <div className="p-4 border-b border-gray-100 flex items-center">
           <div className="relative w-full max-w-md">
             <Search className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search departments..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -184,14 +184,14 @@ export const Departments = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
+                        <button
                           onClick={() => handleOpenModal(dept)}
                           className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                           title="Edit"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDelete(dept.id)}
                           className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete"
@@ -216,65 +216,65 @@ export const Departments = () => {
               <h3 className="text-lg font-bold text-gray-900">
                 {editingDept ? 'Edit Department' : 'Create Department'}
               </h3>
-              <button 
+              <button
                 onClick={handleCloseModal}
                 className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
               {formError && (
                 <div className="p-3 bg-red-50 text-red-600 text-sm font-medium rounded-xl border border-red-100">
                   {formError}
                 </div>
               )}
-              
+
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Department Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all outline-none"
                   placeholder="e.g. Computer Science and Engineering"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Code</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
                   value={formData.code}
-                  onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all outline-none"
                   placeholder="e.g. CSE"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Description / Vision (Optional)</label>
-                <textarea 
+                <textarea
                   rows={3}
                   value={formData.vision}
-                  onChange={(e) => setFormData({...formData, vision: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, vision: e.target.value })}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 focus:bg-white transition-all outline-none resize-none"
                   placeholder="Brief description of the department..."
                 />
               </div>
-              
+
               <div className="pt-4 border-t border-gray-100 flex justify-end space-x-3">
-                <button 
+                <button
                   type="button"
                   onClick={handleCloseModal}
                   className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={formLoading}
                   className="px-5 py-2.5 bg-primary-600 text-white text-sm font-bold rounded-xl hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-50"
