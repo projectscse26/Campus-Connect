@@ -53,9 +53,7 @@ def should_exclude_path(path: str, method: str) -> bool:
             return True
             
     if method == "GET":
-        for pattern in IGNORED_GET_ENDPOINTS:
-            if re.match(pattern, path):
-                return True
+        return True
                 
     return False
 

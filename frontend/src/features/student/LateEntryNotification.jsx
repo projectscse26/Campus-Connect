@@ -139,12 +139,15 @@ export default function LateEntryNotification() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:p-6">
       {/* Mobile Header */}
-      <div className="bg-blue-600 text-white p-4 md:hidden sticky top-0 z-10 shadow-md">
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <Bell className="h-6 w-6" />
-          Late Entry Notification
+      <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white p-6 md:hidden rounded-b-3xl shadow-lg mb-6 relative overflow-hidden">
+        <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+        <h1 className="text-2xl font-bold flex items-center gap-3 relative z-10">
+          <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+            <Bell className="h-6 w-6 text-white" />
+          </div>
+          Late Entry
         </h1>
-        <p className="text-blue-100 text-sm mt-1">Notify in advance if you'll arrive late</p>
+        <p className="text-primary-100 text-sm mt-3 opacity-90 relative z-10">Notify in advance if you'll arrive late</p>
       </div>
 
       {/* Desktop Header */}
@@ -160,23 +163,24 @@ export default function LateEntryNotification() {
 
       <div className="max-w-6xl mx-auto space-y-4">
         {/* Usage Summary */}
-        <div className="bg-white shadow-sm border mx-4 md:mx-0 rounded-lg p-4 md:p-6">
-          <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
-            <Clock className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+        <div className="bg-white shadow-sm border border-gray-100 mx-4 md:mx-0 rounded-3xl p-5 md:p-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-12 bg-gradient-to-bl from-primary-50 to-transparent rounded-bl-full opacity-50 pointer-events-none"></div>
+          <h2 className="text-base md:text-lg font-bold mb-5 flex items-center gap-2 text-gray-800">
+            <Clock className="h-5 w-5 text-primary-600" />
             Monthly Usage
           </h2>
-          <div className="grid grid-cols-3 gap-2 md:gap-4">
-            <div className="bg-red-50 p-3 md:p-4 rounded-lg text-center">
-              <p className="text-xs md:text-sm text-red-600 font-medium mb-1">Used</p>
-              <p className="text-2xl md:text-3xl font-bold text-red-700">{usage.used}</p>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-6 relative z-10">
+            <div className="bg-red-50/80 p-2 sm:p-3 md:p-5 rounded-2xl text-center border border-red-100/50 backdrop-blur-sm transition-transform hover:scale-105">
+              <p className="text-[10px] sm:text-xs md:text-sm text-red-600 font-bold mb-1 uppercase tracking-wider truncate">Used</p>
+              <p className="text-2xl sm:text-3xl md:text-4xl font-black text-red-700">{usage.used}</p>
             </div>
-            <div className="bg-green-50 p-3 md:p-4 rounded-lg text-center">
-              <p className="text-xs md:text-sm text-green-600 font-medium mb-1">Remaining</p>
-              <p className="text-2xl md:text-3xl font-bold text-green-700">{usage.remaining}</p>
+            <div className="bg-green-50/80 p-2 sm:p-3 md:p-5 rounded-2xl text-center border border-green-100/50 backdrop-blur-sm transition-transform hover:scale-105">
+              <p className="text-[10px] sm:text-xs md:text-sm text-green-600 font-bold mb-1 uppercase tracking-wider truncate">Remaining</p>
+              <p className="text-2xl sm:text-3xl md:text-4xl font-black text-green-700">{usage.remaining}</p>
             </div>
-            <div className="bg-blue-50 p-3 md:p-4 rounded-lg text-center">
-              <p className="text-xs md:text-sm text-blue-600 font-medium mb-1">Limit</p>
-              <p className="text-2xl md:text-3xl font-bold text-blue-700">{usage.monthly_limit}</p>
+            <div className="bg-primary-50/80 p-2 sm:p-3 md:p-5 rounded-2xl text-center border border-primary-100/50 backdrop-blur-sm transition-transform hover:scale-105">
+              <p className="text-[10px] sm:text-xs md:text-sm text-primary-600 font-bold mb-1 uppercase tracking-wider truncate">Limit</p>
+              <p className="text-2xl sm:text-3xl md:text-4xl font-black text-primary-700">{usage.monthly_limit}</p>
             </div>
           </div>
 
@@ -194,9 +198,9 @@ export default function LateEntryNotification() {
 
         {/* Form */}
         {usage.can_submit && (
-          <div className="bg-white shadow-sm border mx-4 md:mx-0 rounded-lg p-4 md:p-6">
-            <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
-              <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+          <div className="bg-white shadow-sm border border-gray-100 mx-4 md:mx-0 rounded-3xl p-5 md:p-8">
+            <h2 className="text-base md:text-lg font-bold mb-5 flex items-center gap-2 text-gray-800">
+              <Calendar className="h-5 w-5 text-primary-600" />
               Submit Notification
             </h2>
 
@@ -219,7 +223,7 @@ export default function LateEntryNotification() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
                   Date <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -227,13 +231,13 @@ export default function LateEntryNotification() {
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   min={todayDateStr}
-                  className="w-full px-3 py-3 md:py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 text-base bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
                   Expected Arrival Time <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -242,13 +246,13 @@ export default function LateEntryNotification() {
                   onChange={(e) =>
                     setFormData({ ...formData, expected_arrival_time: e.target.value })
                   }
-                  className="w-full px-3 py-3 md:py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 text-base bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">
                   Reason for Late Arrival <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -256,7 +260,7 @@ export default function LateEntryNotification() {
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                   rows="4"
                   placeholder="Please provide a detailed reason..."
-                  className="w-full px-3 py-3 md:py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-4 py-3 text-base bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all font-medium resize-none"
                   required
                 />
               </div>
@@ -264,7 +268,7 @@ export default function LateEntryNotification() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-medium py-3 px-4 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 active:scale-[0.98] text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-primary-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3 mt-4"
               >
                 {submitting ? (
                   <>
@@ -283,58 +287,68 @@ export default function LateEntryNotification() {
         )}
 
         {/* History */}
-        <div className="bg-white shadow-sm border mx-4 md:mx-0 rounded-lg p-4 md:p-6">
-          <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
-            <History className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+        <div className="bg-white shadow-sm border border-gray-100 mx-4 md:mx-0 rounded-3xl p-5 md:p-8">
+          <h2 className="text-base md:text-lg font-bold mb-5 flex items-center gap-2 text-gray-800">
+            <History className="h-5 w-5 text-primary-600" />
             History
           </h2>
 
           {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-gray-500 mt-2 text-sm">Loading...</p>
+            <div className="text-center py-10">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-primary-600 mx-auto"></div>
+              <p className="text-gray-500 mt-4 text-sm font-medium">Loading history...</p>
             </div>
           ) : history.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <AlertCircle className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm md:text-base">No notifications submitted yet</p>
+            <div className="text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+              <AlertCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <p className="text-base font-bold text-gray-700">No notifications yet</p>
+              <p className="text-sm text-gray-500 mt-1">Your late entry history will appear here.</p>
             </div>
           ) : (
             <>
               {/* Mobile Cards */}
-              <div className="md:hidden space-y-3">
+              <div className="md:hidden space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent pt-2 pb-2">
                 {history.map((item) => (
-                  <div key={item.id} className="border rounded-lg p-3 bg-gray-50">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="font-medium text-gray-900">{formatDate(item.date)}</div>
-                      {item.acknowledged_by_security ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Seen by Security
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          <Clock className="h-3 w-3 mr-1" />
-                          Pending Security
-                        </span>
-                      )}
+                  <div key={item.id} className="relative flex items-start gap-4">
+                    {/* Timeline Node */}
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white border-2 border-primary-100 text-primary-500 shadow-sm shrink-0 z-10 relative mt-1">
+                      <Clock className="w-4 h-4" />
                     </div>
-                    {item.viewed_by_mentor && (
-                      <div className="mb-2">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Viewed by Mentor
-                        </span>
+                    
+                    {/* Card Content */}
+                    <div className="flex-1 p-4 rounded-2xl bg-white border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                      <div className="flex flex-col gap-2 mb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="font-black text-gray-900 text-base">{formatDate(item.date)}</div>
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-lg border border-gray-100">
+                            <Clock className="h-3.5 w-3.5 text-primary-600" />
+                            <span className="font-bold text-primary-700 text-xs">{formatTime(item.expected_arrival_time)}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2">
+                          {item.acknowledged_by_security ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] uppercase tracking-wider font-bold bg-green-50 text-green-700 border border-green-100">
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Seen by Security
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] uppercase tracking-wider font-bold bg-yellow-50 text-yellow-700 border border-yellow-100">
+                              <Clock className="h-3 w-3 mr-1" /> Pending Security
+                            </span>
+                          )}
+                          {item.viewed_by_mentor && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-[10px] uppercase tracking-wider font-bold bg-primary-50 text-primary-700 border border-primary-100">
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Viewed by Mentor
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-3.5 w-3.5 text-gray-400" />
-                        <span className="font-medium">{formatTime(item.expected_arrival_time)}</span>
-                      </div>
-                      <div className="text-gray-700 mt-2">{item.reason}</div>
-                      <div className="text-xs text-gray-500 mt-2">
-                        Submitted: {formatDateTime(item.created_at)}
+                      
+                      <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-50">
+                        <div className="text-sm text-gray-600 leading-relaxed font-medium">{item.reason}</div>
+                        <div className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mt-2 pt-2 border-t border-gray-100">
+                          Submitted: {formatDateTime(item.created_at)}
+                        </div>
                       </div>
                     </div>
                   </div>

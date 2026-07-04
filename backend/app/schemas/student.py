@@ -24,6 +24,8 @@ class StudentCreate(StudentBase):
 class StudentUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    register_number: Optional[str] = None
+    college_email: Optional[EmailStr] = None
     phone: Optional[str] = None
     department_id: Optional[int] = None
     batch: Optional[str] = None
