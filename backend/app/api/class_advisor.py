@@ -473,7 +473,7 @@ def get_timetable(
             start_time=slot.start_time.strftime("%H:%M") if hasattr(slot.start_time, 'strftime') else str(slot.start_time),
             end_time=slot.end_time.strftime("%H:%M") if hasattr(slot.end_time, 'strftime') else str(slot.end_time),
             room=slot.room,
-            subject_code=assignment.course.code,
+            subject_code=assignment.course.short_name or assignment.course.code,
             subject_name=assignment.course.name,
             faculty_name=f"{assignment.faculty.first_name} {assignment.faculty.last_name}"
         ))

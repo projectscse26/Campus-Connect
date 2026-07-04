@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, Boolean, Text, Enum as SQLEnum
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 import enum
 
@@ -35,5 +35,5 @@ class DisciplineRecord(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    student = relationship("Student", backref="discipline_records")
+    student = relationship("Student", backref=backref("discipline_records", cascade="all, delete-orphan"))
     reported_by = relationship("User", backref="reported_incidents")

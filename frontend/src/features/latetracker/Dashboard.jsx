@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Clock, Search, User as UserIcon, Calendar, CheckCircle2, CheckCircle, X, AlertCircle, ChevronRight, ChevronDown, Plus, LogOut } from 'lucide-react';
+import { Clock, Search, User as UserIcon, Calendar, CheckCircle2, CheckCircle, X, AlertCircle, ChevronRight, ChevronDown, Plus, LogOut, Bell, Info } from 'lucide-react';
 import axios from 'axios';
 
 // Custom Dropdown Component
@@ -58,6 +58,7 @@ export const LateTrackerDashboard = () => {
   const [error, setError] = useState(null);
   const [actionStatus, setActionStatus] = useState('Not Informed');
   const [recentRecords, setRecentRecords] = useState([]);
+  const [lateNotifications, setLateNotifications] = useState([]);
   
   const [departments, setDepartments] = useState([]);
   const [students, setStudents] = useState([]);
@@ -70,14 +71,19 @@ export const LateTrackerDashboard = () => {
   React.useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [deptRes, studentsRes, recordsRes] = await Promise.all([
-          axios.get('/api/departments'),
-          axios.get('/api/students?limit=1000'),
-          axios.get('/api/late?limit=5')
+        const token = localStorage.getItem("token");
+        const [deptRes, studentsRes, recordsRes, notificationsRes] = await Promise.all([
+          axios.get('/api/departments', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('/api/students?limit=1000', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('/api/late?limit=5', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('/api/late/notifications?date_filter=' + new Date().toISOString().split('T')[0], { 
+            headers: { Authorization: `Bearer ${token}` } 
+          })
         ]);
         setDepartments(deptRes.data);
         setStudents(studentsRes.data);
         setRecentRecords(recordsRes.data);
+        setLateNotifications(notificationsRes.data);
       } catch (err) {
         console.error("Failed to fetch initial data:", err);
       }
@@ -101,11 +107,24 @@ export const LateTrackerDashboard = () => {
     setModalStep(2);
     setSuccessMessage('');
     setError(null);
-    setActionStatus('Not Informed');
+    
+    // Auto-detect if student has pre-informed late entry notification for today
+    const notification = getStudentNotification(student.id);
+    if (notification && !notification.acknowledged_by_security) {
+      setActionStatus('Informed');
+      setSuccessMessage(`✓ Student has pre-informed: Expected at ${new Date(`2000-01-01T${notification.expected_arrival_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}. Status auto-filled as "Informed".`);
+    } else {
+      setActionStatus('Not Informed');
+    }
   };
 
   const availableYears = [...new Set(students.map(s => s.current_year))].filter(Boolean).sort();
   const availableSections = [...new Set(students.map(s => s.section?.name))].filter(Boolean).sort();
+
+  // Check if student has a late entry notification for today
+  const getStudentNotification = (studentId) => {
+    return lateNotifications.find(n => n.student_id === studentId);
+  };
 
   const searchFilteredStudents = students.filter(s => 
     studentSearch && (
@@ -129,15 +148,24 @@ export const LateTrackerDashboard = () => {
     setSuccessMessage('');
 
     try {
+      const token = localStorage.getItem("token");
       await axios.post('/api/late', {
         student_id: selectedStudent.id,
         action_status: actionStatus
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       setSuccessMessage(`Late record for ${selectedStudent.first_name} ${selectedStudent.last_name} submitted successfully.`);
       
-      // Refresh recent records
-      const recordsRes = await axios.get('/api/late?limit=5');
+      // Refresh recent records and notifications
+      const [recordsRes, notificationsRes] = await Promise.all([
+        axios.get('/api/late?limit=5', { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get('/api/late/notifications?date_filter=' + new Date().toISOString().split('T')[0], { 
+          headers: { Authorization: `Bearer ${token}` } 
+        })
+      ]);
       setRecentRecords(recordsRes.data);
+      setLateNotifications(notificationsRes.data);
 
       setTimeout(() => {
         setIsModalOpen(false);
@@ -202,8 +230,8 @@ export const LateTrackerDashboard = () => {
           <Clock className="w-8 h-8 sm:w-10 sm:h-10 text-primary-500" />
         </div>
         <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Ready to Record</h2>
-        <p className="text-gray-500 mb-8 max-w-md mx-auto">
-          Click the button above or on the top right to open the tracker wizard and log a student's late arrival.
+        <p className="text-gray-500 mb-8 max-w-md mx-auto text-sm sm:text-base">
+          Click the button above to start tracking. Students with late entry notifications will be automatically highlighted with a blue border and bell icon.
         </p>
         <button 
           onClick={handleOpenModal} 
@@ -368,21 +396,33 @@ export const LateTrackerDashboard = () => {
                   <div className="mt-4 border border-gray-100 rounded-xl max-h-48 overflow-y-auto bg-gray-50/30">
                     {drillDownStudents.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2">
-                        {drillDownStudents.map(s => (
-                          <div 
-                            key={s.id}
-                            onClick={() => handleSelectStudent(s)}
-                            className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-sm cursor-pointer transition-all"
-                          >
-                            <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold text-xs flex-shrink-0 uppercase">
-                              {s.first_name[0]}
+                        {drillDownStudents.map(s => {
+                          const hasNotification = getStudentNotification(s.id);
+                          return (
+                            <div 
+                              key={s.id}
+                              onClick={() => handleSelectStudent(s)}
+                              className={`flex items-center space-x-3 p-3 bg-white rounded-lg border-2 cursor-pointer transition-all ${
+                                hasNotification 
+                                  ? 'border-blue-300 hover:border-blue-400 hover:shadow-md bg-blue-50' 
+                                  : 'border-gray-200 hover:border-primary-300 hover:shadow-sm'
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 uppercase ${
+                                hasNotification ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {hasNotification ? <Bell className="w-4 h-4" /> : s.first_name[0]}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-bold text-gray-900">{s.first_name} {s.last_name}</div>
+                                <div className="text-xs text-gray-500">{s.register_number}</div>
+                                {hasNotification && (
+                                  <div className="text-xs text-blue-600 font-semibold mt-0.5">Pre-Informed</div>
+                                )}
+                              </div>
                             </div>
-                            <div>
-                              <div className="text-sm font-bold text-gray-900">{s.first_name} {s.last_name}</div>
-                              <div className="text-xs text-gray-500">{s.register_number}</div>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="p-4 text-center text-gray-500 text-sm font-medium">No students match this drill down</div>
@@ -403,6 +443,42 @@ export const LateTrackerDashboard = () => {
                       <div className="text-xs font-semibold text-primary-600">{selectedStudent.register_number}</div>
                     </div>
                   </div>
+
+                  {/* Show Notification Info if Pre-Informed */}
+                  {(() => {
+                    const notification = getStudentNotification(selectedStudent.id);
+                    return notification && !notification.acknowledged_by_security ? (
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 space-y-2">
+                        <div className="flex items-center gap-2 text-blue-700 font-bold mb-2">
+                          <Bell className="w-5 h-5" />
+                          <span>Student Pre-Informed</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <div className="text-blue-600 font-semibold text-xs uppercase mb-1">Expected Arrival</div>
+                            <div className="text-gray-900 font-bold">
+                              {new Date(`2000-01-01T${notification.expected_arrival_time}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                            </div>
+                          </div>
+                          {notification.mentor_name && (
+                            <div>
+                              <div className="text-blue-600 font-semibold text-xs uppercase mb-1">Mentor Informed</div>
+                              <div className="text-gray-900 font-bold truncate">{notification.mentor_name}</div>
+                            </div>
+                          )}
+                        </div>
+                        {notification.reason && (
+                          <div className="pt-2 border-t border-blue-200">
+                            <div className="text-blue-600 font-semibold text-xs uppercase mb-1">Reason</div>
+                            <div className="text-gray-700 text-sm">{notification.reason}</div>
+                          </div>
+                        )}
+                        <div className="pt-2 text-xs text-blue-600">
+                          Submitted: {new Date(notification.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
 
                   <form id="recordForm" onSubmit={handleSubmit}>
                     <div className="mb-8">

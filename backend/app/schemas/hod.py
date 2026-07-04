@@ -42,6 +42,7 @@ class SimpleCourse(BaseModel):
     id: int
     code: str
     name: str
+    short_name: Optional[str] = None
 
 class SimpleFaculty(BaseModel):
     id: int

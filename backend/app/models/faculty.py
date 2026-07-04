@@ -28,6 +28,7 @@ class Faculty(Base):
     blood_group = Column(String(5), nullable=True)
     nationality = Column(String(50), default="Indian")
     community = Column(String(50), nullable=True)         # OBC, MBC, SC, ST, etc.
+    religion = Column(String(100), nullable=True)
     photo_url = Column(String(500), nullable=True)
 
     # --- Contact Details ---

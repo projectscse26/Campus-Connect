@@ -152,8 +152,8 @@ export const CATimetable = () => {
                           >
                             {cell.subject_code}
                           </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 truncate">
-                            {cell.faculty_name.split(' ').pop()}
+                          <div className="text-[10px] text-slate-500 mt-0.5 truncate" title={cell.faculty_name}>
+                            {cell.faculty_name}
                           </div>
                           {cell.room && (
                             <div className="text-[10px] text-slate-400 mt-0.5 truncate">

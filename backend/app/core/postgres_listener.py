@@ -89,3 +89,7 @@ class PostgresListener:
 
 # Global instance
 pg_listener = PostgresListener()
+
+async def start_postgres_listener():
+    """Start the PostgreSQL listener for audit logs"""
+    await pg_listener.connect()

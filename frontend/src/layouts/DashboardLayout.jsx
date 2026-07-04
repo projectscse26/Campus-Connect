@@ -3,7 +3,7 @@ import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-d
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield, Award
 } from 'lucide-react';
 
 const ROLE_NAV_LINKS = {
@@ -16,6 +16,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Courses', path: '/admin/courses', icon: BookOpen },
     { name: 'Discipline', path: '/admin/discipline', icon: ShieldAlert },
     { name: 'Late Tracker', path: '/admin/latetracker', icon: Clock },
+    { name: 'Audit Logs', path: '/admin/audit-logs', icon: Shield },
     { name: 'Announcements', path: '/admin/announcements', icon: Bell },
   ],
   hod: [
@@ -42,14 +43,16 @@ const ROLE_NAV_LINKS = {
     { name: 'Mentorship', path: '/faculty/mentorship', icon: GraduationCap },
     { name: 'Report Incident', path: '/faculty/discipline', icon: ShieldAlert },
     { name: 'Gate Pass Approvals', path: '/faculty/gatepass', icon: Clock },
+    { name: 'Late Entry Notifications', path: '/faculty/late-entry', icon: Bell },
     { name: 'Announcements', path: '/faculty/announcements', icon: Bell },
   ],
   student: [
     { name: 'Dashboard', path: '/student', icon: LayoutDashboard },
     { name: 'My Courses', path: '/student/courses', icon: BookOpen },
-    { name: 'Leave Tracker', path: '/student/leave', icon: Settings },
-    { name: 'Discipline', path: '/student/discipline', icon: ShieldAlert },
+    { name: 'My Marks', path: '/student/marks', icon: Award },
+    { name: 'Leave Tracker', path: '/student/leave', icon: Calendar },
     { name: 'Gate Pass', path: '/student/gatepass', icon: Clock },
+    { name: 'Late Entry Notification', path: '/student/late-entry', icon: Bell },
     { name: 'Announcements', path: '/student/announcements', icon: Bell },
   ],
   authority: [
@@ -154,6 +157,7 @@ export default function DashboardLayout() {
     '/faculty/class-advisor/subjects': 'Class Subjects',
     '/faculty/class-advisor/progress': 'Course Progress',
     '/faculty/class-advisor/info': 'Class Information',
+    '/faculty/class-advisor/leave': 'Leave Requests',
   };
   const caLabel = CA_SUB_LABELS[location.pathname];
   const pageName = currentLink ? currentLink.name : (caLabel || 'Dashboard');
@@ -167,6 +171,7 @@ export default function DashboardLayout() {
     { name: 'Class Subjects',     path: '/faculty/class-advisor/subjects',            icon: BookOpen },
     { name: 'Course Progress',    path: '/faculty/class-advisor/progress',            icon: TrendingUp },
     { name: 'Class Information',  path: '/faculty/class-advisor/info',                icon: Info },
+    { name: 'Leave Requests',     path: '/faculty/class-advisor/leave',               icon: Calendar },
   ];
 
   return (
@@ -205,7 +210,7 @@ export default function DashboardLayout() {
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive = location.pathname === link.path;
-            return (
+            const renderLink = (
               <Link
                 key={link.name}
                 to={link.path}
@@ -220,54 +225,60 @@ export default function DashboardLayout() {
                 <span className="text-[15px]">{link.name}</span>
               </Link>
             );
+
+            if (link.name === 'Dashboard' && user.role === 'faculty' && user.is_class_advisor) {
+              return (
+                <React.Fragment key={link.name}>
+                  {renderLink}
+                  <div>
+                    <button
+                      onClick={() => setIsCAOpen(prev => !prev)}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium ${
+                        location.pathname.startsWith('/faculty/class-advisor')
+                          ? 'bg-indigo-50 text-indigo-700 font-bold'
+                          : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <GraduationCap className={`w-5 h-5 ${location.pathname.startsWith('/faculty/class-advisor') ? 'text-indigo-600' : 'text-gray-400'}`} />
+                        <span className="text-[15px]">Class Advisor</span>
+                      </div>
+                      {isCAOpen
+                        ? <ChevronDown className="w-4 h-4 text-gray-400" />
+                        : <ChevronRight className="w-4 h-4 text-gray-400" />
+                      }
+                    </button>
+
+                    {isCAOpen && (
+                      <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-indigo-100 pl-3">
+                        {CA_SUB_LINKS.map(sublink => {
+                          const SubIcon = sublink.icon;
+                          const isSubActive = location.pathname === sublink.path;
+                          return (
+                            <Link
+                              key={sublink.path}
+                              to={sublink.path}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-xl transition-all text-[14px] ${
+                                isSubActive
+                                  ? 'bg-indigo-50 text-indigo-700 font-bold'
+                                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 font-medium'
+                              }`}
+                            >
+                              <SubIcon className={`w-4 h-4 ${isSubActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                              <span>{sublink.name}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </React.Fragment>
+              );
+            }
+
+            return renderLink;
           })}
-
-          {/* Class Advisor — only visible if assigned */}
-          {user.role === 'faculty' && user.is_class_advisor && (
-            <div>
-              <button
-                onClick={() => setIsCAOpen(prev => !prev)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium ${
-                  location.pathname.startsWith('/faculty/class-advisor')
-                    ? 'bg-indigo-50 text-indigo-700 font-bold'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <GraduationCap className={`w-5 h-5 ${location.pathname.startsWith('/faculty/class-advisor') ? 'text-indigo-600' : 'text-gray-400'}`} />
-                  <span className="text-[15px]">Class Advisor</span>
-                </div>
-                {isCAOpen
-                  ? <ChevronDown className="w-4 h-4 text-gray-400" />
-                  : <ChevronRight className="w-4 h-4 text-gray-400" />
-                }
-              </button>
-
-              {isCAOpen && (
-                <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-indigo-100 pl-3">
-                  {CA_SUB_LINKS.map(link => {
-                    const Icon = link.icon;
-                    const isActive = location.pathname === link.path;
-                    return (
-                      <Link
-                        key={link.path}
-                        to={link.path}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-xl transition-all text-[14px] ${
-                          isActive
-                            ? 'bg-indigo-50 text-indigo-700 font-bold'
-                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 font-medium'
-                        }`}
-                      >
-                        <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                        <span>{link.name}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </nav>
         
         <div className="p-4 mt-auto border-t border-gray-100">

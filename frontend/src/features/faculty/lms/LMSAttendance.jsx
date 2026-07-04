@@ -26,9 +26,13 @@ export const LMSAttendance = () => {
 
   const toggle = (studentId) => {
     setSaved(false);
-    setStudents(prev => prev.map(s =>
-      s.id !== studentId ? s : { ...s, status: s.status === 'present' ? 'absent' : 'present' }
-    ));
+    setStudents(prev => prev.map(s => {
+      if (s.id !== studentId) return s;
+      let nextStatus = 'present';
+      if (s.status === 'present') nextStatus = 'absent';
+      else if (s.status === 'absent') nextStatus = 'holiday';
+      return { ...s, status: nextStatus };
+    }));
   };
 
   const markAll = (status) => {
@@ -152,12 +156,15 @@ export const LMSAttendance = () => {
                 {unmarked} Unmarked
               </div>
             )}
-            <div className="sm:ml-auto flex gap-2 w-full sm:w-auto">
+            <div className="sm:ml-auto flex flex-wrap gap-2 w-full sm:w-auto">
               <button onClick={() => markAll('present')} className="flex-1 sm:flex-none px-4 py-2 bg-green-100 text-green-700 text-sm font-bold rounded-xl hover:bg-green-200 transition-colors">
                 Mark All Present
               </button>
               <button onClick={() => markAll('absent')} className="flex-1 sm:flex-none px-4 py-2 bg-red-100 text-red-700 text-sm font-bold rounded-xl hover:bg-red-200 transition-colors">
                 Mark All Absent
+              </button>
+              <button onClick={() => markAll('holiday')} className="flex-1 sm:flex-none px-4 py-2 bg-purple-100 text-purple-700 text-sm font-bold rounded-xl hover:bg-purple-200 transition-colors">
+                Mark Holiday
               </button>
             </div>
           </div>
@@ -174,6 +181,7 @@ export const LMSAttendance = () => {
             {students.map((s, idx) => {
               const isPresent = s.status === 'present';
               const isAbsent  = s.status === 'absent';
+              const isHoliday = s.status === 'holiday';
               return (
                 <div key={s.id} className="flex items-center px-6 py-4 gap-4 hover:bg-gray-50 transition-colors">
                   <span className="text-sm font-bold text-gray-400 w-6 text-right flex-shrink-0">{idx + 1}</span>
@@ -187,18 +195,20 @@ export const LMSAttendance = () => {
                       className={`w-32 py-2 rounded-xl text-sm font-bold flex-shrink-0 transition-all ${
                         isPresent ? 'bg-green-500 text-white shadow-md shadow-green-200' :
                         isAbsent  ? 'bg-red-500 text-white shadow-md shadow-red-200'   :
+                        isHoliday ? 'bg-purple-500 text-white shadow-md shadow-purple-200' :
                         'bg-gray-100 text-gray-500 border border-dashed border-gray-300 hover:bg-gray-200'
                       }`}
                     >
-                      {isPresent ? '✓ Present' : isAbsent ? '✕ Absent' : 'Tap to Mark'}
+                      {isPresent ? '✓ Present' : isAbsent ? '✕ Absent' : isHoliday ? '🏖️ Holiday' : 'Tap to Mark'}
                     </button>
                   ) : (
                     <span className={`w-32 py-2 rounded-xl text-sm font-bold text-center flex-shrink-0 ${
                       isPresent ? 'bg-green-50 text-green-700' :
                       isAbsent  ? 'bg-red-50 text-red-700'    :
+                      isHoliday ? 'bg-purple-50 text-purple-700' :
                       'bg-gray-100 text-gray-400'
                     }`}>
-                      {isPresent ? 'Present' : isAbsent ? 'Absent' : 'Unmarked'}
+                      {isPresent ? 'Present' : isAbsent ? 'Absent' : isHoliday ? 'Holiday' : 'Unmarked'}
                     </span>
                   )}
                 </div>

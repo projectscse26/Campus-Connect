@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import (
     auth, admin, departments, faculty, 
-    students, authorities, discipline, late, leave, class_advisor
+    students, authorities, discipline, late, leave, class_advisor, audit_logs
 )
 
 app = FastAPI(
@@ -14,7 +14,14 @@ app = FastAPI(
 # Configure CORS for the React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://10.1.10.24:5173"],
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://localhost:5174", 
+        "http://localhost:3000", 
+        "http://10.1.10.24:5173",
+        "http://localhost:4173",
+        "http://10.1.10.24:4173"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,6 +38,7 @@ app.include_router(late.router, prefix="/api/late", tags=["Late Tracker"])
 app.include_router(authorities.router, prefix="/api/authorities", tags=["Authorities"])
 app.include_router(leave.router, prefix="/api/leave", tags=["Leave Management"])
 app.include_router(class_advisor.router, prefix="/api/class-advisor", tags=["Class Advisor"])
+app.include_router(audit_logs.router, prefix="/api/audit-logs", tags=["Audit Logs"])
 from app.api import courses
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
 from app.api import hod
@@ -42,6 +50,12 @@ app.include_router(student_portal.router, prefix="/api/student-portal", tags=["S
 
 from app.api import gatepass
 app.include_router(gatepass.router, prefix="/api/gatepass", tags=["Gate Pass"])
+
+from app.api import retest
+app.include_router(retest.router, prefix="/api/retest", tags=["Retest Marks"])
+
+from app.middleware.audit_middleware import AuditLoggingMiddleware
+app.add_middleware(AuditLoggingMiddleware)
 
 @app.get("/")
 def read_root():
