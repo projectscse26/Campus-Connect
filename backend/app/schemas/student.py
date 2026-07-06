@@ -17,6 +17,10 @@ class StudentBase(BaseModel):
     current_year: Optional[int] = None
     gender: Optional[str] = None
     date_of_birth: Optional[date] = None
+    aadhar_number: Optional[str] = None
+    accommodation: Optional[str] = None
+    transportation: Optional[str] = None
+    bus_number: Optional[str] = None
 
 class StudentCreate(StudentBase):
     password: str
@@ -32,6 +36,10 @@ class StudentUpdate(BaseModel):
     current_semester: Optional[int] = None
     current_year: Optional[int] = None
     is_active: Optional[bool] = None
+    aadhar_number: Optional[str] = None
+    accommodation: Optional[str] = None
+    transportation: Optional[str] = None
+    bus_number: Optional[str] = None
 
 class StudentResponse(StudentBase):
     id: int

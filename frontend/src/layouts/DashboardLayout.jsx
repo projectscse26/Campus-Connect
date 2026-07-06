@@ -194,7 +194,10 @@ export default function DashboardLayout() {
       >
         <div className="h-20 flex flex-col justify-center px-6 border-b border-gray-100 relative">
           <div className="text-primary-600 font-extrabold text-2xl tracking-tight flex items-center">
-            <span className="text-3xl mr-1.5">^</span>CampusConnect
+            <img src="/logo2.png" alt="Logo" className="h-8 w-auto mr-2 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-indigo-600">
+              CampusConnect
+            </span>
           </div>
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 ml-1.5">
             {user.role} Portal

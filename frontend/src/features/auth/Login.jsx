@@ -31,17 +31,21 @@ export default function Login() {
   return (
     <div className="min-h-screen w-full bg-gray-50 flex items-center justify-center p-4 relative overflow-hidden font-sans">
       
-      {/* Background decoration */}
-      <div className="absolute top-[-10%] left-[10%] w-[40vw] h-[40vw] bg-blue-100/50 blur-[120px] rounded-full mix-blend-multiply pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[10%] w-[40vw] h-[40vw] bg-indigo-100/50 blur-[120px] rounded-full mix-blend-multiply pointer-events-none" />
+      {/* Enhanced Background decoration */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-primary-200/40 blur-[120px] rounded-full mix-blend-multiply pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-indigo-300/40 blur-[120px] rounded-full mix-blend-multiply pointer-events-none animate-pulse" style={{ animationDuration: '10s' }} />
+      <div className="absolute top-[20%] right-[20%] w-[30vw] h-[30vw] bg-blue-200/30 blur-[100px] rounded-full mix-blend-multiply pointer-events-none" />
 
       <div className="w-full max-w-[440px] bg-white rounded-[24px] shadow-2xl border border-gray-100 p-8 sm:p-10 relative z-10 flex flex-col">
         
         {/* Logo & Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-6">
-            <div className="text-primary-600 font-extrabold text-2xl tracking-tight flex items-center">
-              <span className="text-3xl mr-1.5">^</span>CampusConnect
+            <div className="text-primary-600 font-extrabold text-2xl tracking-tight flex flex-col items-center gap-4 w-full">
+              <img src="/logo.png" alt="College Logo" className="w-full max-w-[320px] h-auto object-contain drop-shadow-sm" onError={(e) => { e.target.style.display = 'none'; }} />
+              <div className="flex items-center text-3xl bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-indigo-600">
+                CampusConnect
+              </div>
             </div>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">

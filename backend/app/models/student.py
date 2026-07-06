@@ -35,6 +35,12 @@ class Student(Base):
     nationality = Column(String(50), default="Indian")
     community = Column(String(50), nullable=True)         # OBC, MBC, SC, ST, BC, etc.
     photo_url = Column(String(500), nullable=True)
+    aadhar_number = Column(String(12), nullable=True)
+
+    # --- Transportation & Accommodation ---
+    accommodation = Column(String(50), nullable=True)     # Hostel / Day Scholar
+    transportation = Column(String(50), nullable=True)    # OWN / BUS
+    bus_number = Column(String(50), nullable=True)
 
     # --- Academic Details ---
     batch = Column(String(20), nullable=False)             # e.g., "2023-2027"
