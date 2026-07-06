@@ -301,6 +301,16 @@ def create_late_entry_notification(
             detail=f"Monthly limit of {MONTHLY_LATE_ENTRY_LIMIT} late entry notifications reached"
         )
     
+    # Check cutoff time: Cannot submit a request for today after 8:40 AM
+    if notification_in.date == today:
+        current_time = datetime.now().time()
+        cutoff_time = time(8, 40)
+        if current_time > cutoff_time:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Late entry notifications for today cannot be submitted after 08:40 AM"
+            )
+    
     # Check if already submitted for this date
     existing = db.query(LateEntryNotification).filter(
         and_(
