@@ -4,6 +4,9 @@ from app.api import (
     auth, admin, departments, faculty, 
     students, authorities, discipline, late, leave, class_advisor, audit_logs
 )
+from app.core.config import get_settings
+
+settings = get_settings()
 
 app = FastAPI(
     title="Campus Connect ERP API",
@@ -21,6 +24,7 @@ app.add_middleware(
         "http://10.1.10.24:5173",
         "http://localhost:4173",
         "http://10.1.10.24:4173",
+        settings.FRONTEND_URL,
         "https://robust-presence-production-82b0.up.railway.app",
         "https://campus-connect-production-6cbf.up.railway.app"
     ],
