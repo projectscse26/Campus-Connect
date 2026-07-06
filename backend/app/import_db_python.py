@@ -27,7 +27,11 @@ def run_import():
                     # Execute all buffered SQL before the COPY
                     sql = "".join(buffer).strip()
                     if sql:
-                        cursor.execute(sql)
+                        try:
+                            cursor.execute(sql)
+                        except psycopg2.ProgrammingError as e:
+                            if "empty query" not in str(e):
+                                raise e
                     buffer = []
                 else:
                     # Ignore pg_dump commands like \connect
@@ -46,7 +50,11 @@ def run_import():
         if buffer:
             sql = "".join(buffer).strip()
             if sql:
-                cursor.execute(sql)
+                try:
+                    cursor.execute(sql)
+                except psycopg2.ProgrammingError as e:
+                    if "empty query" not in str(e):
+                        raise e
                 
         conn.commit()
         cursor.close()
