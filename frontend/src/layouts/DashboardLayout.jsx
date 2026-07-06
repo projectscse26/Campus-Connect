@@ -48,6 +48,7 @@ const ROLE_NAV_LINKS = {
   ],
   student: [
     { name: 'Dashboard', path: '/student', icon: LayoutDashboard },
+    { name: 'My Class', path: '/student/class', icon: Users },
     { name: 'My Courses', path: '/student/courses', icon: BookOpen },
     { name: 'My Marks', path: '/student/marks', icon: Award },
     { name: 'Leave Tracker', path: '/student/leave', icon: Calendar },

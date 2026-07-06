@@ -37,6 +37,7 @@ import { LMSAnnouncements as CourseAnnouncements } from './features/faculty/lms/
 import { LMSSyllabus } from './features/faculty/lms/LMSSyllabus';
 import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
 import { LMSAttendanceHistory } from './features/faculty/lms/LMSAttendanceHistory';
+import MyClass from './features/student/MyClass';
 import StudentCourses from './features/student/StudentCourses';
 import StudentCourseDetail from './features/student/StudentCourseDetail';
 import StudentMarks from './features/student/StudentMarks';
@@ -361,6 +362,11 @@ function AppRoutes() {
         <Route path="/student" element={
           <ProtectedRoute allowedRole="student">
             <StudentDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/class" element={
+          <ProtectedRoute allowedRole="student">
+            <MyClass />
           </ProtectedRoute>
         } />
         <Route path="/student/courses" element={
