@@ -76,4 +76,16 @@ def import_db():
     else:
         return {"status": "error", "error": result}
 
+@app.get("/test-jwt")
+def test_jwt(token: str):
+    from jose import jwt
+    from app.core.config import get_settings
+    settings = get_settings()
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        return {"status": "success", "payload": payload, "secret": settings.SECRET_KEY[:3] + "..."}
+    except Exception as e:
+        return {"status": "error", "error": str(e), "secret": settings.SECRET_KEY[:3] + "..."}
+
+
 
