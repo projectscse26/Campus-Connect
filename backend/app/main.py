@@ -22,8 +22,8 @@ app.add_middleware(
     "http://localhost:5174",
     "http://localhost:3000",
     "http://localhost:4173",
-
     "https://secure-healing-production-6347.up.railway.app",
+    settings.FRONTEND_URL,
 ],
     allow_credentials=True,
     allow_methods=["*"],
