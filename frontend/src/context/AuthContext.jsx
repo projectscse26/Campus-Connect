@@ -11,7 +11,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Configure global Axios defaults
-  axios.defaults.baseURL = `http://${window.location.hostname}:8000`;
+  let apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+  if (apiUrl && !apiUrl.startsWith('http')) {
+    apiUrl = `https://${apiUrl}`;
+  }
+  axios.defaults.baseURL = apiUrl;
 
   useEffect(() => {
     const initAuth = async () => {
