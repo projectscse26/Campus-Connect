@@ -17,17 +17,14 @@ app = FastAPI(
 # Configure CORS for the React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173", 
-        "http://localhost:5174", 
-        "http://localhost:3000", 
-        "http://10.1.10.24:5173",
-        "http://localhost:4173",
-        "http://10.1.10.24:4173",
-        settings.FRONTEND_URL,
-        "https://robust-presence-production-82b0.up.railway.app",
-        "https://campus-connect-production-6cbf.up.railway.app"
-    ],
+    allow_origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+    "http://localhost:4173",
+
+    "https://secure-healing-production-6347.up.railway.app",
+],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -92,5 +89,61 @@ def test_jwt(token: str):
     except Exception as e:
         return {"status": "error", "error": str(e), "secret": settings.SECRET_KEY[:3] + "..."}
 
-
-
+@app.get("/debug-api")
+def debug_api():
+    """Diagnostic endpoint - tests students/faculty DB queries without auth"""
+    from app.core.database import SessionLocal
+    from app.models.student import Student
+    from app.models.faculty import Faculty
+    import traceback
+    
+    results = {"students": None, "faculty": None, "cors_origins": None}
+    db = SessionLocal()
+    
+    try:
+        # Check CORS config
+        for mw in app.user_middleware:
+            if "CORS" in str(mw):
+                results["cors_origins"] = str(mw.kwargs.get("allow_origins", "NOT_FOUND"))
+        
+        # Test students query
+        try:
+            students = db.query(Student).limit(3).all()
+            results["students"] = {
+                "count": db.query(Student).count(),
+                "sample": [{"id": s.id, "name": f"{s.first_name} {s.last_name}", "has_section": s.section_id is not None} for s in students],
+                "status": "OK"
+            }
+        except Exception as e:
+            results["students"] = {"status": "ERROR", "error": str(e), "trace": traceback.format_exc()[-500:]}
+        
+        # Test faculty query
+        try:
+            faculty = db.query(Faculty).limit(3).all()
+            results["faculty"] = {
+                "count": db.query(Faculty).count(),
+                "sample": [{"id": f.id, "name": f"{f.first_name} {f.last_name}"} for f in faculty],
+                "status": "OK"
+            }
+        except Exception as e:
+            results["faculty"] = {"status": "ERROR", "error": str(e), "trace": traceback.format_exc()[-500:]}
+        
+        # Test the actual serialization that the endpoints do
+        try:
+            from sqlalchemy.orm import joinedload
+            students = db.query(Student).options(joinedload(Student.section)).limit(3).all()
+            serialized = [
+                {
+                    "id": s.id,
+                    "section": {"name": s.section.name} if s.section else None,
+                }
+                for s in students
+            ]
+            results["student_serialization"] = {"status": "OK", "data": serialized}
+        except Exception as e:
+            results["student_serialization"] = {"status": "ERROR", "error": str(e), "trace": traceback.format_exc()[-500:]}
+            
+    finally:
+        db.close()
+    
+    return results
