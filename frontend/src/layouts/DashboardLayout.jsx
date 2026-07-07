@@ -3,7 +3,7 @@ import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-d
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield, Award
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield, Award
 } from 'lucide-react';
 
 const ROLE_NAV_LINKS = {
@@ -27,8 +27,8 @@ const ROLE_NAV_LINKS = {
     { name: 'Timetable', path: '/hod/timetable', icon: Calendar },
     { name: 'Course Assignment', path: '/hod/assignments', icon: BookOpen },
     { name: 'Mentor Assignment', path: '/hod/mentors', icon: Users },
-    { name: 'Attendance', path: '/hod/attendance', icon: Search },
-    { name: 'Results', path: '/hod/results', icon: Search },
+    { name: 'Attendance', path: '/hod/attendance', icon: ClipboardList },
+    { name: 'Results', path: '/hod/results', icon: BarChart2 },
     { name: 'Announcements', path: '/hod/announcements', icon: Bell },
     { name: 'Reports', path: '/hod/reports', icon: Home },
     { name: 'Leave Approvals', path: '/hod/leave', icon: Calendar },
@@ -318,17 +318,6 @@ export default function DashboardLayout() {
             <div className="hidden sm:flex items-center text-gray-700 font-bold text-[14px] bg-gray-50 px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
               <Home className="w-4 h-4 mr-2 text-gray-400" />
               {pageName}
-            </div>
-            
-            <div className="ml-4 sm:ml-8 relative hidden md:block w-48 lg:w-96">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search pages, courses..."
-                className="block w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-[14px] font-medium placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 bg-gray-50 transition-all"
-              />
             </div>
           </div>
           
