@@ -190,7 +190,7 @@ export const DisciplineManagement = ({ role }) => {
       if (editingId && role === 'admin') {
         await axios.put(`/api/discipline/${editingId}`, formData);
       } else {
-        await axios.post('/api/discipline', formData);
+        await axios.post('/api/discipline/', formData);
       }
       await fetchData();
       setIsModalOpen(false);

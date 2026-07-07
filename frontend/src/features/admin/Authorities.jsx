@@ -36,7 +36,7 @@ export const Authorities = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/authorities');
+      const res = await axios.get('/api/authorities/');
       setAuthorities(res.data);
       setError(null);
     } catch (err) {
@@ -94,7 +94,7 @@ export const Authorities = () => {
         delete payload.email;
         await axios.put(`/api/authorities/${editingId}`, payload);
       } else {
-        await axios.post('/api/authorities', formData);
+        await axios.post('/api/authorities/', formData);
       }
       await fetchData();
       handleCloseModal();
