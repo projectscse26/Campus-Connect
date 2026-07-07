@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 import csv
 import io
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import List
 
 from app.core.database import get_db
@@ -253,6 +254,14 @@ def update_student(
         if db.query(Student).filter(Student.register_number == update_data["register_number"]).first():
             raise HTTPException(status_code=400, detail="Register Number already in use")
             
+    if "college_email" in update_data and update_data["college_email"] != db_student.college_email:
+        if db.query(User).filter(User.email == update_data["college_email"]).first():
+            raise HTTPException(status_code=400, detail="Email already in use")
+        
+        db_user = db.query(User).filter(User.id == db_student.user_id).first()
+        if db_user:
+            db_user.email = update_data["college_email"]
+            
     for field, value in update_data.items():
         setattr(db_student, field, value)
         
@@ -278,6 +287,19 @@ def delete_student(
         
     db_user = db.query(User).filter(User.id == db_student.user_id).first()
     
+    # Manually delete related records to avoid FK constraints
+    db.execute(text("DELETE FROM discipline_records WHERE student_id = :id"), {"id": student_id})
+    db.execute(text("DELETE FROM late_records WHERE student_id = :id"), {"id": student_id})
+    db.execute(text("DELETE FROM late_entry_notifications WHERE student_id = :id"), {"id": student_id})
+    db.execute(text("DELETE FROM mentoring_meetings WHERE student_id = :id"), {"id": student_id})
+    db.execute(text("DELETE FROM advising_logs WHERE student_id = :id"), {"id": student_id})
+    db.execute(text("DELETE FROM gate_passes WHERE student_id = :id"), {"id": student_id})
+    db.execute(text("DELETE FROM enrollments WHERE student_id = :id"), {"id": student_id})
+    db.execute(text("DELETE FROM attendance WHERE student_id = :id"), {"id": student_id})
+    db.execute(text("DELETE FROM student_leave_requests WHERE student_id = :id"), {"id": student_id})
+    db.execute(text("DELETE FROM grades WHERE student_id = :id"), {"id": student_id})
+    db.execute(text("DELETE FROM mentor_assignments WHERE student_id = :id"), {"id": student_id})
+
     db.delete(db_student)
     if db_user:
         db.delete(db_user)

@@ -325,7 +325,7 @@ export function Timetable() {
                         {assignment ? (
                           <div className="h-full bg-white border border-indigo-200 rounded-lg p-2 shadow-sm relative group-hover:border-indigo-400 group-hover:shadow-md transition-all cursor-pointer">
                             <div className="font-bold text-indigo-700 text-xs truncate" title={assignment.course?.name}>
-                              {assignment.course?.code}
+                              {assignment.course?.short_name || assignment.course?.code}
                             </div>
                             <div className="text-[10px] text-slate-500 mt-1 truncate">
                               {assignment.faculty?.first_name} {assignment.faculty?.last_name}

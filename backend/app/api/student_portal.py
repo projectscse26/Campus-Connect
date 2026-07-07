@@ -17,16 +17,19 @@ Endpoints:
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
+from datetime import datetime
 
 from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.models.user import User
 from app.models.student import Student
-from app.models.academic import Course, CourseAssignment, Enrollment
+from app.models.academic import Course, CourseAssignment, Enrollment, Section, MentorAssignment
 from app.models.lms import LMSResource, Announcement
 from app.models.attendance import Attendance
 from app.models.faculty import Faculty
 from app.models.department import Department
+from app.models.leave import StudentLeaveRequest, StudentLeaveStatus
+from app.schemas.leave import StudentLeaveRequestCreate, StudentLeaveRequestResponse
 
 router = APIRouter()
 
@@ -465,4 +468,550 @@ def get_course_attendance(
             "attendance_percentage": percentage,
         },
         "history": history,
+    }
+
+
+# ─────────────────────────────────────────────────────────
+# HELPER: serialise a StudentLeaveRequest into the response dict
+# ─────────────────────────────────────────────────────────
+
+def _faculty_name(fac):
+    if fac is None:
+        return None
+    return f"{fac.first_name} {fac.last_name}"
+
+
+def _format_leave(req: StudentLeaveRequest) -> dict:
+    return {
+        "id":                        req.id,
+        "student_id":                req.student_id,
+        "from_date":                 req.from_date.isoformat(),
+        "to_date":                   req.to_date.isoformat(),
+        "duration_days":             req.duration_days,
+        "reason":                    req.reason,
+        "status":                    req.status.value,
+        # Mentor (step 1)
+        "mentor_id":                 req.mentor_id,
+        "mentor_name":               _faculty_name(req.mentor),
+        "mentor_remarks":            req.mentor_remarks,
+        "mentor_actioned_at":        req.mentor_actioned_at.isoformat() if req.mentor_actioned_at else None,
+        # Class Advisor (step 2)
+        "class_advisor_id":          req.class_advisor_id,
+        "class_advisor_name":        _faculty_name(req.class_advisor),
+        "class_advisor_remarks":     req.class_advisor_remarks,
+        "class_advisor_actioned_at": req.class_advisor_actioned_at.isoformat() if req.class_advisor_actioned_at else None,
+        # HOD (step 3)
+        "hod_id":                    req.hod_id,
+        "hod_name":                  _faculty_name(req.hod),
+        "hod_remarks":               req.hod_remarks,
+        "hod_actioned_at":           req.hod_actioned_at.isoformat() if req.hod_actioned_at else None,
+        "rejection_reason":          req.rejection_reason,
+        "created_at":                req.created_at.isoformat() if req.created_at else None,
+        "updated_at":                req.updated_at.isoformat() if req.updated_at else None,
+    }
+
+def _leave_with_student(r: StudentLeaveRequest) -> dict:
+    d = _format_leave(r)
+    s = r.student
+    d["student_name"]    = f"{s.first_name} {s.last_name}" if s else None
+    d["register_number"] = s.register_number if s else None
+    return d
+
+def _load_leave(leave_id: int, db: Session) -> StudentLeaveRequest:
+    return (
+        db.query(StudentLeaveRequest)
+        .options(
+            joinedload(StudentLeaveRequest.student),
+            joinedload(StudentLeaveRequest.mentor),
+            joinedload(StudentLeaveRequest.class_advisor),
+            joinedload(StudentLeaveRequest.hod),
+        )
+        .filter(StudentLeaveRequest.id == leave_id)
+        .first()
+    )
+
+
+# ─────────────────────────────────────────────────────────
+# 8. Student Leave — Apply
+#    Workflow: Student → Mentor → Class Advisor → HOD
+# ─────────────────────────────────────────────────────────
+
+@router.post("/leave")
+def apply_leave(
+    payload: StudentLeaveRequestCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    student = get_student_profile(current_user, db)
+
+    if payload.to_date < payload.from_date:
+        raise HTTPException(status_code=400, detail="to_date must be on or after from_date")
+
+    duration = (payload.to_date - payload.from_date).days + 1
+
+    # Resolve mentor
+    mentor_id = None
+    ma = db.query(MentorAssignment).filter(MentorAssignment.student_id == student.id).first()
+    if ma:
+        mentor_id = ma.mentor_id
+
+    # Resolve class advisor from section
+    class_advisor_id = None
+    if student.section_id:
+        section = db.query(Section).filter(Section.id == student.section_id).first()
+        if section:
+            class_advisor_id = section.class_advisor_id
+
+    leave = StudentLeaveRequest(
+        student_id=student.id,
+        from_date=payload.from_date,
+        to_date=payload.to_date,
+        duration_days=duration,
+        reason=payload.reason,
+        status=StudentLeaveStatus.PENDING_MENTOR,
+        mentor_id=mentor_id,
+        class_advisor_id=class_advisor_id,  # snapshot, refreshed on mentor approval
+    )
+    db.add(leave)
+    db.commit()
+    db.refresh(leave)
+
+    return _format_leave(_load_leave(leave.id, db))
+
+
+# ─────────────────────────────────────────────────────────
+# 9. Student Leave — List my requests
+# ─────────────────────────────────────────────────────────
+
+@router.get("/leave")
+def get_my_leave_requests(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    student = get_student_profile(current_user, db)
+
+    requests = (
+        db.query(StudentLeaveRequest)
+        .options(
+            joinedload(StudentLeaveRequest.mentor),
+            joinedload(StudentLeaveRequest.class_advisor),
+            joinedload(StudentLeaveRequest.hod),
+        )
+        .filter(StudentLeaveRequest.student_id == student.id)
+        .order_by(StudentLeaveRequest.created_at.desc())
+        .all()
+    )
+    return [_format_leave(r) for r in requests]
+
+
+# ─────────────────────────────────────────────────────────
+# 10. Student Leave — Withdraw
+# ─────────────────────────────────────────────────────────
+
+@router.delete("/leave/{leave_id}")
+def withdraw_leave(
+    leave_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    student = get_student_profile(current_user, db)
+
+    leave = db.query(StudentLeaveRequest).filter(
+        StudentLeaveRequest.id == leave_id,
+        StudentLeaveRequest.student_id == student.id,
+    ).first()
+
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+
+    if leave.status not in (
+        StudentLeaveStatus.PENDING_MENTOR,
+        StudentLeaveStatus.PENDING_CLASS_ADVISOR,
+        StudentLeaveStatus.PENDING_HOD,
+    ):
+        raise HTTPException(status_code=400, detail="Only pending requests can be withdrawn")
+
+    leave.status = StudentLeaveStatus.WITHDRAWN
+    db.commit()
+    return {"message": "Leave request withdrawn successfully"}
+
+
+# ─────────────────────────────────────────────────────────
+# 11. Mentor — Pending queue
+#     Uses the student's CURRENT mentor assignment, not the stored snapshot
+# ─────────────────────────────────────────────────────────
+
+@router.get("/leave/mentor-queue")
+def get_mentor_leave_queue(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+
+    # Get all students currently assigned to this mentor
+    mentored_student_ids = [
+        ma.student_id for ma in db.query(MentorAssignment)
+        .filter(MentorAssignment.mentor_id == faculty.id)
+        .all()
+    ]
+
+    if not mentored_student_ids:
+        return []
+
+    requests = (
+        db.query(StudentLeaveRequest)
+        .options(
+            joinedload(StudentLeaveRequest.student),
+            joinedload(StudentLeaveRequest.mentor),
+            joinedload(StudentLeaveRequest.class_advisor),
+            joinedload(StudentLeaveRequest.hod),
+        )
+        .filter(
+            StudentLeaveRequest.student_id.in_(mentored_student_ids),
+            StudentLeaveRequest.status == StudentLeaveStatus.PENDING_MENTOR,
+        )
+        .order_by(StudentLeaveRequest.created_at.desc())
+        .all()
+    )
+    return [_leave_with_student(r) for r in requests]
+
+
+# ─────────────────────────────────────────────────────────
+# 12. Mentor — Approve / Reject  →  next: PENDING_CLASS_ADVISOR
+#     Validates faculty is the student's current mentor
+# ─────────────────────────────────────────────────────────
+
+@router.put("/leave/{leave_id}/mentor-action")
+def mentor_action(
+    leave_id: int,
+    action: str,
+    remarks: str = "",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+
+    # Validate this faculty is the student's current mentor
+    mentored_student_ids = [
+        ma.student_id for ma in db.query(MentorAssignment)
+        .filter(MentorAssignment.mentor_id == faculty.id)
+        .all()
+    ]
+
+    leave = db.query(StudentLeaveRequest).filter(
+        StudentLeaveRequest.id == leave_id,
+        StudentLeaveRequest.student_id.in_(mentored_student_ids),
+    ).first()
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave request not found or you are not this student's mentor")
+    if leave.status != StudentLeaveStatus.PENDING_MENTOR:
+        raise HTTPException(status_code=400, detail="Request is not pending mentor action")
+
+    leave.mentor_id = faculty.id   # stamp current mentor
+    leave.mentor_remarks = remarks
+    leave.mentor_actioned_at = datetime.utcnow()
+
+    if action.lower() == "approve":
+        # Resolve current class advisor for next step
+        student = db.query(Student).filter(Student.id == leave.student_id).first()
+        if student and student.section_id:
+            section = db.query(Section).filter(Section.id == student.section_id).first()
+            if section and section.class_advisor_id:
+                leave.class_advisor_id = section.class_advisor_id
+        leave.status = StudentLeaveStatus.PENDING_CLASS_ADVISOR
+    elif action.lower() == "reject":
+        leave.status = StudentLeaveStatus.REJECTED
+        leave.rejection_reason = remarks or "Rejected by mentor"
+    else:
+        raise HTTPException(status_code=400, detail="action must be 'approve' or 'reject'")
+
+    db.commit()
+    return _format_leave(_load_leave(leave.id, db))
+
+
+# ─────────────────────────────────────────────────────────
+# 13. Class Advisor — Pending queue
+#     Uses the student's CURRENT section class_advisor, not the stored snapshot
+# ─────────────────────────────────────────────────────────
+
+@router.get("/leave/ca-queue")
+def get_ca_leave_queue(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+
+    # Get all sections this faculty advises
+    advised_sections = db.query(Section).filter(
+        Section.class_advisor_id == faculty.id,
+        Section.is_active == True,
+    ).all()
+    advised_section_ids = [s.id for s in advised_sections]
+
+    if not advised_section_ids:
+        return []
+
+    # Get all students in those sections
+    student_ids = [
+        s.id for s in db.query(Student.id)
+        .filter(Student.section_id.in_(advised_section_ids))
+        .all()
+    ]
+
+    if not student_ids:
+        return []
+
+    requests = (
+        db.query(StudentLeaveRequest)
+        .options(
+            joinedload(StudentLeaveRequest.student),
+            joinedload(StudentLeaveRequest.mentor),
+            joinedload(StudentLeaveRequest.class_advisor),
+            joinedload(StudentLeaveRequest.hod),
+        )
+        .filter(
+            StudentLeaveRequest.student_id.in_(student_ids),
+            StudentLeaveRequest.status == StudentLeaveStatus.PENDING_CLASS_ADVISOR,
+        )
+        .order_by(StudentLeaveRequest.created_at.desc())
+        .all()
+    )
+    return [_leave_with_student(r) for r in requests]
+
+
+# ─────────────────────────────────────────────────────────
+# 14. Class Advisor — Approve / Reject  →  next: PENDING_HOD
+#     Validates faculty advises the student's current section
+# ─────────────────────────────────────────────────────────
+
+@router.put("/leave/{leave_id}/ca-action")
+def class_advisor_action(
+    leave_id: int,
+    action: str,
+    remarks: str = "",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+
+    # Resolve sections this faculty advises
+    advised_section_ids = [
+        s.id for s in db.query(Section)
+        .filter(Section.class_advisor_id == faculty.id, Section.is_active == True)
+        .all()
+    ]
+    student_ids = [
+        s.id for s in db.query(Student.id)
+        .filter(Student.section_id.in_(advised_section_ids))
+        .all()
+    ] if advised_section_ids else []
+
+    leave = db.query(StudentLeaveRequest).filter(
+        StudentLeaveRequest.id == leave_id,
+        StudentLeaveRequest.student_id.in_(student_ids),
+    ).first()
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave request not found or not in your section")
+    if leave.status != StudentLeaveStatus.PENDING_CLASS_ADVISOR:
+        raise HTTPException(status_code=400, detail="Request is not pending class advisor action")
+
+    leave.class_advisor_id = faculty.id   # stamp current CA
+    leave.class_advisor_remarks = remarks
+    leave.class_advisor_actioned_at = datetime.utcnow()
+
+    if action.lower() == "approve":
+        leave.status = StudentLeaveStatus.PENDING_HOD
+    elif action.lower() == "reject":
+        leave.status = StudentLeaveStatus.REJECTED
+        leave.rejection_reason = remarks or "Rejected by class advisor"
+    else:
+        raise HTTPException(status_code=400, detail="action must be 'approve' or 'reject'")
+
+    db.commit()
+    return _format_leave(_load_leave(leave.id, db))
+
+
+# ─────────────────────────────────────────────────────────
+# 15. HOD — Pending queue
+# ─────────────────────────────────────────────────────────
+
+@router.get("/leave/hod-queue")
+def get_hod_leave_queue(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    if current_user.role != "hod":
+        raise HTTPException(status_code=403, detail="HOD only")
+
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    department = db.query(Department).filter(Department.hod_id == faculty.id).first()
+    if not department:
+        raise HTTPException(status_code=404, detail="No department assigned to this HOD")
+
+    student_ids = [
+        s.id for s in db.query(Student.id)
+        .filter(Student.department_id == department.id)
+        .all()
+    ]
+
+    requests = (
+        db.query(StudentLeaveRequest)
+        .options(
+            joinedload(StudentLeaveRequest.student),
+            joinedload(StudentLeaveRequest.mentor),
+            joinedload(StudentLeaveRequest.class_advisor),
+            joinedload(StudentLeaveRequest.hod),
+        )
+        .filter(
+            StudentLeaveRequest.student_id.in_(student_ids),
+            StudentLeaveRequest.status == StudentLeaveStatus.PENDING_HOD,
+        )
+        .order_by(StudentLeaveRequest.created_at.desc())
+        .all()
+    )
+    return [_leave_with_student(r) for r in requests]
+
+
+# ─────────────────────────────────────────────────────────
+# 16. HOD — Approve / Reject  →  APPROVED / REJECTED
+# ─────────────────────────────────────────────────────────
+
+@router.put("/leave/{leave_id}/hod-action")
+def hod_action(
+    leave_id: int,
+    action: str,
+    remarks: str = "",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    if current_user.role != "hod":
+        raise HTTPException(status_code=403, detail="HOD only")
+
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    department = db.query(Department).filter(Department.hod_id == faculty.id).first()
+
+    student_ids = [
+        s.id for s in db.query(Student.id)
+        .filter(Student.department_id == department.id)
+        .all()
+    ]
+
+    leave = db.query(StudentLeaveRequest).filter(
+        StudentLeaveRequest.id == leave_id,
+        StudentLeaveRequest.student_id.in_(student_ids),
+    ).first()
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave request not found")
+    if leave.status != StudentLeaveStatus.PENDING_HOD:
+        raise HTTPException(status_code=400, detail="Request is not pending HOD action")
+
+    leave.hod_id = faculty.id
+    leave.hod_remarks = remarks
+    leave.hod_actioned_at = datetime.utcnow()
+
+    if action.lower() == "approve":
+        leave.status = StudentLeaveStatus.APPROVED
+    elif action.lower() == "reject":
+        leave.status = StudentLeaveStatus.REJECTED
+        leave.rejection_reason = remarks or "Rejected by HOD"
+    else:
+        raise HTTPException(status_code=400, detail="action must be 'approve' or 'reject'")
+
+    db.commit()
+    return _format_leave(_load_leave(leave.id, db))
+
+
+# ─────────────────────────────────────────────────────────
+# 17. My Class / Section Info
+# ─────────────────────────────────────────────────────────
+
+@router.get("/my-class")
+def get_my_class_info(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Returns comprehensive information about the student's class (section),
+    including Class Advisor, Mentor, classmates, and the timetable.
+    """
+    student = get_student_profile(current_user, db)
+    if not student.section_id:
+        raise HTTPException(status_code=400, detail="You are not assigned to a section.")
+
+    section = db.query(Section).options(joinedload(Section.department)).filter(Section.id == student.section_id).first()
+    
+    # Class Advisor
+    advisor_info = None
+    if section.class_advisor_id:
+        advisor = db.query(Faculty).filter(Faculty.id == section.class_advisor_id).first()
+        if advisor:
+            advisor_info = {
+                "name": f"{advisor.first_name} {advisor.last_name}",
+                "email": advisor.user.email if advisor.user else None
+            }
+
+    # Mentor
+    mentor_info = None
+    mentor_assignment = db.query(MentorAssignment).filter(MentorAssignment.student_id == student.id).first()
+    if mentor_assignment and mentor_assignment.mentor_id:
+        mentor = db.query(Faculty).filter(Faculty.id == mentor_assignment.mentor_id).first()
+        if mentor:
+            mentor_info = {
+                "name": f"{mentor.first_name} {mentor.last_name}",
+                "email": mentor.user.email if mentor.user else None
+            }
+
+    # Timetable
+    # 1. Get all active course assignments for this section
+    assignments = db.query(CourseAssignment).options(
+        joinedload(CourseAssignment.course),
+        joinedload(CourseAssignment.faculty)
+    ).filter(
+        CourseAssignment.section_id == section.id,
+        CourseAssignment.is_active == True
+    ).all()
+
+    assignment_ids = [a.id for a in assignments]
+    assignment_map = {a.id: a for a in assignments}
+
+    # 2. Get timetable slots for these assignments
+    from app.models.lms import TimetableSlot
+    slots = db.query(TimetableSlot).filter(
+        TimetableSlot.course_assignment_id.in_(assignment_ids)
+    ).order_by(TimetableSlot.day, TimetableSlot.start_time).all()
+
+    timetable = []
+    for slot in slots:
+        assignment = assignment_map.get(slot.course_assignment_id)
+        if assignment and assignment.course:
+            faculty_name = f"{assignment.faculty.first_name} {assignment.faculty.last_name}" if assignment.faculty else "TBD"
+            timetable.append({
+                "id": slot.id,
+                "day": slot.day.value,
+                "start_time": slot.start_time.isoformat() if slot.start_time else None,
+                "end_time": slot.end_time.isoformat() if slot.end_time else None,
+                "course_name": assignment.course.name,
+                "course_code": assignment.course.code,
+                "faculty_name": faculty_name,
+                "room_number": slot.room_number
+            })
+
+    return {
+        "section": {
+            "name": section.name,
+            "year": section.year,
+            "batch": section.batch,
+            "department": section.department.name if section.department else None,
+        },
+        "advisor": advisor_info,
+        "mentor": mentor_info,
+        "timetable": timetable
     }

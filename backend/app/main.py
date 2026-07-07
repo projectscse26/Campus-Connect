@@ -4,6 +4,9 @@ from app.api import (
     auth, admin, departments, faculty, 
     students, authorities, discipline, late, leave, class_advisor, audit_logs
 )
+from app.core.config import get_settings
+
+settings = get_settings()
 
 app = FastAPI(
     title="Campus Connect ERP API",
@@ -14,7 +17,17 @@ app = FastAPI(
 # Configure CORS for the React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://10.1.10.24:5173"],
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://localhost:5174", 
+        "http://localhost:3000", 
+        "http://10.1.10.24:5173",
+        "http://localhost:4173",
+        "http://10.1.10.24:4173",
+        settings.FRONTEND_URL,
+        "https://robust-presence-production-82b0.up.railway.app",
+        "https://campus-connect-production-6cbf.up.railway.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,6 +57,12 @@ app.include_router(student_portal.router, prefix="/api/student-portal", tags=["S
 from app.api import gatepass
 app.include_router(gatepass.router, prefix="/api/gatepass", tags=["Gate Pass"])
 
+from app.api import retest
+app.include_router(retest.router, prefix="/api/retest", tags=["Retest Marks"])
+
+from app.middleware.audit_middleware import AuditLoggingMiddleware
+app.add_middleware(AuditLoggingMiddleware)
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Campus Connect ERP API"}
@@ -51,3 +70,26 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/import-db")
+def import_db():
+    from app.import_db_python import run_import
+    result = run_import()
+    if result == "success":
+        return {"status": "success", "message": "Database imported perfectly!"}
+    else:
+        return {"status": "error", "error": result}
+
+@app.get("/test-jwt")
+def test_jwt(token: str):
+    from jose import jwt
+    from app.core.config import get_settings
+    settings = get_settings()
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        return {"status": "success", "payload": payload, "secret": settings.SECRET_KEY[:3] + "..."}
+    except Exception as e:
+        return {"status": "error", "error": str(e), "secret": settings.SECRET_KEY[:3] + "..."}
+
+
+

@@ -22,7 +22,7 @@ import { FacultyAssignment } from './features/hod/FacultyAssignment';
 import { MentorAssignment } from './features/hod/MentorAssignment';
 import { Timetable } from './features/hod/Timetable';
 import { Announcements } from './features/hod/Announcements';
-import { AttendanceMonitor } from './features/hod/AttendanceMonitor';
+import { AdvancedAttendanceMonitor } from './features/hod/AdvancedAttendanceMonitor';
 import { ResultsMonitor } from './features/hod/ResultsMonitor';
 import { Reports } from './features/hod/Reports';
 import { Discipline as AdminDiscipline } from './features/admin/Discipline';
@@ -37,8 +37,10 @@ import { LMSAnnouncements as CourseAnnouncements } from './features/faculty/lms/
 import { LMSSyllabus } from './features/faculty/lms/LMSSyllabus';
 import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
 import { LMSAttendanceHistory } from './features/faculty/lms/LMSAttendanceHistory';
+import MyClass from './features/student/MyClass';
 import StudentCourses from './features/student/StudentCourses';
 import StudentCourseDetail from './features/student/StudentCourseDetail';
+import StudentMarks from './features/student/StudentMarks';
 import { LMSGradebook } from './features/faculty/lms/LMSGradebook';
 import { Discipline as StudentDiscipline } from './features/student/Discipline';
 import { LateTrackerDashboard } from './features/latetracker/Dashboard';
@@ -57,10 +59,13 @@ import { CATimetable } from './features/faculty/classadvisor/CATimetable';
 import { CASubjects } from './features/faculty/classadvisor/CASubjects';
 import { CACourseProgress } from './features/faculty/classadvisor/CACourseProgress';
 import { CAClassInfo } from './features/faculty/classadvisor/CAClassInfo';
+import { CALeaveRequests } from './features/faculty/classadvisor/CALeaveRequests';
 import { Mentorship } from './features/faculty/Mentorship';
 import { GatePass } from './features/student/GatePass';
+import { StudentLeave } from './features/student/StudentLeave';
 import { MenteeGatePasses } from './features/faculty/MenteeGatePasses';
 import { GatePassApprovals as HodGatePassApprovals } from './features/hod/GatePassApprovals';
+import { StudentLeaveApprovals } from './features/hod/StudentLeaveApprovals';
 import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
 import { Profile } from './features/profile/Profile';
 import LateEntryNotification from './features/student/LateEntryNotification';
@@ -189,7 +194,7 @@ function AppRoutes() {
         } />
         <Route path="/hod/attendance" element={
           <ProtectedRoute allowedRole="hod">
-            <AttendanceMonitor />
+            <AdvancedAttendanceMonitor />
           </ProtectedRoute>
         } />
         <Route path="/hod/results" element={
@@ -210,6 +215,11 @@ function AppRoutes() {
         <Route path="/hod/gatepass" element={
           <ProtectedRoute allowedRole="hod">
             <HodGatePassApprovals />
+          </ProtectedRoute>
+        } />
+        <Route path="/hod/leave" element={
+          <ProtectedRoute allowedRole="hod">
+            <StudentLeaveApprovals />
           </ProtectedRoute>
         } />
         <Route path="/hod/latetracker" element={
@@ -324,6 +334,9 @@ function AppRoutes() {
         <Route path="/faculty/class-advisor/info" element={
           <ProtectedRoute allowedRole="faculty"><CAClassInfo /></ProtectedRoute>
         } />
+        <Route path="/faculty/class-advisor/leave" element={
+          <ProtectedRoute allowedRole="faculty"><CALeaveRequests /></ProtectedRoute>
+        } />
         <Route path="/faculty/announcements" element={
           <ProtectedRoute allowedRole="faculty">
             <Announcements />
@@ -351,6 +364,11 @@ function AppRoutes() {
             <StudentDashboard />
           </ProtectedRoute>
         } />
+        <Route path="/student/class" element={
+          <ProtectedRoute allowedRole="student">
+            <MyClass />
+          </ProtectedRoute>
+        } />
         <Route path="/student/courses" element={
           <ProtectedRoute allowedRole="student">
             <StudentCourses />
@@ -359,6 +377,11 @@ function AppRoutes() {
         <Route path="/student/courses/:courseId" element={
           <ProtectedRoute allowedRole="student">
             <StudentCourseDetail />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/marks" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentMarks />
           </ProtectedRoute>
         } />
         <Route path="/student/announcements" element={
@@ -379,6 +402,11 @@ function AppRoutes() {
         <Route path="/student/discipline" element={
           <ProtectedRoute allowedRole="student">
             <StudentDiscipline />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/leave" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentLeave />
           </ProtectedRoute>
         } />
       </Route>

@@ -17,8 +17,14 @@ class DepartmentUpdate(BaseModel):
     description: Optional[str] = None
     hod_id: Optional[int] = None
 
+class DepartmentSettingsUpdate(BaseModel):
+    current_sem_start_date: Optional[datetime] = None
+    attendance_closed: Optional[bool] = None
+
 class DepartmentResponse(DepartmentBase):
     id: int
+    current_sem_start_date: Optional[datetime] = None
+    attendance_closed: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None
 

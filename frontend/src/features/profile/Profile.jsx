@@ -5,6 +5,7 @@ import {
   User, Mail, Phone, Building2, BookOpen, MapPin, Users,
   GraduationCap, Briefcase, Shield, Eye, EyeOff, Edit2, Check, X
 } from 'lucide-react';
+import OnboardingForm from './OnboardingForm';
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -188,6 +189,22 @@ const StudentProfile = ({ profile, onUpdate }) => {
           <InfoRow label="Gender"         value={profile.gender} />
           <InfoRow label="Date of Birth"  value={profile.date_of_birth} />
           <EditableRow label="Blood Group" value={profile.blood_group} field="blood_group" onSave={handleSave} />
+          <InfoRow label="Religion"       value={profile.religion} />
+        </div>
+      </div>
+
+      {/* Additional Details */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <User className="w-4 h-4" /> Additional Details
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <EditableRow label="Aadhar Number" value={profile.aadhar_number} field="aadhar_number" onSave={handleSave} />
+          <EditableRow label="Accommodation (Hostel / Day Scholar)" value={profile.accommodation} field="accommodation" onSave={handleSave} />
+          <EditableRow label="Transportation (OWN / BUS)" value={profile.transportation} field="transportation" onSave={handleSave} />
+          {profile.transportation && profile.transportation.toUpperCase() === 'BUS' && (
+            <EditableRow label="Bus Number" value={profile.bus_number} field="bus_number" onSave={handleSave} />
+          )}
         </div>
       </div>
 
@@ -211,6 +228,8 @@ const StudentProfile = ({ profile, onUpdate }) => {
         <InfoRow label="Current Year"     value={profile.current_year ? `Year ${profile.current_year}` : null} />
         <InfoRow label="Current Semester" value={profile.current_semester ? `Semester ${profile.current_semester}` : null} />
         <InfoRow label="Section"          value={profile.section_name} />
+        <InfoRow label="Admission Date"   value={profile.admission_date} />
+        <InfoRow label="Admission Type"   value={profile.admission_type} />
         <InfoRow label="Class Advisor"    value={profile.class_advisor} />
         <InfoRow label="Mentor"           value={profile.mentor} />
         <InfoRow label="Student Status"   value={profile.is_active ? 'Active' : 'Inactive'} />
@@ -295,6 +314,7 @@ const GenericProfile = ({ profile, onUpdate }) => {
         <InfoRow label="Gender"       value={profile.gender} />
         <InfoRow label="Date of Birth" value={profile.date_of_birth} />
         {isFacultyOrHod ? <EditableRow label="Blood Group" value={profile.blood_group} field="blood_group" onSave={handleSave} /> : <InfoRow label="Blood Group" value={profile.blood_group} />}
+        <InfoRow label="Religion"     value={profile.religion} />
         {isFacultyOrHod ? <EditableRow label="Personal Email" value={profile.personal_email} field="personal_email" onSave={handleSave} /> : <InfoRow label="Personal Email" value={profile.personal_email} />}
         {isFacultyOrHod ? <EditableRow label="Alt. Phone" value={profile.alternate_phone} field="alternate_phone" onSave={handleSave} /> : <InfoRow label="Alt. Phone" value={profile.alternate_phone} />}
       </SectionCard>
@@ -361,9 +381,33 @@ export const Profile = () => {
     setProfile(prev => ({ ...prev, [field]: value }));
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-400">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-100 border-t-primary-600 mb-4"></div>
+        <p className="font-medium">Loading profile...</p>
+      </div>
+    );
+  }
   if (error)   return <div className="p-8 text-center text-red-500">{error}</div>;
   if (!profile) return null;
+
+  const isOnboarding = profile.role !== 'admin' && profile.role !== 'authority' && (!profile.date_of_birth || !profile.gender);
+
+  if (isOnboarding) {
+    return (
+      <OnboardingForm 
+        profile={profile} 
+        onComplete={() => {
+          setLoading(true);
+          axios.get('/api/auth/profile')
+            .then(r => setProfile(r.data))
+            .catch(() => setError('Failed to load profile'))
+            .finally(() => setLoading(false));
+        }} 
+      />
+    );
+  }
 
   const name = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
 

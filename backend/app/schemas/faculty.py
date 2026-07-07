@@ -23,6 +23,7 @@ class FacultyUpdate(BaseModel):
     last_name: Optional[str] = None
     department_id: Optional[int] = None
     employee_id: Optional[str] = None
+    college_email: Optional[EmailStr] = None
     phone: Optional[str] = None
     designation: Optional[str] = None
     specialization: Optional[str] = None
