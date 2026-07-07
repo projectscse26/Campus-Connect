@@ -18,7 +18,6 @@ const ROLE_NAV_LINKS = {
     { name: 'Courses', path: '/admin/courses', icon: BookOpen },
     { name: 'Discipline', path: '/admin/discipline', icon: ShieldAlert },
     { name: 'Late Tracker', path: '/admin/latetracker', icon: Clock },
-    { name: 'Audit Logs', path: '/admin/audit-logs', icon: Shield },
     { name: 'Announcements', path: '/admin/announcements', icon: Bell },
   ],
   hod: [
