@@ -53,6 +53,8 @@ from app.api import announcements
 app.include_router(announcements.router, prefix="/api/announcements", tags=["Announcements"])
 from app.api import student_portal
 app.include_router(student_portal.router, prefix="/api/student-portal", tags=["Student Portal"])
+from app.api import dashboard
+app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 
 from app.api import gatepass
 app.include_router(gatepass.router, prefix="/api/gatepass", tags=["Gate Pass"])
