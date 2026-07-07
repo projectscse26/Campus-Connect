@@ -3,8 +3,9 @@ import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-d
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield, Award
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Sun, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield, Award
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 const ROLE_NAV_LINKS = {
   admin: [
@@ -68,6 +69,7 @@ const ROLE_NAV_LINKS = {
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCAOpen, setIsCAOpen] = useState(location.pathname.startsWith('/faculty/class-advisor'));
@@ -176,8 +178,10 @@ export default function DashboardLayout() {
   ];
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden font-sans w-full relative">
+    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans w-full relative">
       
+      {/* Elegant Dark Theme Ambient Glow (White Shade) */}
+      <div className="absolute top-0 left-0 right-0 h-[800px] opacity-0 dark:opacity-100 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.05),transparent_70%)] pointer-events-none z-0"></div>
       {/* Mobile Backdrop */}
       {isMobileMenuOpen && (
         <div 
@@ -218,11 +222,11 @@ export default function DashboardLayout() {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
                   isActive 
-                    ? 'bg-primary-50 text-primary-600 font-bold' 
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium'
+                    ? 'bg-primary-50 dark:bg-gray-100 text-primary-600 dark:text-gray-900 font-bold' 
+                    : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-100/50 hover:text-gray-900 dark:hover:text-gray-100 font-medium'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-primary-600' : 'text-gray-400'}`} />
+                <Icon className={`w-5 h-5 ${isActive ? 'text-primary-600 dark:text-gray-900' : 'text-gray-400 dark:text-gray-500'}`} />
                 <span className="text-[15px]">{link.name}</span>
               </Link>
             );
@@ -236,12 +240,12 @@ export default function DashboardLayout() {
                       onClick={() => setIsCAOpen(prev => !prev)}
                       className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium ${
                         location.pathname.startsWith('/faculty/class-advisor')
-                          ? 'bg-indigo-50 text-indigo-700 font-bold'
-                          : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-indigo-50 dark:bg-gray-100 text-indigo-700 dark:text-gray-900 font-bold'
+                          : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-100/50 hover:text-gray-900 dark:hover:text-gray-100'
                       }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <GraduationCap className={`w-5 h-5 ${location.pathname.startsWith('/faculty/class-advisor') ? 'text-indigo-600' : 'text-gray-400'}`} />
+                        <GraduationCap className={`w-5 h-5 ${location.pathname.startsWith('/faculty/class-advisor') ? 'text-indigo-600 dark:text-gray-900' : 'text-gray-400 dark:text-gray-500'}`} />
                         <span className="text-[15px]">Class Advisor</span>
                       </div>
                       {isCAOpen
@@ -251,7 +255,7 @@ export default function DashboardLayout() {
                     </button>
 
                     {isCAOpen && (
-                      <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-indigo-100 pl-3">
+                      <div className="ml-4 mt-1 space-y-0.5 border-l-2 border-indigo-100 dark:border-indigo-500/50 pl-3">
                         {CA_SUB_LINKS.map(sublink => {
                           const SubIcon = sublink.icon;
                           const isSubActive = location.pathname === sublink.path;
@@ -262,11 +266,11 @@ export default function DashboardLayout() {
                               onClick={() => setIsMobileMenuOpen(false)}
                               className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-xl transition-all text-[14px] ${
                                 isSubActive
-                                  ? 'bg-indigo-50 text-indigo-700 font-bold'
-                                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 font-medium'
+                                  ? 'bg-indigo-50 dark:bg-gray-100 text-indigo-700 dark:text-gray-900 font-bold'
+                                  : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-100/50 hover:text-gray-800 dark:hover:text-gray-100 font-medium'
                               }`}
                             >
-                              <SubIcon className={`w-4 h-4 ${isSubActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                              <SubIcon className={`w-4 h-4 ${isSubActive ? 'text-indigo-600 dark:text-gray-900' : 'text-gray-400 dark:text-gray-500'}`} />
                               <span>{sublink.name}</span>
                             </Link>
                           );
@@ -330,8 +334,11 @@ export default function DashboardLayout() {
           </div>
           
           <div className="flex items-center space-x-6">
-            <button className="text-gray-400 hover:text-gray-600 transition-colors">
-              <Moon className="w-5 h-5" />
+            <button 
+              onClick={toggleTheme}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-xl hover:bg-gray-50 focus:outline-none"
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <div className="relative" ref={dropdownRef}>
               <button 
@@ -434,7 +441,7 @@ export default function DashboardLayout() {
               {/* Dropdown */}
               {userMenuVisible && (
                 <div
-                  className={`absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 transition-all duration-150 origin-top-right ${
+                  className={`absolute right-0 top-full mt-2 w-48 bg-white dark:bg-[#1c1c1e]/90 dark:backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100 py-2 z-50 transition-all duration-150 origin-top-right ${
                     isUserMenuOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-1'
                   }`}
                 >
@@ -444,13 +451,13 @@ export default function DashboardLayout() {
                   </div>
                   <button
                     onClick={() => { setIsUserMenuOpen(false); navigate(`/${user.role}/profile`); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors rounded-xl"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-100/50 transition-colors rounded-xl"
                   >
-                    <User className="w-4 h-4 text-gray-400" /> Profile
+                    <User className="w-4 h-4 text-gray-400 dark:text-gray-500" /> Profile
                   </button>
                   <button
                     onClick={() => { setIsUserMenuOpen(false); logout(); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors rounded-xl"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors rounded-xl"
                   >
                     <LogOut className="w-4 h-4" /> Logout
                   </button>

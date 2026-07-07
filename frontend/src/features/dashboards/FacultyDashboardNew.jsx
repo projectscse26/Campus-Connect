@@ -181,7 +181,7 @@ const KPICard = ({ title, value, icon: Icon, colorClass, bgColorClass, loading, 
 const QuickAccessCard = ({ title, icon: Icon, colorClass, bgColorClass, href }) => (
   <a 
     href={href}
-    className={`block p-4 rounded-xl ${bgColorClass} border border-gray-200 hover:shadow-lg hover:scale-105 transition-all duration-300 group`}
+    className={`block p-4 rounded-xl ${bgColorClass} dark:bg-none dark:bg-white border border-gray-200 dark:border-gray-100 hover:shadow-lg hover:scale-105 transition-all duration-300 group`}
   >
     <div className="flex items-center space-x-3">
       <div className={`w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center`}>
@@ -198,18 +198,20 @@ const AIInsightsModal = ({ students, courseName, onClose, onDownloadReport }) =>
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden animate-slide-up">
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 text-white">
+        <div className="bg-white dark:bg-gray-50 border-b border-gray-100 p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Brain className="w-8 h-8" />
+              <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-gray-100 flex items-center justify-center">
+                <Brain className="w-7 h-7 text-purple-600 dark:text-purple-400" />
+              </div>
               <div>
-                <h2 className="text-2xl font-bold">AI Academic Insights</h2>
-                <p className="text-sm text-white/90 mt-1">{courseName} • Detailed Student Analysis</p>
+                <h2 className="text-2xl font-bold text-gray-900">AI Academic Insights</h2>
+                <p className="text-sm text-gray-500 mt-1">{courseName} • Detailed Student Analysis</p>
               </div>
             </div>
             <button 
               onClick={onClose}
-              className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 transition-all flex items-center justify-center"
+              className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition-all flex items-center justify-center"
             >
               <span className="text-2xl">×</span>
             </button>
@@ -245,7 +247,7 @@ const AIInsightsModal = ({ students, courseName, onClose, onDownloadReport }) =>
           </p>
           <button 
             onClick={onClose}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold px-6 py-2.5 rounded-xl hover:shadow-lg transition-all"
+            className="bg-purple-600 dark:bg-purple-500 text-white dark:text-gray-950 font-bold px-6 py-2.5 rounded-xl hover:shadow-lg transition-all"
           >
             Close
           </button>
@@ -276,28 +278,28 @@ const AIInsightsModal = ({ students, courseName, onClose, onDownloadReport }) =>
 const StudentDetailedCard = ({ student, index, onDownloadReport }) => {
   const riskColors = {
     high: { 
-      bg: 'bg-red-50', 
-      border: 'border-red-200', 
-      badge: 'bg-red-600', 
-      text: 'text-red-900',
+      bg: 'bg-red-50 dark:bg-gray-50', 
+      border: 'border-red-200 dark:border-gray-200', 
+      badge: 'bg-red-100 text-red-700 dark:bg-gray-100 dark:text-red-400', 
+      text: 'text-red-900 dark:text-red-400',
       icon: '🚨',
-      chart: 'bg-red-500'
+      chart: 'bg-red-500 dark:bg-red-400'
     },
     medium: { 
-      bg: 'bg-yellow-50', 
-      border: 'border-yellow-200', 
-      badge: 'bg-yellow-600', 
-      text: 'text-yellow-900',
+      bg: 'bg-amber-50 dark:bg-gray-50', 
+      border: 'border-amber-200 dark:border-gray-200', 
+      badge: 'bg-amber-100 text-amber-700 dark:bg-gray-100 dark:text-amber-400', 
+      text: 'text-amber-900 dark:text-amber-400',
       icon: '⚠️',
-      chart: 'bg-yellow-500'
+      chart: 'bg-amber-500 dark:bg-amber-400'
     },
     low: { 
-      bg: 'bg-blue-50', 
-      border: 'border-blue-200', 
-      badge: 'bg-blue-600', 
-      text: 'text-blue-900',
+      bg: 'bg-blue-50 dark:bg-gray-50', 
+      border: 'border-blue-200 dark:border-gray-200', 
+      badge: 'bg-blue-100 text-blue-700 dark:bg-gray-100 dark:text-blue-400', 
+      text: 'text-blue-900 dark:text-blue-400',
       icon: 'ℹ️',
-      chart: 'bg-blue-500'
+      chart: 'bg-blue-500 dark:bg-blue-400'
     }
   };
   
@@ -320,7 +322,7 @@ const StudentDetailedCard = ({ student, index, onDownloadReport }) => {
           </div>
         </div>
         <div className="flex flex-col items-end space-y-2">
-          <span className={`${colors.badge} text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase`}>
+          <span className={`${colors.badge} text-xs font-bold px-3 py-1.5 rounded-full uppercase`}>
             {student.risk_level}
           </span>
           <span className="text-2xl">{colors.icon}</span>
@@ -375,13 +377,13 @@ const StudentDetailedCard = ({ student, index, onDownloadReport }) => {
 
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3 mt-4">
-        <button className="bg-white border-2 border-gray-300 text-gray-700 font-bold py-2.5 px-4 rounded-lg hover:bg-gray-50 transition-all text-sm flex items-center justify-center">
+        <button className="bg-white border border-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-lg hover:bg-gray-50 transition-all text-sm flex items-center justify-center">
           <Users className="w-4 h-4 mr-2" />
           Contact
         </button>
         <button 
           onClick={() => onDownloadReport && onDownloadReport(student.student_id, student.name)}
-          className={`${colors.badge} text-white font-bold py-2.5 px-4 rounded-lg hover:opacity-90 transition-all text-sm flex items-center justify-center`}
+          className={`${colors.badge} font-bold py-2.5 px-4 rounded-lg hover:opacity-90 transition-all text-sm flex items-center justify-center`}
         >
           <FileText className="w-4 h-4 mr-2" />
           Full Report
@@ -740,25 +742,25 @@ export const FacultyDashboard = () => {
 
       {/* Quick Stats - Moved below welcome card */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 animate-fade-in">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl px-3 sm:px-6 py-3 sm:py-4 border border-blue-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:bg-none dark:bg-white rounded-xl px-3 sm:px-6 py-3 sm:py-4 border border-blue-200 dark:border-gray-100 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <div className="p-2 sm:p-3 bg-white rounded-lg">
               <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide">Courses</p>
-              <p className="text-2xl sm:text-3xl font-bold text-blue-700">{dashboardData?.assigned_courses || 0}</p>
+              <p className="text-xs text-blue-600 dark:text-gray-500 font-semibold uppercase tracking-wide">Courses</p>
+              <p className="text-2xl sm:text-3xl font-bold text-blue-700 dark:text-gray-900">{dashboardData?.assigned_courses || 0}</p>
             </div>
           </div>
         </div>
-        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl px-3 sm:px-6 py-3 sm:py-4 border border-emerald-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:bg-none dark:bg-white rounded-xl px-3 sm:px-6 py-3 sm:py-4 border border-emerald-200 dark:border-gray-100 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <div className="p-2 sm:p-3 bg-white rounded-lg">
               <Users className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
             </div>
             <div>
-              <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide">Students</p>
-              <p className="text-2xl sm:text-3xl font-bold text-emerald-700">{dashboardData?.total_students || 0}</p>
+              <p className="text-xs text-emerald-600 dark:text-gray-500 font-semibold uppercase tracking-wide">Students</p>
+              <p className="text-2xl sm:text-3xl font-bold text-emerald-700 dark:text-gray-900">{dashboardData?.total_students || 0}</p>
             </div>
           </div>
         </div>
@@ -819,9 +821,9 @@ export const FacultyDashboard = () => {
             </h3>
             <MiniCalendar selectedDate={selectedDate} onDateSelect={setSelectedDate} />
             {dashboardData?.selected_date_classes && (
-              <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
-                <p className="text-xs font-bold text-blue-900 mb-1">Classes on Selected Date</p>
-                <p className="text-3xl font-extrabold text-blue-600">
+              <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:bg-none dark:bg-white rounded-xl border border-blue-200 dark:border-gray-100">
+                <p className="text-xs font-bold text-blue-900 dark:text-blue-500 mb-1">Classes on Selected Date</p>
+                <p className="text-3xl font-extrabold text-blue-600 dark:text-blue-500">
                   {dashboardData.selected_date_classes.length}
                 </p>
               </div>
@@ -901,7 +903,7 @@ export const FacultyDashboard = () => {
 
           {/* Course-specific content */}
           {!selectedCourseId ? (
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border-2 border-blue-200 p-6 sm:p-12 text-center animate-fade-in">
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:bg-none dark:bg-white rounded-2xl border-2 border-blue-200 dark:border-gray-100 p-6 sm:p-12 text-center animate-fade-in">
               <BookOpen className="w-12 h-12 sm:w-20 sm:h-20 text-blue-500 mx-auto mb-4 sm:mb-6" />
               <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">Select a Course to View Analytics</h2>
               <p className="text-gray-600 text-sm sm:text-lg mb-4 sm:mb-6">
@@ -963,19 +965,19 @@ export const FacultyDashboard = () => {
           {/* AI Risk Analysis */}
           <div className="grid grid-cols-1 gap-6">
             {/* AI-Powered Risk Analysis */}
-            <div className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl shadow-lg p-6 text-white animate-fade-in">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-fade-in">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-bold flex items-center">
-                    <Brain className="w-5 h-5 mr-2"/> AI Risk Analysis
+                  <h3 className="text-lg font-bold flex items-center text-gray-900">
+                    <Brain className="w-5 h-5 mr-2 text-purple-500"/> AI Risk Analysis
                   </h3>
                   {selectedCourseId && dashboardData?.all_courses && (
-                    <p className="text-xs text-white/80 mt-1">
+                    <p className="text-xs text-gray-500 mt-1">
                       {dashboardData.all_courses.find(c => c.id === selectedCourseId)?.course_code}
                     </p>
                   )}
                 </div>
-                <span className="text-xs font-bold bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center">
+                <span className="text-xs font-bold bg-purple-50 text-purple-700 dark:bg-gray-100 dark:text-purple-300 px-3 py-1.5 rounded-full flex items-center border border-purple-100 dark:border-gray-200">
                   <Sparkles className="w-3 h-3 mr-1" />
                   Powered by AI
                 </span>
@@ -984,7 +986,7 @@ export const FacultyDashboard = () => {
               {loading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="h-20 bg-white/20 rounded-xl animate-pulse"></div>
+                    <div key={i} className="h-24 bg-gray-50 rounded-xl animate-pulse border border-gray-100"></div>
                   ))}
                 </div>
               ) : dashboardData?.at_risk_students && dashboardData.at_risk_students.length > 0 ? (
@@ -994,15 +996,15 @@ export const FacultyDashboard = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <CheckCircle className="w-12 h-12 text-white/70 mx-auto mb-3" />
-                  <p className="text-sm text-white/90 font-medium">All students performing well!</p>
+                <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-100">
+                  <CheckCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-sm text-gray-500 font-medium">All students performing well!</p>
                 </div>
               )}
               
               <button 
                 onClick={() => setShowAIInsightsModal(true)}
-                className="w-full mt-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center"
+                className="w-full mt-4 bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-gray-100 dark:text-purple-300 dark:hover:bg-gray-200 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center border border-purple-100 dark:border-gray-200"
               >
                 <Brain className="w-4 h-4 mr-2" />
                 View Detailed AI Insights
@@ -1523,38 +1525,38 @@ const AttendanceBarChart = ({ data }) => {
 // AI Risk Card Component
 const AIRiskCard = ({ student }) => {
   const riskColors = {
-    high: { bg: 'bg-red-500/20', border: 'border-red-300/50', badge: 'bg-red-500', icon: '🚨' },
-    medium: { bg: 'bg-yellow-500/20', border: 'border-yellow-300/50', badge: 'bg-yellow-500', icon: '⚠️' },
-    low: { bg: 'bg-blue-500/20', border: 'border-blue-300/50', badge: 'bg-blue-500', icon: 'ℹ️' }
+    high: { bg: 'bg-red-50 dark:bg-gray-50', border: 'border-red-200 dark:border-gray-200', badge: 'bg-red-100 text-red-700 dark:bg-gray-100 dark:text-red-400', icon: '🚨' },
+    medium: { bg: 'bg-amber-50 dark:bg-gray-50', border: 'border-amber-200 dark:border-gray-200', badge: 'bg-amber-100 text-amber-700 dark:bg-gray-100 dark:text-amber-400', icon: '⚠️' },
+    low: { bg: 'bg-blue-50 dark:bg-gray-50', border: 'border-blue-200 dark:border-gray-200', badge: 'bg-blue-100 text-blue-700 dark:bg-gray-100 dark:text-blue-400', icon: 'ℹ️' }
   };
   
   const colors = riskColors[student.risk_level];
   
   return (
-    <div className={`p-4 rounded-xl border ${colors.border} ${colors.bg} backdrop-blur-sm`}>
+    <div className={`p-4 rounded-xl border ${colors.border} ${colors.bg}`}>
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center space-x-2">
           <span className="text-lg">{colors.icon}</span>
           <div>
-            <p className="font-bold text-white text-sm">{student.name}</p>
-            <p className="text-xs text-white/70">{student.register_number}</p>
+            <p className="font-bold text-gray-900 text-sm">{student.name}</p>
+            <p className="text-xs text-gray-500">{student.register_number}</p>
           </div>
         </div>
-        <span className={`text-xs font-bold px-2 py-1 rounded-full ${colors.badge} text-white`}>
+        <span className={`text-[10px] font-bold px-2 py-1 rounded-lg ${colors.badge}`}>
           {student.risk_level.toUpperCase()}
         </span>
       </div>
       <div className="space-y-1 mb-2">
         {student.risk_factors.map((factor, idx) => (
-          <p key={idx} className="text-xs text-white/90 flex items-start">
-            <span className="mr-1">•</span>
+          <p key={idx} className="text-xs text-gray-600 flex items-start">
+            <span className="mr-1 text-gray-400">•</span>
             {factor}
           </p>
         ))}
       </div>
-      <div className="flex items-center justify-between pt-2 border-t border-white/20">
-        <p className="text-xs text-white/80">{student.course}</p>
-        <button className="text-xs font-medium text-white hover:underline flex items-center">
+      <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200 dark:border-gray-100">
+        <p className="text-xs font-medium text-gray-500">{student.course}</p>
+        <button className="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 flex items-center">
           {student.suggestion}
           <ChevronRight className="w-3 h-3 ml-1" />
         </button>
@@ -1660,27 +1662,38 @@ const MiniCalendar = ({ selectedDate, onDateSelect }) => {
 // Reminder Card Component
 const ReminderCard = ({ icon: Icon, title, description, time, priority }) => {
   const priorityColors = {
-    high: { border: 'border-red-200', bg: 'bg-gradient-to-r from-red-50 to-pink-50', icon: 'text-red-600', badge: 'bg-red-100 text-red-700' },
-    medium: { border: 'border-yellow-200', bg: 'bg-gradient-to-r from-yellow-50 to-orange-50', icon: 'text-yellow-600', badge: 'bg-yellow-100 text-yellow-700' },
-    low: { border: 'border-blue-200', bg: 'bg-gradient-to-r from-blue-50 to-cyan-50', icon: 'text-blue-600', badge: 'bg-blue-100 text-blue-700' }
+    high: { border: 'border-red-200 dark:border-gray-200', bg: 'bg-red-50 dark:bg-gray-50', icon: 'text-red-600 dark:text-red-400', badge: 'bg-red-100 text-red-700 dark:bg-gray-100 dark:text-red-400' },
+    medium: { border: 'border-yellow-200 dark:border-gray-200', bg: 'bg-yellow-50 dark:bg-gray-50', icon: 'text-yellow-600 dark:text-yellow-400', badge: 'bg-yellow-100 text-yellow-700 dark:bg-gray-100 dark:text-yellow-400' },
+    low: { border: 'border-blue-200 dark:border-gray-200', bg: 'bg-blue-50 dark:bg-gray-50', icon: 'text-blue-600 dark:text-blue-400', badge: 'bg-blue-100 text-blue-700 dark:bg-gray-100 dark:text-blue-400' }
   };
   
   const colors = priorityColors[priority];
   
   return (
-    <div className={`p-4 rounded-xl border ${colors.border} ${colors.bg} hover:shadow-md transition-all hover:scale-105`}>
-      <div className="flex items-start space-x-3">
-        <div className={`w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center flex-shrink-0`}>
-          <Icon className={`w-5 h-5 ${colors.icon}`} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-gray-900 text-sm mb-1">{title}</p>
-          <p className="text-xs text-gray-600 mb-2">{description}</p>
-          <div className="flex items-center justify-between">
-            <span className={`text-xs font-bold px-2 py-1 rounded-full ${colors.badge}`}>
+    <div className={`p-4 sm:p-5 rounded-xl border ${colors.border} ${colors.bg} hover:shadow-md transition-all sm:hover:scale-[1.02] cursor-pointer`}>
+      <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+        <div className="flex items-center justify-between sm:block">
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white dark:bg-gray-100 shadow-sm flex items-center justify-center flex-shrink-0`}>
+            <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${colors.icon}`} />
+          </div>
+          {/* Mobile badge (hidden on sm+) */}
+          <div className="sm:hidden flex items-center gap-2">
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${colors.badge}`}>
               {time}
             </span>
-            {priority === 'high' && <AlertTriangle className="w-4 h-4 text-red-600" />}
+            {priority === 'high' && <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />}
+          </div>
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-gray-900 text-sm sm:text-base mb-1 truncate">{title}</p>
+          <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-2 line-clamp-2">{description}</p>
+          {/* Desktop badge (hidden on mobile) */}
+          <div className="hidden sm:flex items-center justify-between">
+            <span className={`text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full ${colors.badge}`}>
+              {time}
+            </span>
+            {priority === 'high' && <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />}
           </div>
         </div>
       </div>

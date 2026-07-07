@@ -95,25 +95,26 @@ const DEFAULT_EVENTS = [
 
 // ─── Reusable KPI & Action Components ───────────────────────────────────────
 
-const KPICard = ({ title, value, icon: Icon, color, bg, to, sub }) => (
+const KPICard = ({ title, value, icon: Icon, to, sub, color, bg }) => (
   <Link
     to={to}
-    className="group bg-white rounded-3xl border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_12px_30px_rgba(37,99,235,0.06)] hover:border-primary-100 hover:-translate-y-1 transition-all duration-300 p-4 sm:p-6 flex flex-col justify-between min-h-[145px]"
+    className="group bg-white dark:bg-gray-50/50 rounded-3xl border border-slate-100 dark:border-gray-200/60 shadow-[0_4px_20px_rgba(0,0,0,0.01)] dark:shadow-md hover:shadow-[0_12px_30px_rgba(37,99,235,0.06)] dark:hover:shadow-xl dark:hover:bg-gray-100/50 hover:border-primary-100 dark:hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 p-5 sm:p-7 flex flex-col justify-between min-h-[160px] relative overflow-hidden"
   >
-    <div className="flex items-center justify-between">
-      <div className={`w-10 h-10 rounded-2xl ${bg} flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 duration-300`}>
-        <Icon className={`w-5 h-5 ${color}`} strokeWidth={1.8} />
+    <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+    <div className="flex items-center justify-between relative z-10">
+      <div className={`w-12 h-12 rounded-2xl ${bg} dark:bg-gray-100 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110 group-hover:rotate-3 duration-300`}>
+        <Icon className={`w-6 h-6 ${color} dark:text-gray-800`} strokeWidth={2} />
       </div>
-      <span className="text-[10px] font-bold text-slate-400 group-hover:text-primary-500 transition-colors flex items-center gap-0.5">
-        Open <ArrowUpRight className="w-3.5 h-3.5" />
+      <span className="text-[11px] font-bold text-slate-400 dark:text-gray-500 group-hover:text-primary-600 dark:group-hover:text-gray-900 transition-colors flex items-center gap-0.5">
+        Open <ArrowUpRight className="w-4 h-4" />
       </span>
     </div>
-    <div className="mt-4">
-      <p className="text-2xl font-black text-slate-900 leading-none mb-1.5 tracking-tight">
-        {value ?? <span className="text-slate-355">—</span>}
+    <div className="mt-5 relative z-10">
+      <p className="text-4xl font-black text-slate-900 dark:text-gray-900 leading-none mb-2 tracking-tight">
+        {value ?? <span className="text-slate-355 dark:text-gray-400">—</span>}
       </p>
-      <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">{title}</p>
-      {sub && <p className="text-[10px] text-slate-455 mt-1 font-medium">{sub}</p>}
+      <p className="text-xs font-extrabold text-slate-400 dark:text-gray-600 uppercase tracking-wider">{title}</p>
+      {sub && <p className="text-[11px] text-slate-455 dark:text-gray-500 mt-1.5 font-medium">{sub}</p>}
     </div>
   </Link>
 );
@@ -121,12 +122,13 @@ const KPICard = ({ title, value, icon: Icon, color, bg, to, sub }) => (
 const QuickAction = ({ label, icon: Icon, to, color, bg }) => (
   <Link
     to={to}
-    className="group flex flex-col items-center justify-center p-4 sm:p-5 rounded-3xl border border-slate-100 bg-white hover:border-primary-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:-translate-y-0.5 transition-all duration-300 text-center"
+    className="group flex flex-col items-center justify-center p-5 sm:p-6 rounded-3xl border border-slate-100 dark:border-gray-200/60 bg-white dark:bg-gray-50/50 hover:border-slate-200 dark:hover:border-gray-300 hover:shadow-lg dark:hover:shadow-2xl dark:hover:bg-gray-100/50 hover:-translate-y-1 transition-all duration-300 text-center relative overflow-hidden"
   >
-    <div className={`w-12 h-12 rounded-2xl ${bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300 shadow-sm mb-3`}>
-      <Icon className={`w-5 h-5 ${color}`} strokeWidth={1.8} />
+    <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+    <div className={`w-14 h-14 rounded-2xl ${bg} dark:bg-gray-100 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 shadow-sm mb-4 relative z-10`}>
+      <Icon className={`w-6 h-6 ${color} dark:text-gray-800`} strokeWidth={2} />
     </div>
-    <span className="text-xs font-bold text-slate-700 group-hover:text-slate-900 transition-colors block leading-tight">{label}</span>
+    <span className="text-sm font-bold text-slate-700 dark:text-gray-600 group-hover:text-slate-900 dark:group-hover:text-gray-900 transition-colors block leading-tight relative z-10">{label}</span>
   </Link>
 );
 
@@ -441,62 +443,62 @@ export const HodDashboard = () => {
       {/* ═══════════════════════════════════════════════════════════
           1. WELCOME HEADER (Enhanced Executive Theme)
       ═══════════════════════════════════════════════════════════ */}
-      <div className="relative bg-gradient-to-r from-[#1E3A8A] via-[#2563EB] to-[#3B82F6] rounded-3xl p-6 sm:p-8 md:p-10 overflow-hidden shadow-xl shadow-blue-900/20 hover:scale-[1.01] transition-all duration-300">
+      <div className="relative bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-900 rounded-[2rem] p-6 sm:p-8 md:p-10 overflow-hidden shadow-2xl shadow-indigo-900/20 hover:shadow-indigo-900/30 transition-all duration-500">
         
         {/* Subtle background decoration (5-8% opacity) */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.06] select-none">
-          <svg className="absolute -right-16 -top-16 w-[450px] h-[450px] text-white" fill="currentColor" viewBox="0 0 100 100">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.08] select-none mix-blend-overlay">
+          <svg className="absolute -right-16 -top-16 w-[450px] h-[450px] text-[#ffffff]" fill="currentColor" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="40" />
           </svg>
-          <svg className="absolute -left-20 -bottom-20 w-[350px] h-[350px] text-white" fill="currentColor" viewBox="0 0 100 100">
+          <svg className="absolute -left-20 -bottom-20 w-[350px] h-[350px] text-[#ffffff]" fill="currentColor" viewBox="0 0 100 100">
             <polygon points="50,15 90,85 10,85" />
           </svg>
           {/* Subtle Grid / Dot pattern */}
-          <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1.5px,transparent_1.5px)] [background-size:24px_24px] opacity-75" />
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff_2px,transparent_2px)] [background-size:32px_32px] opacity-70" />
         </div>
 
         <div className="relative flex flex-col sm:flex-row sm:items-start justify-between gap-6 z-10">
           
           {/* Left Column: Greeting, Department Details, Academic Info, Status Badge */}
-          <div className="space-y-4 text-left max-w-xl text-white">
+          <div className="space-y-6 text-left max-w-xl text-[#ffffff]">
             
             {/* Working Day Status & Current Date */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               {dateConditions.isSunday ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 border border-white/20 text-white backdrop-blur-sm">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-white/10 border border-white/20 text-[#ffffff] backdrop-blur-md shadow-inner">
                   🔴 Holiday
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 border border-white/20 text-white backdrop-blur-sm">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-white/10 border border-white/20 text-[#ffffff] backdrop-blur-md shadow-inner">
                   🟢 Working Day
                 </span>
               )}
               
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 border border-white/20 text-white backdrop-blur-sm">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-white/10 border border-white/20 text-[#ffffff] backdrop-blur-md shadow-inner">
                 {formatFullDate()}
               </span>
             </div>
             
             {/* Typography Hierarchy */}
-            <div className="space-y-1">
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
-                {greetingText}, {user?.name || 'Dr. Balaji'}
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
+                {greetingText}, {user?.name || user?.first_name || user?.email?.split('@')[0] || 'HOD'}
               </h1>
-              <p className="text-white/80 text-xs font-bold tracking-wide">
+              <p className="text-white/80 text-[#ffffff]/80 text-xs font-bold tracking-wide">
                 D.C.T., B.Tech., M.E., Ph.D.
               </p>
-              <div className="pt-0.5">
-                <p className="text-white/90 text-sm font-bold uppercase tracking-wider">
+              <div className="pt-2">
+                <p className="text-white/90 text-[#ffffff]/90 text-xs font-bold uppercase tracking-widest text-indigo-200">
                   Head of Department
                 </p>
-                <p className="text-white text-base font-extrabold tracking-wide uppercase mt-0.5">
+                <p className="text-[#ffffff] text-lg sm:text-xl font-extrabold tracking-wide uppercase mt-1">
                   {dashboard?.department_name || 'Computer Science & Engineering'}
                 </p>
               </div>
             </div>
 
             {/* Academic Info */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-white/90 text-xs font-semibold pt-1">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-white/90 text-[#ffffff]/90 text-xs font-semibold pt-1">
               <span>Academic Year : {getAcademicYear()}</span>
             </div>
 
@@ -511,12 +513,12 @@ export const HodDashboard = () => {
                   requestManagementRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
               }}
-              className="inline-flex items-center gap-2.5 bg-white/15 border border-white/20 px-4 py-2 rounded-full backdrop-blur-md hover:bg-white/25 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-sm text-white focus:outline-none cursor-pointer"
+              className="inline-flex items-center gap-2.5 bg-white/15 border border-white/20 px-4 py-2 rounded-full backdrop-blur-md hover:bg-white/25 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-sm text-[#ffffff] focus:outline-none cursor-pointer"
             >
-              <Bell className="w-4 h-4 text-white fill-white/10" />
+              <Bell className="w-4 h-4 text-[#ffffff] fill-white/10" />
               <span className="text-xs font-bold tracking-wide">Requests</span>
               {totalUnseenCount > 0 && (
-                <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full min-w-[20px] text-center animate-pulse">
+                <span className="bg-rose-500 text-[#ffffff] text-[10px] font-black px-2 py-0.5 rounded-full min-w-[20px] text-center animate-pulse">
                   {totalUnseenCount}
                 </span>
               )}
@@ -529,36 +531,36 @@ export const HodDashboard = () => {
       {/* ═══════════════════════════════════════════════════════════
           SEMESTER CONFIGURATION
       ═══════════════════════════════════════════════════════════ */}
-      <div className="bg-white rounded-[28px] p-6 border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.01)] text-left flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div className="bg-white dark:bg-gray-50 rounded-[28px] p-8 border border-slate-100 dark:border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.01)] dark:shadow-xl text-left flex flex-col sm:flex-row items-center justify-between gap-6">
         <div>
-          <h3 className="font-extrabold text-slate-800 text-sm mb-1 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
-              <CalendarDays className="w-4 h-4 text-violet-600" />
+          <h3 className="font-extrabold text-slate-800 dark:text-gray-900 text-base sm:text-lg mb-1 flex items-center gap-3">
+            <span className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center shrink-0">
+              <CalendarDays className="w-6 h-6 text-violet-600 dark:text-violet-400" />
             </span>
             Semester Settings & Attendance Controls
           </h3>
-          <p className="text-xs text-slate-500 font-medium ml-10">Configure your department's working dates and instantly lock attendance marking.</p>
+          <p className="text-sm text-slate-500 dark:text-gray-600 font-medium ml-14">Configure your department's working dates and instantly lock attendance marking.</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-5 w-full sm:w-auto">
           {/* Start Date Picker */}
-          <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100 w-full sm:w-auto">
-            <span className="text-xs font-bold text-slate-600 px-2 whitespace-nowrap">Sem Start:</span>
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-gray-100/50 p-2 rounded-xl border border-slate-100 dark:border-gray-200 w-full sm:w-auto">
+            <span className="text-sm font-bold text-slate-600 dark:text-gray-700 px-3 whitespace-nowrap">Sem Start:</span>
             <input
               type="date"
-              className="bg-white text-sm font-bold text-slate-700 px-3 py-1.5 rounded-lg border-none focus:ring-2 focus:ring-primary-500 w-full sm:w-auto"
+              className="bg-white dark:bg-gray-100 text-sm font-bold text-slate-700 dark:text-gray-900 px-3 py-1.5 rounded-lg border-none focus:ring-2 focus:ring-primary-500 w-full sm:w-auto outline-none"
               value={deptSettings.current_sem_start_date}
               onChange={(e) => setDeptSettings(prev => ({ ...prev, current_sem_start_date: e.target.value }))}
             />
           </div>
 
           {/* Attendance Lock Toggle */}
-          <div className="flex items-center gap-3 bg-rose-50/50 p-2 rounded-xl border border-rose-100 w-full sm:w-auto px-4 cursor-pointer" onClick={() => setDeptSettings(prev => ({ ...prev, attendance_closed: !prev.attendance_closed }))}>
-            <span className={`text-xs font-bold ${deptSettings.attendance_closed ? 'text-rose-600' : 'text-slate-600'}`}>
+          <div className="flex items-center gap-3 bg-rose-50/50 dark:bg-rose-500/10 p-2.5 rounded-xl border border-rose-100 dark:border-rose-500/20 w-full sm:w-auto px-5 cursor-pointer" onClick={() => setDeptSettings(prev => ({ ...prev, attendance_closed: !prev.attendance_closed }))}>
+            <span className={`text-sm font-bold ${deptSettings.attendance_closed ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-gray-500'}`}>
               {deptSettings.attendance_closed ? "Attendance Locked" : "Attendance Open"}
             </span>
-            <div className={`relative w-10 h-5 transition-colors duration-300 ease-in-out rounded-full ${deptSettings.attendance_closed ? 'bg-rose-500' : 'bg-slate-300'}`}>
-              <div className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-300 ease-in-out ${deptSettings.attendance_closed ? 'transform translate-x-5' : ''}`} />
+            <div className={`relative w-11 h-6 transition-colors duration-300 ease-in-out rounded-full ${deptSettings.attendance_closed ? 'bg-rose-500' : 'bg-slate-300 dark:bg-gray-400'}`}>
+              <div className={`absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 ease-in-out ${deptSettings.attendance_closed ? 'transform translate-x-5' : ''}`} />
             </div>
           </div>
 
@@ -566,9 +568,9 @@ export const HodDashboard = () => {
           <button
             onClick={handleSaveSettings}
             disabled={isSavingSettings}
-            className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white px-5 py-2 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary-600/20"
+            className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary-600/20"
           >
-            {isSavingSettings ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+            {isSavingSettings ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
             Save 
           </button>
         </div>
@@ -580,20 +582,20 @@ export const HodDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* 2A. Recent Department Announcements */}
-        <div className="bg-white rounded-[28px] border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.01)] flex flex-col justify-between min-h-[370px] text-left hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300">
-          <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
-            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                <Megaphone className="w-4 h-4 text-primary-605" />
+        <div className="bg-white dark:bg-gray-50 rounded-[28px] border border-slate-100 dark:border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.01)] dark:shadow-xl flex flex-col justify-between min-h-[420px] text-left hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300">
+          <div className="px-8 py-6 border-b border-slate-50 dark:border-gray-100 flex items-center justify-between">
+            <h3 className="font-bold text-slate-800 dark:text-gray-900 text-base flex items-center gap-3">
+              <span className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-gray-100 flex items-center justify-center shrink-0">
+                <Megaphone className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </span>
               Department Announcements
             </h3>
-            <Link to="/hod/announcements" className="text-xs font-bold text-primary-600 hover:text-primary-700 bg-primary-50 px-2.5 py-1.5 rounded-lg transition-colors">
+            <Link to="/hod/announcements" className="text-sm font-bold text-primary-600 dark:text-gray-900 hover:text-primary-700 bg-primary-50 dark:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors">
               Manage
             </Link>
           </div>
 
-          <div className="p-6 flex-1 flex flex-col justify-between">
+          <div className="p-8 flex-1 flex flex-col justify-between">
             {announcements.length > 0 ? (
               <div className="space-y-4">
                 {announcements.slice(0, 4).map((ann) => {
@@ -629,9 +631,9 @@ export const HodDashboard = () => {
                 })}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-10 text-slate-300 flex-1">
-                <Bell className="w-10 h-10 mb-2 text-slate-350" />
-                <p className="text-xs font-bold text-slate-400">No announcements posted yet</p>
+              <div className="flex flex-col items-center justify-center py-10 text-slate-300 dark:text-gray-600 flex-1">
+                <Bell className="w-10 h-10 mb-2 text-slate-300 dark:text-gray-600" />
+                <p className="text-xs font-bold text-slate-400 dark:text-gray-600">No announcements posted yet</p>
               </div>
             )}
             
@@ -646,17 +648,17 @@ export const HodDashboard = () => {
         </div>
 
         {/* 2B. Student Attendance Overview */}
-        <div className="bg-white rounded-[28px] border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.01)] flex flex-col justify-between min-h-[370px] overflow-hidden text-left hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300 relative">
-          <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between bg-slate-50/20">
-            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                <ClipboardList className="w-4 h-4 text-emerald-650" />
+        <div className="bg-white dark:bg-gray-50 rounded-[28px] border border-slate-100 dark:border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.01)] dark:shadow-xl flex flex-col justify-between min-h-[420px] overflow-hidden text-left hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300 relative">
+          <div className="px-8 py-6 border-b border-slate-50 dark:border-gray-100 flex items-center justify-between bg-slate-50/20 dark:bg-transparent">
+            <h3 className="font-bold text-slate-800 dark:text-gray-900 text-base flex items-center gap-3">
+              <span className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
+                <ClipboardList className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </span>
               Student Attendance
             </h3>
           </div>
 
-          <div className="p-6 flex-1 flex flex-col justify-center">
+          <div className="p-8 flex-1 flex flex-col justify-center">
             {dateConditions.isSunday ? (
               <div className="text-center py-8 space-y-4">
                 <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto border border-amber-100">
@@ -680,10 +682,10 @@ export const HodDashboard = () => {
             ) : (
               <div className="space-y-4">
                 {/* Overall Student Attendance Card */}
-                <div className="bg-gradient-to-r from-emerald-50/40 to-teal-50/10 border border-emerald-100/50 rounded-2xl p-4 flex items-center justify-between mb-4">
+                <div className="bg-gradient-to-r from-emerald-50/40 to-teal-50/10 dark:from-gray-100 dark:to-transparent border border-emerald-100/50 dark:border-gray-200 rounded-2xl p-4 flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Overall Student Attendance</p>
-                    <p className="text-3xl font-black text-emerald-955 mt-1">{studentAttendanceSummary.overallRate}%</p>
+                    <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Overall Student Attendance</p>
+                    <p className="text-3xl font-black text-emerald-950 dark:text-gray-900 mt-1">{studentAttendanceSummary.overallRate}%</p>
                   </div>
                   <div className="w-12 h-12 relative shrink-0">
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -703,14 +705,14 @@ export const HodDashboard = () => {
                       onMouseEnter={() => setHoveredYear(year)}
                       onMouseLeave={() => setHoveredYear(null)}
                     >
-                      <span className="text-[11px] font-bold text-slate-650 w-14 shrink-0">{year}</span>
-                      <div className="flex-1 h-3.5 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/40">
+                      <span className="text-[11px] font-bold text-slate-600 dark:text-gray-700 w-14 shrink-0">{year}</span>
+                      <div className="flex-1 h-3.5 bg-slate-100 dark:bg-gray-100 rounded-full overflow-hidden relative border border-slate-200/40 dark:border-transparent">
                         <div
                           className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-500"
                           style={{ width: `${info.totalRate}%` }}
                         />
                       </div>
-                      <span className="text-[11px] font-black text-slate-900 w-8 text-right shrink-0">{info.totalRate}%</span>
+                      <span className="text-[11px] font-black text-slate-900 dark:text-gray-900 w-8 text-right shrink-0">{info.totalRate}%</span>
 
                       {/* Tooltip Hover Interaction */}
                       {hoveredYear === year && (
@@ -744,29 +746,29 @@ export const HodDashboard = () => {
         </div>
 
         {/* 2C. Faculty Attendance Summary */}
-        <div className="bg-white rounded-[28px] border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.01)] flex flex-col justify-between min-h-[370px] text-left hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300 relative">
-          <div className="px-6 py-5 border-b border-slate-50">
-            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                <Users className="w-4 h-4 text-indigo-655" />
+        <div className="bg-white dark:bg-gray-50 rounded-[28px] border border-slate-100 dark:border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.01)] dark:shadow-xl flex flex-col justify-between min-h-[420px] text-left hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300 relative">
+          <div className="px-8 py-6 border-b border-slate-50 dark:border-gray-100">
+            <h3 className="font-bold text-slate-800 dark:text-gray-900 text-base flex items-center gap-3">
+              <span className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               </span>
               Faculty Attendance Summary
             </h3>
           </div>
 
-          <div className="p-6 flex-1 flex flex-col justify-between">
-            <div className="text-[11px] text-slate-450 font-medium mb-3">
+          <div className="p-8 flex-1 flex flex-col justify-between">
+            <div className="text-xs text-slate-500 dark:text-gray-600 font-medium mb-3">
               Daily status for department faculty members. Click cards to view details.
             </div>
 
             <div className="grid grid-cols-1 gap-3 my-2">
               {/* Present Card */}
-              <div className="p-4 bg-emerald-50/20 rounded-2xl border border-emerald-100/50 flex items-center justify-between">
+              <div className="p-4 bg-emerald-50/20 dark:bg-emerald-500/5 rounded-2xl border border-emerald-100/50 dark:border-emerald-500/20 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Present Today</p>
-                  <p className="text-2xl font-black text-emerald-800 mt-0.5">{facultyAttendanceSummary.presentCount}</p>
+                  <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Present Today</p>
+                  <p className="text-2xl font-black text-emerald-800 dark:text-gray-900 mt-0.5">{facultyAttendanceSummary.presentCount}</p>
                 </div>
-                <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-500/20">
                   Active
                 </span>
               </div>
@@ -774,13 +776,13 @@ export const HodDashboard = () => {
               {/* Absent Card */}
               <button
                 onClick={() => setFacultyModalContent({ type: 'Absent', list: facultyAttendanceSummary.absentFaculty })}
-                className="p-4 bg-rose-50/20 hover:bg-rose-50/40 active:scale-[0.98] transition-all rounded-2xl border border-rose-100/50 flex items-center justify-between text-left cursor-pointer focus:outline-none group w-full"
+                className="p-4 bg-rose-50/20 dark:bg-rose-500/5 hover:bg-rose-50/40 dark:hover:bg-rose-500/10 active:scale-[0.98] transition-all rounded-2xl border border-rose-100/50 dark:border-rose-500/20 flex items-center justify-between text-left cursor-pointer focus:outline-none group w-full"
               >
                 <div>
-                  <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Absent Today</p>
-                  <p className="text-2xl font-black text-rose-700 mt-0.5">{facultyAttendanceSummary.absentCount}</p>
+                  <p className="text-[10px] font-bold text-rose-500 dark:text-rose-400 uppercase tracking-wider">Absent Today</p>
+                  <p className="text-2xl font-black text-rose-700 dark:text-gray-900 mt-0.5">{facultyAttendanceSummary.absentCount}</p>
                 </div>
-                <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-100 group-hover:bg-rose-100 transition-colors">
+                <span className="text-[9px] font-bold text-rose-500 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 px-2.5 py-1 rounded-full border border-rose-100 dark:border-rose-500/20 group-hover:bg-rose-100 dark:group-hover:bg-rose-500/20 transition-colors">
                   View Names
                 </span>
               </button>
@@ -788,21 +790,21 @@ export const HodDashboard = () => {
               {/* On Leave Card */}
               <button
                 onClick={() => setFacultyModalContent({ type: 'On Leave', list: facultyAttendanceSummary.onLeaveFaculty })}
-                className="p-4 bg-blue-50/20 hover:bg-blue-50/40 active:scale-[0.98] transition-all rounded-2xl border border-blue-100/50 flex items-center justify-between text-left cursor-pointer focus:outline-none group w-full"
+                className="p-4 bg-blue-50/20 dark:bg-blue-500/5 hover:bg-blue-50/40 dark:hover:bg-blue-500/10 active:scale-[0.98] transition-all rounded-2xl border border-blue-100/50 dark:border-blue-500/20 flex items-center justify-between text-left cursor-pointer focus:outline-none group w-full"
               >
                 <div>
-                  <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">On Leave</p>
-                  <p className="text-2xl font-black text-blue-700 mt-0.5">{facultyAttendanceSummary.onLeaveCount}</p>
+                  <p className="text-[10px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-wider">On Leave</p>
+                  <p className="text-2xl font-black text-blue-700 dark:text-gray-900 mt-0.5">{facultyAttendanceSummary.onLeaveCount}</p>
                 </div>
-                <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100 group-hover:bg-blue-100 transition-colors">
+                <span className="text-[9px] font-bold text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-100 dark:border-blue-500/20 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 transition-colors">
                   View Names
                 </span>
               </button>
             </div>
 
-            <div className="text-[10px] text-slate-500 flex items-start gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100 mt-2">
-              <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-              <span>Synced with live faculty leave requests and HOD approvals.</span>
+            <div className="text-[10px] text-slate-500 dark:text-gray-700 flex items-start gap-2 bg-slate-50 dark:bg-gray-100 p-3 rounded-xl border border-slate-100 dark:border-gray-200 mt-2">
+              <Info className="w-4 h-4 text-slate-400 dark:text-gray-600 shrink-0 mt-0.5" />
+              <span className="dark:text-gray-600">Synced with live faculty leave requests and HOD approvals.</span>
             </div>
           </div>
         </div>
@@ -814,19 +816,19 @@ export const HodDashboard = () => {
       <div
         id="request-management-card"
         ref={requestManagementRef}
-        className="bg-white rounded-[28px] border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.01)] overflow-hidden text-left hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300"
+        className="bg-white dark:bg-gray-50 rounded-[28px] border border-slate-100 dark:border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.01)] dark:shadow-xl overflow-hidden text-left hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300"
       >
         {/* Main Heading for Request Management */}
-        <div className="px-6 pt-5 pb-3 border-b border-slate-50 flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
-            <ClipboardList className="w-4 h-4 text-primary-600" />
+        <div className="px-8 pt-6 pb-4 border-b border-slate-50 dark:border-gray-100 flex items-center gap-3">
+          <span className="w-10 h-10 rounded-2xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center shrink-0">
+            <ClipboardList className="w-5 h-5 text-primary-600 dark:text-primary-400" />
           </span>
-          <h3 className="font-extrabold text-slate-800 text-sm">
+          <h3 className="font-extrabold text-slate-800 dark:text-gray-900 text-base">
             Request Management
           </h3>
         </div>
 
-        <div className="border-b border-slate-100 bg-slate-50/30 px-6 py-3 flex items-center overflow-x-auto scrollbar-none">
+        <div className="border-b border-slate-100 dark:border-gray-200 bg-slate-50/30 dark:bg-transparent px-8 py-4 flex items-center overflow-x-auto scrollbar-none">
           <div className="flex gap-2.5 min-w-max py-1.5">
             {[
               { id: 'leaves', label: 'Faculty Leave Requests', count: pendingLeaves.length, color: 'bg-primary-600 text-white shadow-sm border-primary-600', baseColor: 'text-slate-655 hover:bg-slate-100 border-slate-200' },
@@ -839,49 +841,49 @@ export const HodDashboard = () => {
                 className={`px-4.5 py-2 text-xs font-bold rounded-2xl border transition-all duration-300 ${
                   activeTab === tab.id
                     ? `${tab.color}`
-                    : `${tab.baseColor} bg-white`
+                    : `${tab.baseColor} bg-white dark:bg-transparent dark:text-gray-700 dark:border-gray-200 dark:hover:bg-gray-100`
                 }`}
               >
                 {tab.label} <span className={`ml-1.5 px-2 py-0.5 text-[9px] rounded-full font-black ${
                   activeTab === tab.id
                     ? 'bg-white/20 text-white'
-                    : 'bg-slate-100 text-slate-500'
+                    : 'bg-slate-100 dark:bg-gray-100 text-slate-500 dark:text-gray-600'
                 }`}>{tab.count}</span>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-8">
           {/* TAB 1: Faculty Leave Requests */}
           {activeTab === 'leaves' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-50 pb-3 mb-2">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Awaiting HOD approval</h4>
-                <Link to="/hod/leave" className="text-xs font-bold text-primary-600 hover:text-primary-700 bg-primary-50 px-2.5 py-1.5 rounded-lg flex items-center transition-colors">
+              <div className="flex items-center justify-between border-b border-slate-50 dark:border-gray-200 pb-3 mb-2">
+                <h4 className="text-[10px] font-bold text-slate-400 dark:text-gray-600 uppercase tracking-wider">Awaiting HOD approval</h4>
+                <Link to="/hod/leave" className="text-xs font-bold text-primary-600 hover:text-primary-700 bg-primary-50 dark:bg-primary-500/10 px-2.5 py-1.5 rounded-lg flex items-center transition-colors">
                   Open Approvals Page <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
                 </Link>
               </div>
 
               {pendingLeaves.length > 0 ? (
-                <div className="divide-y divide-slate-100/60">
+                <div className="divide-y divide-slate-100/60 dark:divide-gray-200">
                   {pendingLeaves.slice(0, 4).map(req => (
-                    <div key={req.id} className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 group hover:bg-slate-50/20 px-2 rounded-xl transition-colors duration-200">
+                    <div key={req.id} className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 group hover:bg-slate-50/20 dark:hover:bg-gray-100/50 px-2 rounded-xl transition-colors duration-200">
                       <div>
-                        <p className="text-xs font-bold text-slate-900 group-hover:text-primary-650 transition-colors">{req.faculty_name}</p>
-                        <p className="text-[11px] text-slate-505 mt-1">
-                          Type: <span className="font-semibold text-slate-700 capitalize">{req.leave_type}</span> · Dates: <span className="font-semibold text-slate-700">{new Date(req.from_date).toLocaleDateString()} to {new Date(req.to_date).toLocaleDateString()}</span>
+                        <p className="text-xs font-bold text-slate-900 dark:text-gray-900 group-hover:text-primary-650 transition-colors">{req.faculty_name}</p>
+                        <p className="text-[11px] text-slate-505 dark:text-gray-700 mt-1">
+                          Type: <span className="font-semibold text-slate-700 dark:text-gray-900 capitalize">{req.leave_type}</span> · Dates: <span className="font-semibold text-slate-700 dark:text-gray-900">{new Date(req.from_date).toLocaleDateString()} to {new Date(req.to_date).toLocaleDateString()}</span>
                         </p>
-                        <p className="text-[11px] text-slate-405 mt-1.5 line-clamp-1 italic bg-slate-50 p-2 rounded-lg border border-slate-100/60">Reason: "{req.reason}"</p>
+                        <p className="text-[11px] text-slate-405 dark:text-gray-600 mt-1.5 line-clamp-1 italic bg-slate-50 dark:bg-gray-100 p-2 rounded-lg border border-slate-100/60 dark:border-gray-200">Reason: "{req.reason}"</p>
                       </div>
-                      <span className="text-[10px] font-bold text-slate-455 bg-slate-105 border border-slate-200/60 px-3 py-1.5 rounded-xl shrink-0">
+                      <span className="text-[10px] font-bold text-slate-455 dark:text-gray-700 bg-slate-105 dark:bg-gray-100 border border-slate-200/60 dark:border-gray-200 px-3 py-1.5 rounded-xl shrink-0">
                         Submitted {timeAgo(req.created_at)}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 text-center py-8 font-medium">No pending leave requests requiring review.</p>
+                <p className="text-xs text-slate-400 dark:text-gray-600 text-center py-8 font-medium">No pending leave requests requiring review.</p>
               )}
             </div>
           )}
@@ -889,36 +891,36 @@ export const HodDashboard = () => {
           {/* TAB 2: Student Requests */}
           {activeTab === 'requests' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-50 pb-3 mb-2">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pending Student Requests</h4>
-                <Link to="/hod/gatepass" className="text-xs font-bold text-primary-600 hover:text-primary-700 bg-primary-50 px-2.5 py-1.5 rounded-lg flex items-center transition-colors">
+              <div className="flex items-center justify-between border-b border-slate-50 dark:border-gray-200 pb-3 mb-2">
+                <h4 className="text-[10px] font-bold text-slate-400 dark:text-gray-600 uppercase tracking-wider">Pending Student Requests</h4>
+                <Link to="/hod/gatepass" className="text-xs font-bold text-primary-600 hover:text-primary-700 bg-primary-50 dark:bg-primary-500/10 px-2.5 py-1.5 rounded-lg flex items-center transition-colors">
                   Open Requests Page <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
                 </Link>
               </div>
 
               {pendingStudentRequests.length > 0 ? (
-                <div className="divide-y divide-slate-100/60">
+                <div className="divide-y divide-slate-100/60 dark:divide-gray-200">
                   {pendingStudentRequests.slice(0, 4).map(gp => (
-                    <div key={gp.id} className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 group hover:bg-slate-50/20 px-2 rounded-xl transition-colors duration-200">
+                    <div key={gp.id} className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 group hover:bg-slate-50/20 dark:hover:bg-gray-100/50 px-2 rounded-xl transition-colors duration-200">
                       <div>
-                        <p className="text-xs font-bold text-slate-900 group-hover:text-primary-655 transition-colors">
+                        <p className="text-xs font-bold text-slate-900 dark:text-gray-900 group-hover:text-primary-655 transition-colors">
                           {gp.student?.first_name} {gp.student?.last_name} ({gp.student?.register_number})
                         </p>
-                        <p className="text-[11px] text-slate-505 mt-1">
-                          Request Type: <span className="font-semibold text-primary-650 bg-primary-50 px-2 py-0.5 rounded border border-primary-100/50">Student Gate Pass</span> · Reason: <span className="text-slate-700 font-medium">"{gp.reason}"</span>
+                        <p className="text-[11px] text-slate-505 dark:text-gray-700 mt-1">
+                          Request Type: <span className="font-semibold text-primary-650 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 px-2 py-0.5 rounded border border-primary-100/50 dark:border-primary-500/20">Student Gate Pass</span> · Reason: <span className="text-slate-700 dark:text-gray-900 font-medium">"{gp.reason}"</span>
                         </p>
-                        <p className="text-[10px] text-emerald-605 font-bold mt-2 flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Approved by Mentor (Pending HOD Sign-off)
+                        <p className="text-[10px] text-emerald-605 dark:text-emerald-400 font-bold mt-2 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" /> Approved by Mentor (Pending HOD Sign-off)
                         </p>
                       </div>
-                      <span className="text-[10px] font-bold text-slate-455 bg-slate-105 border border-slate-200/60 px-3 py-1.5 rounded-xl shrink-0">
+                      <span className="text-[10px] font-bold text-slate-455 dark:text-gray-700 bg-slate-105 dark:bg-gray-100 border border-slate-200/60 dark:border-gray-200 px-3 py-1.5 rounded-xl shrink-0">
                         Submitted {timeAgo(gp.created_at)}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 text-center py-8 font-medium">No pending student requests requiring HOD approval.</p>
+                <p className="text-xs text-slate-400 dark:text-gray-600 text-center py-8 font-medium">No pending student requests requiring HOD approval.</p>
               )}
             </div>
           )}
@@ -926,46 +928,46 @@ export const HodDashboard = () => {
           {/* TAB 3: Department Grievances */}
           {activeTab === 'grievances' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-50 pb-3 mb-2">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Academic Grievance Submissions</h4>
-                <Link to="/hod/discipline" className="text-xs font-bold text-primary-600 hover:text-primary-700 bg-primary-50 px-2.5 py-1.5 rounded-lg flex items-center transition-colors">
+              <div className="flex items-center justify-between border-b border-slate-50 dark:border-gray-200 pb-3 mb-2">
+                <h4 className="text-[10px] font-bold text-slate-400 dark:text-gray-600 uppercase tracking-wider">Academic Grievance Submissions</h4>
+                <Link to="/hod/discipline" className="text-xs font-bold text-primary-600 hover:text-primary-700 bg-primary-50 dark:bg-primary-500/10 px-2.5 py-1.5 rounded-lg flex items-center transition-colors">
                   Open Grievance Management <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
                 </Link>
               </div>
 
               {disciplineRecords.length > 0 ? (
-                <div className="divide-y divide-slate-100/60">
+                <div className="divide-y divide-slate-100/60 dark:divide-gray-200">
                   {disciplineRecords.slice(0, 4).map(rec => {
                     let displayStatus = "Pending";
-                    let statusColor = "bg-amber-50 text-amber-700 border-amber-200/50";
+                    let statusColor = "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200/50 dark:border-amber-500/20";
                     
                     if (rec.action_status === "Informed") {
                       displayStatus = "In Review";
-                      statusColor = "bg-blue-50 text-blue-700 border-blue-200/50";
+                      statusColor = "bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-500/20";
                     } else if (rec.action_status === "Letter Given" || rec.action_status === "Resolved") {
                       displayStatus = "Resolved";
-                      statusColor = "bg-emerald-50 text-emerald-700 border-emerald-200/50";
+                      statusColor = "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-500/20";
                     }
                     
                     return (
                       <Link 
                         to="/hod/discipline" 
                         key={rec.id} 
-                        className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 group hover:bg-slate-50/20 px-2 rounded-xl transition-colors duration-200 block"
+                        className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 group hover:bg-slate-50/20 dark:hover:bg-gray-100/50 px-2 rounded-xl transition-colors duration-200 block"
                       >
                         <div className="space-y-1">
-                          <p className="text-xs font-bold text-slate-900 group-hover:text-primary-600 transition-colors">
+                          <p className="text-xs font-bold text-slate-900 dark:text-gray-900 group-hover:text-primary-600 transition-colors">
                             {rec.remarks || rec.incident_type || 'Academic Issue'}
                           </p>
-                          <p className="text-[10px] text-slate-500">
-                            Submitted by: <strong className="text-slate-700">{rec.student_name}</strong> · Reg No: <strong className="text-slate-700">{rec.student_register_number || 'N/A'}</strong>
+                          <p className="text-[10px] text-slate-500 dark:text-gray-700">
+                            Submitted by: <strong className="text-slate-700 dark:text-gray-900">{rec.student_name}</strong> · Reg No: <strong className="text-slate-700 dark:text-gray-900">{rec.student_register_number || 'N/A'}</strong>
                           </p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-full border ${statusColor}`}>
                             {displayStatus}
                           </span>
-                          <span className="text-[10px] font-bold text-slate-455">
+                          <span className="text-[10px] font-bold text-slate-455 dark:text-gray-600">
                             {new Date(rec.incident_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </span>
                         </div>
@@ -974,7 +976,7 @@ export const HodDashboard = () => {
                   })}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 text-center py-8 font-medium">No grievances submitted recently.</p>
+                <p className="text-xs text-slate-400 dark:text-gray-600 text-center py-8 font-medium">No grievances submitted recently.</p>
               )}
             </div>
           )}
@@ -987,18 +989,18 @@ export const HodDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
         
         {/* Upcoming Events */}
-        <div className="bg-white rounded-[28px] border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.01)] p-6 hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300 flex flex-col justify-between">
+        <div className="bg-white dark:bg-gray-50 rounded-[28px] border border-slate-100 dark:border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.01)] dark:shadow-xl p-8 hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                  <CalendarDays className="w-4 h-4 text-emerald-655" />
+              <h3 className="font-bold text-slate-800 dark:text-gray-900 text-base flex items-center gap-3">
+                <span className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <CalendarDays className="w-5 h-5 text-emerald-655 dark:text-emerald-400" />
                 </span>
                 Upcoming Academic Events
               </h3>
               <button
                 onClick={() => setShowAddEventModal(true)}
-                className="flex items-center gap-1 text-[11px] font-bold text-emerald-655 hover:text-white hover:bg-emerald-600 bg-emerald-50 px-2.5 py-1.5 rounded-xl transition-all duration-200"
+                className="flex items-center gap-1 text-[11px] font-bold text-emerald-655 dark:text-emerald-400 hover:text-white dark:hover:text-white hover:bg-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1.5 rounded-xl transition-all duration-200"
               >
                 <Plus className="w-3.5 h-3.5 font-black" />
                 Add Event
@@ -1009,30 +1011,30 @@ export const HodDashboard = () => {
               {allEvents.slice(0, 3).map((evt) => (
                 <div
                   key={evt.id}
-                  className="p-3.5 rounded-2xl border border-slate-50 hover:border-emerald-100 hover:bg-emerald-50/5 transition-all duration-300 flex items-center justify-between gap-4 group"
+                  className="p-3.5 rounded-2xl border border-slate-50 dark:border-gray-200/50 hover:border-emerald-100 dark:hover:border-emerald-500/30 hover:bg-emerald-50/5 dark:hover:bg-emerald-500/10 transition-all duration-300 flex items-center justify-between gap-4 group"
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded ${
                         evt.type === 'Academic'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-105'
+                          ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-105 dark:border-blue-500/20'
                           : evt.type === 'Placement'
-                            ? 'bg-purple-50 text-purple-700 border border-purple-105'
-                            : 'bg-emerald-50 text-emerald-700 border border-emerald-105'
+                            ? 'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-105 dark:border-purple-500/20'
+                            : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-105 dark:border-emerald-500/20'
                       }`}>
                         {evt.type}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-semibold truncate max-w-[150px]">{evt.time} · {evt.venue}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-gray-600 font-semibold truncate max-w-[150px]">{evt.time} · {evt.venue}</span>
                     </div>
-                    <h4 className="font-bold text-slate-800 text-xs truncate group-hover:text-emerald-700 transition-colors">
+                    <h4 className="font-bold text-slate-800 dark:text-gray-900 text-xs truncate group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
                       {evt.name}
                     </h4>
-                    <p className="text-[10px] text-slate-455 font-semibold">Organizer: {evt.organizer}</p>
+                    <p className="text-[10px] text-slate-455 dark:text-gray-600 font-semibold">Organizer: {evt.organizer}</p>
                   </div>
 
-                  <div className="flex flex-col items-center justify-center bg-slate-50 border border-slate-100/80 w-11 h-13.5 rounded-xl shrink-0 group-hover:bg-emerald-50/20 group-hover:border-emerald-100 transition-colors duration-300">
-                    <span className="text-[8px] font-black uppercase text-slate-400 leading-none">July</span>
-                    <span className="text-sm font-black text-slate-800 leading-none mt-1 group-hover:text-emerald-755">
+                  <div className="flex flex-col items-center justify-center bg-slate-50 dark:bg-gray-100 border border-slate-100/80 dark:border-gray-200/50 w-11 h-13.5 rounded-xl shrink-0 group-hover:bg-emerald-50/20 dark:group-hover:bg-emerald-500/20 group-hover:border-emerald-100 dark:group-hover:border-emerald-500/30 transition-colors duration-300">
+                    <span className="text-[8px] font-black uppercase text-slate-400 dark:text-gray-500 leading-none">July</span>
+                    <span className="text-sm font-black text-slate-800 dark:text-gray-900 leading-none mt-1 group-hover:text-emerald-755 dark:group-hover:text-emerald-400">
                       {new Date(evt.date).getDate()}
                     </span>
                     {evt.id.startsWith('hod-evt-') && (
@@ -1051,26 +1053,26 @@ export const HodDashboard = () => {
         </div>
 
         {/* Recent Activity Feed */}
-        <div className="bg-white rounded-[28px] border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.01)] p-6 hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300">
-          <h3 className="font-bold text-slate-800 text-sm mb-6 flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-              <Activity className="w-4 h-4 text-indigo-655" />
+        <div className="bg-white dark:bg-gray-50 rounded-[28px] border border-slate-100 dark:border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.01)] dark:shadow-xl p-8 hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300">
+          <h3 className="font-bold text-slate-800 dark:text-gray-900 text-base mb-6 flex items-center gap-3">
+            <span className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
+              <Activity className="w-5 h-5 text-indigo-655 dark:text-indigo-400" />
             </span>
             Recent Activity Feed
           </h3>
 
-          <div className="relative border-l-2 border-slate-100 pl-6 ml-3 space-y-6">
+          <div className="relative border-l-2 border-slate-100 dark:border-gray-200 pl-6 ml-3 space-y-6">
             {activities.map((act) => (
               <div key={act.id} className="relative group cursor-default">
-                <div className={`absolute -left-[33px] top-0 w-5 h-5 rounded-full ${act.bg} border-2 border-white shadow-sm flex items-center justify-center shrink-0 z-10 group-hover:scale-110 transition-transform duration-300`}>
+                <div className={`absolute -left-[33px] top-0 w-5 h-5 rounded-full ${act.bg} dark:bg-gray-100 border-2 border-white dark:border-gray-50 shadow-sm flex items-center justify-center shrink-0 z-10 group-hover:scale-110 transition-transform duration-300`}>
                   <div className={`w-1.5 h-1.5 rounded-full ${act.color.replace('text', 'bg')}`} />
                 </div>
                 
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-700 leading-snug group-hover:text-primary-655 transition-colors">
+                  <p className="text-xs font-bold text-slate-700 dark:text-gray-900 leading-snug group-hover:text-primary-655 transition-colors">
                     {act.text}
                   </p>
-                  <p className="text-[10px] text-slate-400 font-bold mt-1">
+                  <p className="text-[10px] text-slate-400 dark:text-gray-600 font-bold mt-1">
                     {act.sub}
                   </p>
                 </div>
@@ -1084,10 +1086,10 @@ export const HodDashboard = () => {
       {/* ═══════════════════════════════════════════════════════════
           4. QUICK ACTIONS
       ═══════════════════════════════════════════════════════════ */}
-      <div className="bg-white rounded-[28px] border border-slate-100 shadow-[0_4px_24px_rgba(0,0,0,0.01)] p-6 hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300">
-        <h3 className="font-bold text-slate-800 text-sm mb-5 flex items-center gap-2.5 text-left">
-          <span className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-            <Zap className="w-4 h-4 text-amber-550" />
+      <div className="bg-white dark:bg-gray-50 rounded-[28px] border border-slate-100 dark:border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.01)] dark:shadow-xl p-8 hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300">
+        <h3 className="font-bold text-slate-800 dark:text-gray-900 text-base mb-5 flex items-center gap-3 text-left">
+          <span className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center shrink-0">
+            <Zap className="w-5 h-5 text-amber-550 dark:text-amber-400" />
           </span>
           Quick Actions Shortcuts
         </h3>
@@ -1105,9 +1107,9 @@ export const HodDashboard = () => {
           5. KPI SUMMARY
       ═══════════════════════════════════════════════════════════ */}
       <div>
-        <h3 className="font-bold text-slate-855 text-sm mb-4 flex items-center gap-2.5 px-1 text-left">
-          <span className="w-8 h-8 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
-            <Activity className="w-4 h-4 text-primary-600" />
+        <h3 className="font-bold text-slate-855 dark:text-gray-900 text-sm mb-4 flex items-center gap-2.5 px-1 text-left">
+          <span className="w-8 h-8 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center shrink-0">
+            <Activity className="w-4 h-4 text-primary-600 dark:text-primary-400" />
           </span>
           Department KPI Summary
         </h3>

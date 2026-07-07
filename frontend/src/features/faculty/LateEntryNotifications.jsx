@@ -146,22 +146,22 @@ export default function LateEntryNotifications() {
       <div className="max-w-6xl mx-auto space-y-4">
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-2 md:gap-4 mx-4 md:mx-0">
-          <div className="bg-white shadow-sm border rounded-lg p-3 md:p-4 text-center">
+          <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-3 md:p-4 text-center">
             <p className="text-xs md:text-sm text-gray-600 font-medium mb-1">Total</p>
             <p className="text-2xl md:text-3xl font-bold text-blue-700">{notifications.length}</p>
           </div>
-          <div className="bg-white shadow-sm border rounded-lg p-3 md:p-4 text-center">
+          <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-3 md:p-4 text-center">
             <p className="text-xs md:text-sm text-gray-600 font-medium mb-1">Today</p>
             <p className="text-2xl md:text-3xl font-bold text-orange-700">{todayCount}</p>
           </div>
-          <div className="bg-white shadow-sm border rounded-lg p-3 md:p-4 text-center">
+          <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-3 md:p-4 text-center">
             <p className="text-xs md:text-sm text-gray-600 font-medium mb-1">Pending</p>
             <p className="text-2xl md:text-3xl font-bold text-red-700">{unacknowledgedCount}</p>
           </div>
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white shadow-sm border mx-4 md:mx-0 rounded-lg p-4">
+        <div className="bg-white shadow-sm border border-gray-200 mx-4 md:mx-0 rounded-lg p-4">
           {/* Filter Buttons */}
           <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
             <button
@@ -210,7 +210,7 @@ export default function LateEntryNotifications() {
         </div>
 
         {/* Notifications List */}
-        <div className="bg-white shadow-sm border mx-4 md:mx-0 rounded-lg p-4 md:p-6">
+        <div className="bg-white shadow-sm border border-gray-200 mx-4 md:mx-0 rounded-lg p-4 md:p-6">
           <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
             <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
             Notifications ({filteredNotifications.length})
@@ -233,7 +233,7 @@ export default function LateEntryNotifications() {
               {/* Mobile Card View */}
               <div className="md:hidden space-y-3">
                 {filteredNotifications.map((notif) => (
-                  <div key={notif.id} className="border rounded-lg p-3 bg-gray-50">
+                  <div key={notif.id} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <div className="font-semibold text-gray-900">{notif.student_name}</div>
@@ -279,14 +279,14 @@ export default function LateEntryNotifications() {
                           {notif.department_name} {notif.section_name && `- ${notif.section_name}`}
                         </div>
                       )}
-                      <div className="text-gray-700 mt-2 bg-white p-2 rounded border">
+                      <div className="text-gray-700 mt-2 bg-white p-2 rounded border border-gray-200">
                         <span className="text-xs text-gray-500">Reason:</span>
                         <p className="mt-1">{notif.reason}</p>
                       </div>
                       
                       {/* Mentor Acknowledgment */}
                       {notif.mentor_comment ? (
-                        <div className="mt-2 bg-green-50 p-2 rounded border border-green-200 flex items-center gap-2">
+                        <div className="mt-2 bg-green-50 p-2 rounded border border-gray-200 border-green-200 flex items-center gap-2">
                           <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
                           <div className="flex-1">
                             <span className="text-xs text-green-700 font-semibold">Acknowledged</span>

@@ -276,8 +276,8 @@ export const CADailyAttendance = () => {
                         onClick={() => setStatus(s.student_id, 'present')}
                         className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
                           isPresent 
-                            ? 'bg-white text-green-700 shadow-sm border border-gray-200' 
-                            : 'text-gray-500 hover:text-gray-700'
+                            ? 'bg-green-600 text-white dark:text-gray-900 shadow-sm border border-transparent' 
+                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                         }`}
                       >
                         Present
@@ -286,8 +286,8 @@ export const CADailyAttendance = () => {
                         onClick={() => setStatus(s.student_id, 'absent')}
                         className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
                           isAbsent 
-                            ? 'bg-white text-red-700 shadow-sm border border-gray-200' 
-                            : 'text-gray-500 hover:text-gray-700'
+                            ? 'bg-red-600 text-white dark:text-gray-900 shadow-sm border border-transparent' 
+                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                         }`}
                       >
                         Absent
@@ -295,8 +295,8 @@ export const CADailyAttendance = () => {
                     </div>
                   ) : (
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                      isPresent ? 'bg-green-50 text-green-700 border-green-200' :
-                      isAbsent  ? 'bg-red-50 text-red-700 border-red-200' :
+                      isPresent ? 'bg-green-50 dark:bg-gray-100 text-green-700 dark:text-green-400 border-green-200 dark:border-gray-200' :
+                      isAbsent  ? 'bg-red-50 dark:bg-gray-100 text-red-700 dark:text-red-400 border-red-200 dark:border-gray-200' :
                       'bg-gray-50 text-gray-500 border-gray-200'
                     }`}>
                       {s.status ? (isPresent ? 'Present' : 'Absent') : 'Not Marked'}

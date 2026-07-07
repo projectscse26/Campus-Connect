@@ -301,10 +301,10 @@ export const GatePass = () => {
 
       {/* Delete Confirmation Modal */}
       {deletingId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="w-6 h-6 text-red-600" />
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
+          <div className="bg-white dark:bg-gray-50 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.1)] dark:shadow-2xl dark:border dark:border-gray-200 w-full max-w-sm p-6 text-center transform transition-all">
+            <div className="w-14 h-14 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-5 border border-red-100 dark:border-red-500/20">
+              <Trash2 className="w-7 h-7 text-red-600 dark:text-red-400" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Request</h2>
             <p className="text-gray-500 text-sm mb-6">Are you sure you want to delete this gate pass request? This action cannot be undone.</p>
@@ -328,16 +328,16 @@ export const GatePass = () => {
 
       {/* Request Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-4">Request Gate Pass</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
+          <div className="bg-white dark:bg-gray-50 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.1)] dark:shadow-2xl dark:border dark:border-gray-200 w-full max-w-md p-6 transform transition-all">
+            <h2 className="text-xl font-bold text-gray-900 mb-5">Request Gate Pass</h2>
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Leaving</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason for Leaving</label>
                 <textarea 
                   required
                   rows={3}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-100 border border-gray-200 dark:border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all dark:text-gray-900 placeholder-gray-400 dark:placeholder-gray-500"
                   value={formData.reason}
                   onChange={e => setFormData({...formData, reason: e.target.value})}
                   placeholder="Explain why you need to leave campus"
