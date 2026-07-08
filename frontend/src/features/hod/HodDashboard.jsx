@@ -982,78 +982,7 @@ export const HodDashboard = () => {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════
-          3.5 UPCOMING EVENTS (Beneath Request Management)
-      ═══════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 gap-6 text-left">
-        
-        {/* Upcoming Events */}
-        <div className="bg-white dark:bg-gray-50 rounded-[28px] border border-slate-100 dark:border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.01)] dark:shadow-xl p-8 hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-slate-800 dark:text-gray-900 text-base flex items-center gap-3">
-                <span className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
-                  <CalendarDays className="w-5 h-5 text-emerald-655 dark:text-emerald-400" />
-                </span>
-                Upcoming Academic Events
-              </h3>
-              <button
-                onClick={() => setShowAddEventModal(true)}
-                className="flex items-center gap-1 text-[11px] font-bold text-emerald-655 dark:text-emerald-400 hover:text-white dark:hover:text-white hover:bg-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1.5 rounded-xl transition-all duration-200"
-              >
-                <Plus className="w-3.5 h-3.5 font-black" />
-                Add Event
-              </button>
-            </div>
 
-            <div className="space-y-4">
-              {allEvents.slice(0, 3).map((evt) => (
-                <div
-                  key={evt.id}
-                  className="p-3.5 rounded-2xl border border-slate-50 dark:border-gray-200/50 hover:border-emerald-100 dark:hover:border-emerald-500/30 hover:bg-emerald-50/5 dark:hover:bg-emerald-500/10 transition-all duration-300 flex items-center justify-between gap-4 group"
-                >
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded ${
-                        evt.type === 'Academic'
-                          ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-105 dark:border-blue-500/20'
-                          : evt.type === 'Placement'
-                            ? 'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-105 dark:border-purple-500/20'
-                            : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-105 dark:border-emerald-500/20'
-                      }`}>
-                        {evt.type}
-                      </span>
-                      <span className="text-[10px] text-slate-400 dark:text-gray-600 font-semibold truncate max-w-[150px]">{evt.time} · {evt.venue}</span>
-                    </div>
-                    <h4 className="font-bold text-slate-800 dark:text-gray-900 text-xs truncate group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
-                      {evt.name}
-                    </h4>
-                    <p className="text-[10px] text-slate-455 dark:text-gray-600 font-semibold">Organizer: {evt.organizer}</p>
-                  </div>
-
-                  <div className="flex flex-col items-center justify-center bg-slate-50 dark:bg-gray-100 border border-slate-100/80 dark:border-gray-200/50 w-11 h-13.5 rounded-xl shrink-0 group-hover:bg-emerald-50/20 dark:group-hover:bg-emerald-500/20 group-hover:border-emerald-100 dark:group-hover:border-emerald-500/30 transition-colors duration-300">
-                    <span className="text-[8px] font-black uppercase text-slate-400 dark:text-gray-500 leading-none">July</span>
-                    <span className="text-sm font-black text-slate-800 dark:text-gray-900 leading-none mt-1 group-hover:text-emerald-755 dark:group-hover:text-emerald-400">
-                      {new Date(evt.date).getDate()}
-                    </span>
-                    {evt.id.startsWith('hod-evt-') && (
-                      <button
-                        onClick={() => handleRemoveEvent(evt.id)}
-                        className="text-[9px] text-rose-500 hover:text-rose-700 mt-2 font-bold hover:underline"
-                      >
-                        Del
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-
-
-      </div>
 
       {/* ═══════════════════════════════════════════════════════════
           4. QUICK ACTIONS
