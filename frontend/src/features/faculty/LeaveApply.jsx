@@ -296,33 +296,8 @@ export const LeaveApply = () => {
           </form>
         </div>
 
-        {/* Right Column - Balance Summary & Tips */}
+        {/* Right Column - Submission Tips */}
         <div className="w-full lg:w-80 space-y-6">
-          <div className="bg-[#1e3a5f] rounded-xl shadow-sm overflow-hidden text-white">
-            <div className="px-6 py-5 border-b border-white/10">
-              <h2 className="text-base font-bold">Balance Summary</h2>
-            </div>
-            <div className="p-6 space-y-4 text-sm font-medium">
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                <span className="text-blue-100">Casual Leaves</span>
-                <span className="text-lg font-bold">{balance.casual_leaves_total - balance.casual_leaves_used}/{balance.casual_leaves_total}</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                <span className="text-blue-100">Sick Leaves</span>
-                <span className="text-lg font-bold">{balance.sick_leaves_total - balance.sick_leaves_used}/{balance.sick_leaves_total}</span>
-              </div>
-              <div className="flex justify-between items-center pb-1">
-                <span className="text-blue-100">Earned Leaves</span>
-                <span className="text-lg font-bold">{balance.earned_leaves_total - balance.earned_leaves_used}/{balance.earned_leaves_total}</span>
-              </div>
-            </div>
-            <div className="px-6 py-4 bg-black/10">
-              <p className="text-[10px] text-blue-200 italic leading-relaxed">
-                Calculated based on the current academic year ending June 2024.
-              </p>
-            </div>
-          </div>
-
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="text-sm font-bold text-gray-800">Submission Tips</h2>
