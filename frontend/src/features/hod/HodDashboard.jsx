@@ -983,9 +983,9 @@ export const HodDashboard = () => {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════
-          3.5 RECENT ACTIVITY FEED & UPCOMING EVENTS (Beneath Request Management)
+          3.5 UPCOMING EVENTS (Beneath Request Management)
       ═══════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
+      <div className="grid grid-cols-1 gap-6 text-left">
         
         {/* Upcoming Events */}
         <div className="bg-white dark:bg-gray-50 rounded-[28px] border border-slate-100 dark:border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.01)] dark:shadow-xl p-8 hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300 flex flex-col justify-between">
@@ -1051,34 +1051,7 @@ export const HodDashboard = () => {
           </div>
         </div>
 
-        {/* Recent Activity Feed */}
-        <div className="bg-white dark:bg-gray-50 rounded-[28px] border border-slate-100 dark:border-gray-200 shadow-[0_4px_24px_rgba(0,0,0,0.01)] dark:shadow-xl p-8 hover:shadow-[0_8px_32px_rgba(0,0,0,0.02)] transition-shadow duration-300">
-          <h3 className="font-bold text-slate-800 dark:text-gray-900 text-base mb-6 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
-              <Activity className="w-5 h-5 text-indigo-655 dark:text-indigo-400" />
-            </span>
-            Recent Activity Feed
-          </h3>
 
-          <div className="relative border-l-2 border-slate-100 dark:border-gray-200 pl-6 ml-3 space-y-6">
-            {activities.map((act) => (
-              <div key={act.id} className="relative group cursor-default">
-                <div className={`absolute -left-[33px] top-0 w-5 h-5 rounded-full ${act.bg} dark:bg-gray-100 border-2 border-white dark:border-gray-50 shadow-sm flex items-center justify-center shrink-0 z-10 group-hover:scale-110 transition-transform duration-300`}>
-                  <div className={`w-1.5 h-1.5 rounded-full ${act.color.replace('text', 'bg')}`} />
-                </div>
-                
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-700 dark:text-gray-900 leading-snug group-hover:text-primary-655 transition-colors">
-                    {act.text}
-                  </p>
-                  <p className="text-[10px] text-slate-400 dark:text-gray-600 font-bold mt-1">
-                    {act.sub}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
       </div>
 
