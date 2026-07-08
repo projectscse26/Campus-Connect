@@ -325,6 +325,59 @@ def get_attendance_for_date(
     ]
 
 
+@router.get("/attendance-report")
+def get_attendance_report(
+    start_date: date,
+    end_date: date,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    _, section = get_advisor_section(current_user, db)
+
+    students = db.query(Student).filter(
+        Student.section_id == section.id,
+        Student.is_active == True
+    ).order_by(Student.register_number).all()
+
+    student_ids = [s.id for s in students]
+
+    homeroom_course_id = None
+    if student_ids:
+        assignment = db.query(CourseAssignment).filter(
+            CourseAssignment.section_id == section.id,
+            CourseAssignment.is_active == True
+        ).order_by(CourseAssignment.id).first()
+        if assignment:
+            homeroom_course_id = assignment.course_id
+
+    records = []
+    if student_ids and homeroom_course_id:
+        records = db.query(Attendance).filter(
+            Attendance.student_id.in_(student_ids),
+            Attendance.course_id == homeroom_course_id,
+            Attendance.date >= start_date,
+            Attendance.date <= end_date
+        ).all()
+        
+    attendance_map = {}
+    for r in records:
+        if r.student_id not in attendance_map:
+            attendance_map[r.student_id] = {}
+        attendance_map[r.student_id][r.date.isoformat()] = r.status.value if r.status else None
+
+    result = []
+    for s in students:
+        result.append({
+            "student_id": s.id,
+            "register_number": s.register_number,
+            "first_name": s.first_name,
+            "last_name": s.last_name,
+            "attendance": attendance_map.get(s.id, {})
+        })
+
+    return result
+
+
 @router.post("/attendance", response_model=AttendanceSaveResponse)
 def save_attendance(
     payload: AttendanceSaveRequest,
