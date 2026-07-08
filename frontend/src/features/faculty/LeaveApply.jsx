@@ -323,8 +323,11 @@ export const LeaveApply = () => {
                 <span className="text-lg font-bold">{(balance.restricted_leaves_total || 1) - (balance.restricted_leaves_used || 0)}/{balance.restricted_leaves_total || 1}</span>
               </div>
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                <span className="text-blue-100">Earned Leave</span>
-                <span className="text-lg font-bold">{(balance.earned_leaves_total || 30) - (balance.earned_leaves_used || 0)}/{balance.earned_leaves_total || 30}</span>
+                <div className="flex flex-col">
+                  <span className="text-blue-100">Earned Leave</span>
+                  <span className="text-[10px] text-blue-200">1 per month (accrued)</span>
+                </div>
+                <span className="text-lg font-bold">{(balance.earned_leaves_total || 1) - (balance.earned_leaves_used || 0)}/{balance.earned_leaves_total || 1}</span>
               </div>
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <span className="text-blue-100">Vacation Leave</span>

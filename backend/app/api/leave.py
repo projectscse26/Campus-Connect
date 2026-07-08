@@ -72,7 +72,9 @@ def get_leave_balances(
         FacultyLeaveRequest.from_date < end_of_sem
     ).all()
     restricted_used_this_sem = sum(r.duration_days for r in sem_restricted_reqs)
-    
+    # 3. Earned Leave total (accrued 1 per month since June)
+    months_elapsed = today.month - 6 + 1 if today.month >= 6 else today.month + 7
+
     return {
         "id": balance.id,
         "faculty_id": balance.faculty_id,
@@ -83,7 +85,7 @@ def get_leave_balances(
         "restricted_leaves_used": int(min(restricted_used_this_sem, 1)),
         "sick_leaves_total": balance.sick_leaves_total,
         "sick_leaves_used": balance.sick_leaves_used,
-        "earned_leaves_total": balance.earned_leaves_total,
+        "earned_leaves_total": int(months_elapsed),
         "earned_leaves_used": balance.earned_leaves_used,
         "vacation_leaves_total": balance.vacation_leaves_total,
         "vacation_leaves_used": balance.vacation_leaves_used,
