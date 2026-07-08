@@ -7,7 +7,7 @@ class FacultyBase(BaseModel):
     last_name: str
     department_id: int
     employee_id: str
-    college_email: EmailStr
+    college_email: str
     phone: str
     designation: Optional[str] = None
     specialization: Optional[str] = None
@@ -23,7 +23,7 @@ class FacultyUpdate(BaseModel):
     last_name: Optional[str] = None
     department_id: Optional[int] = None
     employee_id: Optional[str] = None
-    college_email: Optional[EmailStr] = None
+    college_email: Optional[str] = None
     phone: Optional[str] = None
     designation: Optional[str] = None
     specialization: Optional[str] = None

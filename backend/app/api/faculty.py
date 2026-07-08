@@ -989,7 +989,7 @@ def get_course_announcements(
     return announcements
 
 
-@router.get("/", response_model=List[FacultyResponse])
+@router.get("/")
 def get_faculty(
     skip: int = 0, 
     limit: int = 100, 
@@ -1000,7 +1000,26 @@ def get_faculty(
     Retrieve all faculty members.
     """
     faculty = db.query(Faculty).offset(skip).limit(limit).all()
-    return faculty
+    return [
+        {
+            "id": f.id,
+            "user_id": f.user_id,
+            "first_name": f.first_name,
+            "last_name": f.last_name,
+            "department_id": f.department_id,
+            "employee_id": f.employee_id,
+            "college_email": f.college_email,
+            "phone": f.phone,
+            "designation": f.designation,
+            "specialization": f.specialization,
+            "gender": f.gender,
+            "joining_date": str(f.date_of_joining) if f.date_of_joining else None,
+            "is_active": f.is_active,
+            "created_at": f.created_at.isoformat() if f.created_at else None,
+            "updated_at": f.updated_at.isoformat() if f.updated_at else None,
+        }
+        for f in faculty
+    ]
 
 @router.post("/", response_model=FacultyResponse, status_code=status.HTTP_201_CREATED)
 def create_faculty(

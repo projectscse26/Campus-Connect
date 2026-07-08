@@ -228,10 +228,10 @@ export const HodDashboard = () => {
       setLoading(true);
       const [dashRes, annRes, leaveRes, gpRes, discRes, resSummary, facRes, secRes, attSummaryRes, facAttendanceRes, settingsRes] = await Promise.allSettled([
         axios.get('/api/hod/dashboard'),
-        axios.get('/api/announcements'),
+        axios.get('/api/announcements/'),
         axios.get('/api/leave/requests'),
         axios.get('/api/gatepass/hod'),
-        axios.get('/api/discipline'),
+        axios.get('/api/discipline/'),
         axios.get('/api/hod/results-summary'),
         axios.get('/api/hod/faculty'),
         axios.get('/api/hod/sections'),

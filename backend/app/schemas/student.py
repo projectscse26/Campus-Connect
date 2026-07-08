@@ -4,12 +4,14 @@ from datetime import datetime, date
 
 class SectionSimple(BaseModel):
     name: str
+    
+    model_config = ConfigDict(from_attributes=True)
 
 class StudentBase(BaseModel):
     first_name: str
     last_name: str
     register_number: str
-    college_email: EmailStr
+    college_email: str
     phone: str
     department_id: int
     batch: str                          # e.g. "2023-2027"
@@ -29,7 +31,7 @@ class StudentUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     register_number: Optional[str] = None
-    college_email: Optional[EmailStr] = None
+    college_email: Optional[str] = None
     phone: Optional[str] = None
     department_id: Optional[int] = None
     batch: Optional[str] = None

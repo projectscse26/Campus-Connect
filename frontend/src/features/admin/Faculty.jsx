@@ -43,15 +43,15 @@ export const Faculty = () => {
     try {
       setLoading(true);
       const [facRes, deptRes] = await Promise.all([
-        axios.get('/api/faculty'),
-        axios.get('/api/departments')
+        axios.get('/api/faculty/'),
+        axios.get('/api/departments/')
       ]);
       setFaculty(facRes.data);
       setDepartments(deptRes.data);
       setError(null);
     } catch (err) {
-      console.error(err);
-      setError('Failed to load faculty data');
+      console.error('Faculty fetch error:', err?.response?.status, err?.response?.data, err?.config?.url, err?.message);
+      setError(`Failed to load faculty data: ${err?.response?.status || ''} ${err?.response?.data?.detail || err?.message || ''}`);
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ export const Faculty = () => {
         delete payload.password;
         await axios.put(`/api/faculty/${editingId}`, payload);
       } else {
-        await axios.post('/api/faculty', payload);
+        await axios.post('/api/faculty/', payload);
       }
       
       await fetchData();

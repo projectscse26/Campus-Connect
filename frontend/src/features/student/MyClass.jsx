@@ -3,6 +3,28 @@ import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { Calendar, Users, Mail, User, BookOpen, Clock, Loader2, MapPin } from 'lucide-react';
 
+const PERIODS = [
+  { id: 1, label: '1', time: '8.45 - 9.30am', type: 'period', start: '08:45', end: '09:30' },
+  { id: 2, label: '2', time: '9.30 - 10.20am', type: 'period', start: '09:30', end: '10:20' },
+  { id: 'b1', label: 'BREAK', time: '10.20 - 10.35 am', type: 'break' },
+  { id: 3, label: '3', time: '10.35 - 11.25am', type: 'period', start: '10:35', end: '11:25' },
+  { id: 4, label: '4', time: '11.25 - 12.15pm', type: 'period', start: '11:25', end: '12:15' },
+  { id: 'l1', label: 'LUNCH', time: '12.15 - 1.00 PM', type: 'break' },
+  { id: 5, label: '5', time: '1.00 - 1.50pm', type: 'period', start: '13:00', end: '13:50' },
+  { id: 6, label: '6', time: '1.50 - 2.40pm', type: 'period', start: '13:50', end: '14:40' },
+  { id: 'b2', label: 'BREAK', time: '2.40 - 2.50 PM', type: 'break' },
+  { id: 7, label: '7', time: '2.50 - 3.40pm', type: 'period', start: '14:50', end: '15:40' },
+  { id: 8, label: '8', time: '3.40 - 4.30pm', type: 'period', start: '15:40', end: '16:30' }
+];
+
+const DAYS = [
+  { id: 'Monday', label: 'MON' },
+  { id: 'Tuesday', label: 'TUE' },
+  { id: 'Wednesday', label: 'WED' },
+  { id: 'Thursday', label: 'THU' },
+  { id: 'Friday', label: 'FRI' }
+];
+
 export default function MyClass() {
   const { user } = useAuth();
   const [classInfo, setClassInfo] = useState(null);
@@ -51,24 +73,18 @@ export default function MyClass() {
 
   const { section, advisor, mentor, classmates, timetable } = classInfo;
 
-  // Group timetable by day
-  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const scheduleByDay = {};
-  
-  daysOfWeek.forEach(day => {
-    scheduleByDay[day] = timetable.filter(slot => slot.day === day).sort((a, b) => {
-      return a.start_time.localeCompare(b.start_time);
-    });
+  // Group timetable by day and period for 2D grid
+  const grid = {};
+  DAYS.forEach(d => {
+    grid[d.id] = {};
   });
 
-  const formatTime = (timeStr) => {
-    if (!timeStr) return '';
-    const [hours, minutes] = timeStr.split(':');
-    const h = parseInt(hours, 10);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const displayH = h % 12 || 12;
-    return `${displayH}:${minutes} ${ampm}`;
-  };
+  timetable.forEach(slot => {
+    const period = PERIODS.find(p => slot.start_time && slot.start_time.startsWith(p.start));
+    if (period && grid[slot.day]) {
+      grid[slot.day][period.id] = slot;
+    }
+  });
 
   return (
     <div className="space-y-6">
@@ -126,51 +142,87 @@ export default function MyClass() {
               <h2 className="text-lg font-bold text-gray-900">Class Timetable</h2>
             </div>
             
-            <div className="divide-y divide-gray-100">
-              {daysOfWeek.map(day => {
-                const daySlots = scheduleByDay[day];
-                if (!daySlots || daySlots.length === 0) return null;
-                
-                return (
-                  <div key={day} className="p-6">
-                    <h3 className="text-md font-bold text-gray-900 mb-4">{day}</h3>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {daySlots.map(slot => (
-                        <div key={slot.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-primary-200 transition-colors group">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-700 bg-primary-50 px-2.5 py-1 rounded-md">
-                              <Clock className="w-3.5 h-3.5" />
-                              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                            </span>
-                          </div>
-                          <h4 className="font-bold text-gray-900 leading-tight mb-1">{slot.course_name}</h4>
-                          <p className="text-xs text-gray-500 font-medium mb-3">{slot.course_code}</p>
-                          
-                          <div className="flex items-center justify-between mt-auto">
-                            <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                              <User className="w-4 h-4 text-gray-400" />
-                              <span className="truncate max-w-[120px]">{slot.faculty_name}</span>
-                            </div>
-                            {slot.room_number && (
-                              <div className="flex items-center gap-1 text-xs text-gray-500 font-medium bg-white px-2 py-1 rounded-md border border-gray-200 shadow-sm">
-                                <MapPin className="w-3 h-3" />
-                                {slot.room_number}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+            <div className="overflow-x-auto">
+              <div className="min-w-[1000px]">
+                {/* Header Row */}
+                <div className="flex bg-slate-50 border-b border-slate-200">
+                  <div className="w-20 shrink-0 border-r border-slate-200 p-3 flex flex-col justify-center items-center font-bold text-slate-500 text-xs">
+                    DAY / TIME
                   </div>
-                );
-              })}
-              
-              {timetable.length === 0 && (
-                <div className="p-12 text-center text-gray-500">
-                  <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p>No timetable is available for this section yet.</p>
+                  {PERIODS.map(period => (
+                    <div 
+                      key={period.id} 
+                      className={`flex flex-col justify-center items-center p-2 text-xs border-r border-slate-200 shrink-0 ${
+                        period.type === 'break' ? 'w-16 bg-slate-100 text-slate-400 font-medium' : 'w-[120px] bg-white font-bold text-slate-600'
+                      }`}
+                    >
+                      {period.type === 'period' ? (
+                        <>
+                          <span className="text-indigo-600 mb-1">Period {period.label}</span>
+                          <span className="font-normal text-[10px] text-slate-400 flex items-center">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {period.time}
+                          </span>
+                        </>
+                      ) : (
+                        <div className="[writing-mode:vertical-rl] tracking-widest uppercase">
+                          {period.label}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              )}
+
+                {/* Body Rows */}
+                {DAYS.map(day => (
+                  <div key={day.id} className="flex border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors">
+                    <div className="w-20 shrink-0 border-r border-slate-200 bg-slate-50 p-3 flex items-center justify-center font-bold text-slate-600">
+                      {day.label}
+                    </div>
+                    
+                    {PERIODS.map(period => {
+                      if (period.type === 'break') {
+                        return (
+                          <div key={`${day.id}-${period.id}`} className="w-16 shrink-0 border-r border-slate-200 bg-slate-100/50">
+                            {/* Empty break cell */}
+                          </div>
+                        );
+                      }
+
+                      const slot = grid[day.id]?.[period.id];
+                      
+                      return (
+                        <div 
+                          key={`${day.id}-${period.id}`}
+                          className={`w-[120px] shrink-0 border-r border-slate-200 p-2 relative group transition-colors ${
+                            slot ? 'bg-indigo-50/50' : 'bg-white hover:bg-slate-50'
+                          }`}
+                        >
+                          {slot ? (
+                            <div className="h-full bg-white border border-indigo-200 rounded-lg p-2 shadow-sm relative group-hover:border-indigo-400 group-hover:shadow-md transition-all cursor-pointer">
+                              <div className="font-bold text-indigo-700 text-xs truncate" title={slot.course_name}>
+                                {slot.course_code || slot.course_name}
+                              </div>
+                              <div className="text-[10px] text-slate-500 mt-1 truncate">
+                                {slot.faculty_name}
+                              </div>
+                              {slot.room_number && (
+                                <div className="text-[10px] text-slate-400 mt-1 truncate flex items-center">
+                                  <MapPin className="w-2.5 h-2.5 mr-1" />
+                                  {slot.room_number}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="h-full border border-dashed border-transparent group-hover:border-slate-300 rounded-lg flex items-center justify-center transition-colors">
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

@@ -993,15 +993,25 @@ def get_my_class_info(
         assignment = assignment_map.get(slot.course_assignment_id)
         if assignment and assignment.course:
             faculty_name = f"{assignment.faculty.first_name} {assignment.faculty.last_name}" if assignment.faculty else "TBD"
+            DAY_MAP = {
+                "MON": "Monday",
+                "TUE": "Tuesday",
+                "WED": "Wednesday",
+                "THU": "Thursday",
+                "FRI": "Friday",
+                "SAT": "Saturday",
+                "SUN": "Sunday"
+            }
+            day_val = slot.day.value.upper() if hasattr(slot.day, 'value') else str(slot.day).upper()
             timetable.append({
                 "id": slot.id,
-                "day": slot.day.value,
+                "day": DAY_MAP.get(day_val, day_val),
                 "start_time": slot.start_time.isoformat() if slot.start_time else None,
                 "end_time": slot.end_time.isoformat() if slot.end_time else None,
                 "course_name": assignment.course.name,
                 "course_code": assignment.course.code,
                 "faculty_name": faculty_name,
-                "room_number": slot.room_number
+                "room_number": slot.room
             })
 
     return {

@@ -71,7 +71,6 @@ import { StudentLeaveApprovals } from './features/hod/StudentLeaveApprovals';
 import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
 import { Profile } from './features/profile/Profile';
 import LateEntryNotification from './features/student/LateEntryNotification';
-import { AuditLogs } from './features/admin/AuditLogs';
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
@@ -145,11 +144,6 @@ function AppRoutes() {
         <Route path="/admin/latetracker" element={
           <ProtectedRoute allowedRole="admin">
             <LateManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/audit-logs" element={
-          <ProtectedRoute allowedRole="admin">
-            <AuditLogs />
           </ProtectedRoute>
         } />
         <Route path="/admin/announcements" element={
