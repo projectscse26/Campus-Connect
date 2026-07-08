@@ -400,14 +400,16 @@ export function Timetable() {
         </div>
       )}
       
-      <PrintableTimetable 
-        ref={printableRef}
-        grid={grid}
-        assignments={assignments}
-        sectionData={sections.find(s => s.id.toString() === selectedSection)}
-        DAYS={DAYS}
-        PERIODS={PERIODS}
-      />
+      <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+        <PrintableTimetable 
+          ref={printableRef}
+          grid={grid}
+          assignments={assignments}
+          sectionData={sections.find(s => s.id.toString() === selectedSection)}
+          DAYS={DAYS}
+          PERIODS={PERIODS}
+        />
+      </div>
     </div>
   );
 }

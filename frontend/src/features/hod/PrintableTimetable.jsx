@@ -19,9 +19,7 @@ export const PrintableTimetable = React.forwardRef(({ grid, assignments, section
       style={{
         width: '1000px', // Fixed width to ensure consistent PDF rendering
         minHeight: '1414px', // A4 aspect ratio
-        position: 'absolute',
-        top: '-9999px', // Hide off-screen
-        left: '-9999px',
+        backgroundColor: '#ffffff',
         boxSizing: 'border-box'
       }}
     >
