@@ -52,6 +52,7 @@ def create_authority_user(db: Session, email: str, first_name: str, last_name: s
             last_name=last_name,
             title=title,
             phone="1234567890",
+            employee_id=f"EMP_{title.replace(' ', '_').upper()}",
             is_active=True
         )
         db.add(authority)
