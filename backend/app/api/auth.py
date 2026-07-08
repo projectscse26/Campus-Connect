@@ -44,6 +44,13 @@ def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2Passw
         "name": user.email.split('@')[0] # Fallback until profiles are populated
     }
     
+    # Add title for authority users
+    if user.role.value == "authority":
+        from app.models.authority import Authority
+        authority = db.query(Authority).filter(Authority.user_id == user.id).first()
+        if authority:
+            user_data["title"] = authority.title
+    
     return {"access_token": access_token, "token_type": "bearer", "user": user_data}
 
 from app.core.security import get_current_active_user
@@ -52,6 +59,8 @@ from app.models.academic import Section
 
 @router.get("/me")
 def read_users_me(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+    from app.models.authority import Authority
+    
     extra = {"is_class_advisor": False, "advisor_section_id": None}
 
     if current_user.role in ("faculty", "hod"):
@@ -64,6 +73,12 @@ def read_users_me(current_user: User = Depends(get_current_active_user), db: Ses
             if section:
                 extra["is_class_advisor"] = True
                 extra["advisor_section_id"] = section.id
+    
+    # Add title for authority users
+    if current_user.role == "authority":
+        authority = db.query(Authority).filter(Authority.user_id == current_user.id).first()
+        if authority:
+            extra["title"] = authority.title
 
     return {
         "id": current_user.id,

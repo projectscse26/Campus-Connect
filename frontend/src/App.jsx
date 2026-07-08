@@ -71,6 +71,9 @@ import { StudentLeaveApprovals } from './features/hod/StudentLeaveApprovals';
 import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
 import { Profile } from './features/profile/Profile';
 import LateEntryNotification from './features/student/LateEntryNotification';
+import PrincipalDashboard from './features/authority/PrincipalDashboard';
+import OMDashboard from './features/authority/OMDashboard';
+import AuthorityDashboardRouter from './features/authority/AuthorityDashboardRouter';
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
@@ -426,12 +429,27 @@ function AppRoutes() {
       
       {/* Continuing DashboardLayout for Authority (Needs separate Route wrapper if we closed it above, wait, I need to wrap Authority inside DashboardLayout as well) */}
       <Route element={<DashboardLayout />}>
-        {/* Authority Routes */}
+        {/* Authority Routes - Uses router to determine Principal vs OM */}
         <Route path="/authority" element={
           <ProtectedRoute allowedRole="authority">
-            <AuthorityDashboard />
+            <AuthorityDashboardRouter />
           </ProtectedRoute>
         } />
+        
+        {/* Principal Dashboard Route */}
+        <Route path="/principal" element={
+          <ProtectedRoute allowedRole="authority">
+            <PrincipalDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* OM Dashboard Route */}
+        <Route path="/om" element={
+          <ProtectedRoute allowedRole="authority">
+            <OMDashboard />
+          </ProtectedRoute>
+        } />
+        
         <Route path="/authority/discipline" element={
           <ProtectedRoute allowedRole="authority">
             <AuthorityDiscipline />
