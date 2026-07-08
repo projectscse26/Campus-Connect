@@ -43,8 +43,8 @@ class GatePass(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Forward relationships only to avoid modifying existing models
-    student = relationship("Student", foreign_keys=[student_id])
+    # Forward relationships only to avoid modifying existing models (except Student which was updated for cascade delete)
+    student = relationship("Student", back_populates="gate_passes", foreign_keys=[student_id])
     mentor = relationship("Faculty", foreign_keys=[mentor_id])
     hod = relationship("Faculty", foreign_keys=[hod_id])
     om = relationship("Authority", foreign_keys=[om_id])

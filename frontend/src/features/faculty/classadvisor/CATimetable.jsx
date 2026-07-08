@@ -69,43 +69,43 @@ export const CATimetable = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
         <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
           <Calendar className="w-6 h-6" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Class Timetable</h1>
-          <p className="text-slate-500 text-sm">Read-only view of your class schedule</p>
+          <h1 className="text-2xl font-bold text-gray-900">Class Timetable</h1>
+          <p className="text-gray-500 text-sm">Read-only view of your class schedule</p>
         </div>
       </div>
 
       {slots.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 flex flex-col items-center text-center">
-          <Calendar className="w-12 h-12 text-slate-200 mb-3" />
-          <p className="text-slate-500 font-medium">No timetable assigned to your class yet.</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 flex flex-col items-center text-center">
+          <Calendar className="w-12 h-12 text-gray-200 mb-3" />
+          <p className="text-gray-500 font-medium">No timetable assigned to your class yet.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
           <div className="min-w-[900px]">
 
             {/* Header row */}
-            <div className="flex bg-slate-50 border-b border-slate-200 rounded-t-2xl">
-              <div className="w-20 shrink-0 border-r border-slate-200 p-3 flex flex-col justify-center items-center font-bold text-slate-500 text-xs">
+            <div className="flex bg-gray-50 border-b border-gray-200 rounded-t-2xl">
+              <div className="w-20 shrink-0 border-r border-gray-200 p-3 flex flex-col justify-center items-center font-bold text-gray-500 text-xs">
                 DAY /<br />TIME
               </div>
               {PERIODS.map(period => (
                 <div
                   key={period.id}
-                  className={`flex flex-col justify-center items-center p-2 text-xs border-r border-slate-200 shrink-0 ${
+                  className={`flex flex-col justify-center items-center p-2 text-xs border-r border-gray-200 shrink-0 ${
                     period.type === 'break'
-                      ? 'w-14 bg-slate-100 text-slate-400 font-medium'
-                      : 'w-[120px] bg-white font-bold text-slate-600'
+                      ? 'w-14 bg-gray-100 text-gray-500 font-medium'
+                      : 'w-[120px] bg-white font-bold text-gray-700'
                   }`}
                 >
                   {period.type === 'period' ? (
                     <>
                       <span className="text-indigo-600 mb-1">Period {period.label}</span>
-                      <span className="font-normal text-[10px] text-slate-400 flex items-center gap-0.5">
+                      <span className="font-normal text-[10px] text-gray-500 flex items-center gap-0.5">
                         <Clock className="w-3 h-3" />{period.time}
                       </span>
                     </>
@@ -120,8 +120,8 @@ export const CATimetable = () => {
 
             {/* Day rows */}
             {DAYS.map(day => (
-              <div key={day.id} className="flex border-b border-slate-100 last:border-b-0 hover:bg-slate-50/40 transition-colors">
-                <div className="w-20 shrink-0 border-r border-slate-200 bg-slate-50 p-3 flex items-center justify-center font-bold text-slate-600 text-sm">
+              <div key={day.id} className="flex border-b border-gray-100 last:border-b-0 hover:bg-gray-50/40 transition-colors">
+                <div className="w-20 shrink-0 border-r border-gray-200 bg-gray-50 p-3 flex items-center justify-center font-bold text-gray-700 text-sm">
                   {day.label}
                 </div>
 
@@ -130,7 +130,7 @@ export const CATimetable = () => {
                     return (
                       <div
                         key={`${day.id}-${period.id}`}
-                        className="w-14 shrink-0 border-r border-slate-200 bg-slate-100/50"
+                        className="w-14 shrink-0 border-r border-gray-200 bg-gray-100/50"
                       />
                     );
                   }
@@ -140,23 +140,23 @@ export const CATimetable = () => {
                   return (
                     <div
                       key={`${day.id}-${period.id}`}
-                      className={`w-[120px] shrink-0 border-r border-slate-200 p-2 ${
-                        cell ? 'bg-indigo-50/40' : 'bg-white'
+                      className={`w-[120px] shrink-0 border-r border-gray-200 p-2 ${
+                        cell ? 'bg-indigo-50/40 dark:bg-gray-50/40' : 'bg-white'
                       }`}
                     >
                       {cell ? (
-                        <div className="h-full bg-white border border-indigo-200 rounded-lg p-2 shadow-sm">
+                        <div className="h-full bg-white dark:bg-gray-100 border border-indigo-200 dark:border-gray-200 rounded-lg p-2 shadow-sm">
                           <div
-                            className="font-bold text-indigo-700 text-xs truncate"
+                            className="font-bold text-indigo-700 dark:text-indigo-300 text-xs truncate"
                             title={cell.subject_name}
                           >
                             {cell.subject_code}
                           </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 truncate" title={cell.faculty_name}>
+                          <div className="text-[10px] text-gray-500 mt-0.5 truncate" title={cell.faculty_name}>
                             {cell.faculty_name}
                           </div>
                           {cell.room && (
-                            <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                            <div className="text-[10px] text-gray-500 mt-0.5 truncate">
                               {cell.room}
                             </div>
                           )}

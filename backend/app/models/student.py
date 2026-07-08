@@ -89,6 +89,7 @@ class Student(Base):
     admission_type = Column(String(50), nullable=True)     # Counselling / Management / Lateral Entry
 
     is_active = Column(Boolean, default=True)
+    is_alumni = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -101,3 +102,4 @@ class Student(Base):
     attendance_records = relationship("Attendance", back_populates="student", cascade="all, delete-orphan")
     leave_requests = relationship("StudentLeaveRequest", back_populates="student", cascade="all, delete-orphan")
     grades = relationship("Grade", back_populates="student", cascade="all, delete-orphan")
+    gate_passes = relationship("GatePass", back_populates="student", cascade="all, delete-orphan")

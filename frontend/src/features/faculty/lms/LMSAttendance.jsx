@@ -190,10 +190,10 @@ export const LMSAttendance = () => {
                     <button
                       onClick={() => toggle(s.id)}
                       className={`w-32 py-2 rounded-xl text-sm font-bold flex-shrink-0 transition-all ${
-                        isPresent ? 'bg-green-500 text-white shadow-md shadow-green-200' :
-                        isAbsent  ? 'bg-red-500 text-white shadow-md shadow-red-200'   :
-                        isHoliday ? 'bg-purple-500 text-white shadow-md shadow-purple-200' :
-                        'bg-gray-100 text-gray-500 border border-dashed border-gray-300 hover:bg-gray-200'
+                        isPresent ? 'bg-green-500 text-white dark:text-gray-900 shadow-md shadow-green-200 dark:shadow-none' :
+                        isAbsent  ? 'bg-red-500 text-white dark:text-gray-900 shadow-md shadow-red-200 dark:shadow-none'   :
+                        isHoliday ? 'bg-purple-500 text-white dark:text-gray-900 shadow-md shadow-purple-200 dark:shadow-none' :
+                        'bg-gray-100 dark:bg-gray-50 text-gray-500 border border-dashed border-gray-300 hover:bg-gray-200 dark:hover:bg-gray-100'
                       }`}
                     >
                       {isPresent ? '✓ Present' : isAbsent ? '✕ Absent' : isHoliday ? '🏖️ Holiday' : 'Tap to Mark'}

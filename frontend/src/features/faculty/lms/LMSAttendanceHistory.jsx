@@ -110,10 +110,10 @@ export const LMSAttendanceHistory = () => {
         {/* Left Column: Calendar & Course Info */}
         <div className="lg:col-span-1 space-y-6">
           {/* Course Info Header */}
-          <div className="bg-indigo-50/50 rounded-2xl border border-indigo-100 p-6 shadow-sm">
+          <div className="bg-indigo-50/50 dark:bg-gray-50 rounded-2xl border border-indigo-100 dark:border-gray-100 p-6 shadow-sm">
             <p className="text-lg font-bold text-gray-900">{course_code} — {course_name}</p>
             <p className="text-sm text-gray-600 mt-1 font-medium">Section: {section}</p>
-            <div className="mt-4 inline-block px-3 py-1.5 bg-white text-indigo-800 text-sm font-bold rounded-lg border border-indigo-200">
+            <div className="mt-4 inline-block px-3 py-1.5 bg-white dark:bg-gray-100 text-indigo-800 dark:text-indigo-300 text-sm font-bold rounded-lg border border-indigo-200 dark:border-gray-200">
               {total_students} Enrolled
             </div>
             <div className="mt-2 text-xs font-semibold text-gray-500">
@@ -123,7 +123,7 @@ export const LMSAttendanceHistory = () => {
 
           {/* Modern Calendar UI */}
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -z-10"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 dark:bg-gray-50 rounded-bl-full -z-10"></div>
             
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-gray-900">
@@ -164,8 +164,8 @@ export const LMSAttendanceHistory = () => {
                     onClick={() => handleDateClick(day)}
                     className={`
                       w-10 h-10 mx-auto rounded-full flex items-center justify-center text-sm font-semibold transition-all relative
-                      ${selected ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 scale-110 z-10' : 'text-gray-700 hover:bg-gray-100'}
-                      ${today && !selected ? 'ring-2 ring-indigo-200 text-indigo-700 font-bold' : ''}
+                      ${selected ? 'bg-indigo-600 text-white dark:text-gray-900 shadow-md shadow-indigo-200 dark:shadow-none scale-110 z-10' : 'text-gray-700 hover:bg-gray-100'}
+                      ${today && !selected ? 'ring-2 ring-indigo-200 dark:ring-indigo-700 text-indigo-700 dark:text-indigo-400 font-bold' : ''}
                     `}
                   >
                     {day}
@@ -207,15 +207,15 @@ export const LMSAttendanceHistory = () => {
                   const barColor = pct >= 75 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500';
 
                   return (
-                    <div key={entryKey} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div key={entryKey} className="bg-white rounded-2xl border border-gray-200 dark:border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                       {/* Summary row — click to expand */}
                       <button
                         onClick={() => setExpanded(isExpanded ? null : entryKey)}
-                        className="w-full p-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:bg-gray-50 transition-colors text-left"
+                        className="w-full p-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:bg-gray-50 dark:hover:bg-gray-100 transition-colors text-left"
                       >
                         <div className="flex-1 min-w-0 w-full">
                           <div className="flex items-center justify-between sm:justify-start gap-3">
-                            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 text-[13px] font-bold rounded-lg border border-indigo-100">
+                            <span className="px-3 py-1 bg-indigo-50 dark:bg-gray-100 text-indigo-700 dark:text-indigo-300 text-[13px] font-bold rounded-lg border border-indigo-100 dark:border-gray-200">
                               {entry.hour_label}
                             </span>
                             {/* Show dropdown icon on mobile in header line instead of at the bottom */}
@@ -234,8 +234,8 @@ export const LMSAttendanceHistory = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 mt-1 sm:mt-0 w-full sm:w-auto">
-                          <span className="flex-1 sm:flex-none text-center px-3 py-1.5 bg-green-50 text-green-700 text-[13px] font-bold rounded-xl border border-green-100 shadow-sm">{entry.present} Present</span>
-                          <span className="flex-1 sm:flex-none text-center px-3 py-1.5 bg-red-50 text-red-700 text-[13px] font-bold rounded-xl border border-red-100 shadow-sm">{entry.absent} Absent</span>
+                          <span className="flex-1 sm:flex-none text-center px-3 py-1.5 bg-green-50 dark:bg-gray-100 text-green-700 dark:text-green-400 text-[13px] font-bold rounded-xl border border-green-100 dark:border-gray-200 shadow-sm">{entry.present} Present</span>
+                          <span className="flex-1 sm:flex-none text-center px-3 py-1.5 bg-red-50 dark:bg-gray-100 text-red-700 dark:text-red-400 text-[13px] font-bold rounded-xl border border-red-100 dark:border-gray-200 shadow-sm">{entry.absent} Absent</span>
                           <span className={`hidden sm:block text-gray-400 text-sm transition-transform ml-1 ${isExpanded ? 'rotate-180' : ''}`}>
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                           </span>
@@ -244,18 +244,18 @@ export const LMSAttendanceHistory = () => {
 
                       {/* Expanded student list */}
                       {isExpanded && (
-                        <div className="border-t border-gray-100 divide-y divide-gray-50 bg-gray-50/50 p-2 sm:p-4">
-                          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="border-t border-gray-100 dark:border-gray-200 divide-y divide-gray-50 dark:divide-gray-100 bg-gray-50/50 dark:bg-gray-50 p-2 sm:p-4">
+                          <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-100 overflow-hidden shadow-sm">
                             {entry.records.map(r => (
-                              <div key={r.student_id} className="flex items-center justify-between px-4 sm:px-5 py-3 gap-3 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                              <div key={r.student_id} className="flex items-center justify-between px-4 sm:px-5 py-3 gap-3 border-b border-gray-50 dark:border-gray-100 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-100 transition-colors">
                                 <div className="flex flex-col min-w-0">
                                   <span className="text-[13px] sm:text-sm font-bold text-gray-900 truncate">{r.name}</span>
                                   <span className="text-[11px] sm:text-xs font-mono text-gray-500">{r.register_number}</span>
                                 </div>
                                 <span className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-bold flex-shrink-0 text-center uppercase tracking-wider ${
-                                  r.status === 'present' ? 'bg-green-100 text-green-700' :
-                                  r.status === 'absent'  ? 'bg-red-100 text-red-700'    :
-                                  'bg-gray-100 text-gray-500'
+                                  r.status === 'present' ? 'bg-green-100 dark:bg-gray-100 text-green-700 dark:text-green-400' :
+                                  r.status === 'absent'  ? 'bg-red-100 dark:bg-gray-100 text-red-700 dark:text-red-400'    :
+                                  'bg-gray-100 dark:bg-gray-200 text-gray-500 dark:text-gray-400'
                                 }`}>
                                   {r.status === 'present' ? 'Present' : r.status === 'absent' ? 'Absent' : r.status}
                                 </span>

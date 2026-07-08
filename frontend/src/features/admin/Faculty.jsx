@@ -44,7 +44,7 @@ export const Faculty = () => {
       setLoading(true);
       const [facRes, deptRes] = await Promise.all([
         axios.get('/api/faculty/'),
-        axios.get('/api/departments')
+        axios.get('/api/departments/')
       ]);
       setFaculty(facRes.data);
       setDepartments(deptRes.data);
@@ -118,7 +118,7 @@ export const Faculty = () => {
         delete payload.password;
         await axios.put(`/api/faculty/${editingId}`, payload);
       } else {
-        await axios.post('/api/faculty', payload);
+        await axios.post('/api/faculty/', payload);
       }
       
       await fetchData();

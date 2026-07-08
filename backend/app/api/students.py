@@ -133,38 +133,14 @@ def promote_students(
             s.current_semester += 1
             promoted_count += 1
         elif s.current_semester == 8:
-            # Create Alumni record
-            alumni_record = Alumni(
-                user_id=s.user_id,
-                department_id=s.department_id,
-                first_name=s.first_name,
-                last_name=s.last_name,
-                register_number=s.register_number,
-                gender=s.gender,
-                date_of_birth=s.date_of_birth,
-                blood_group=s.blood_group,
-                nationality=s.nationality,
-                community=s.community,
-                photo_url=s.photo_url,
-                batch=s.batch,
-                graduation_year=2026, # Using a hardcoded year for now or derive from batch
-                college_email=s.college_email,
-                personal_email=s.personal_email,
-                phone=s.phone,
-                address_line1=s.address_line1,
-                address_line2=s.address_line2,
-                city=s.city,
-                state=s.state,
-                pincode=s.pincode
-            )
-            db.add(alumni_record)
+            # Soft delete student and mark as alumni
+            s.is_alumni = True
+            s.is_active = False
             
-            # Deactivate user account (optional, based on requirement)
+            # Deactivate user account so they can't login as active student
             if s.user:
                 s.user.is_active = False
 
-            # Delete student record
-            db.delete(s)
             graduated_count += 1
 
     db.commit()

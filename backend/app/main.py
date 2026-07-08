@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import traceback
 from app.api import (
     auth, admin, departments, faculty, 
-    students, authorities, discipline, late, leave, class_advisor, audit_logs
+    students, authorities, discipline, late, leave, class_advisor
 )
 from app.core.config import get_settings
 
@@ -14,6 +16,13 @@ app = FastAPI(
     version="1.0.0",
 )
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "traceback": traceback.format_exc()}
+    )
+
 # Configure CORS for the React frontend
 app.add_middleware(
     CORSMiddleware,
@@ -22,9 +31,10 @@ app.add_middleware(
     "http://localhost:5174",
     "http://localhost:3000",
     "http://localhost:4173",
-
     "https://secure-healing-production-6347.up.railway.app",
-],
+    settings.FRONTEND_URL,
+    ],
+    allow_origin_regex="https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,7 +51,7 @@ app.include_router(late.router, prefix="/api/late", tags=["Late Tracker"])
 app.include_router(authorities.router, prefix="/api/authorities", tags=["Authorities"])
 app.include_router(leave.router, prefix="/api/leave", tags=["Leave Management"])
 app.include_router(class_advisor.router, prefix="/api/class-advisor", tags=["Class Advisor"])
-app.include_router(audit_logs.router, prefix="/api/audit-logs", tags=["Audit Logs"])
+
 from app.api import courses
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
 from app.api import hod
@@ -54,11 +64,12 @@ app.include_router(student_portal.router, prefix="/api/student-portal", tags=["S
 from app.api import gatepass
 app.include_router(gatepass.router, prefix="/api/gatepass", tags=["Gate Pass"])
 
+from app.api import alumni
+app.include_router(alumni.router, prefix="/api/admin", tags=["Alumni"])
+
 from app.api import retest
 app.include_router(retest.router, prefix="/api/retest", tags=["Retest Marks"])
 
-from app.middleware.audit_middleware import AuditLoggingMiddleware
-app.add_middleware(AuditLoggingMiddleware)
 
 @app.get("/")
 def read_root():

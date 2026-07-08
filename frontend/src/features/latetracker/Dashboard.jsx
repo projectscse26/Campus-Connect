@@ -73,7 +73,7 @@ export const LateTrackerDashboard = () => {
       try {
         const token = localStorage.getItem("token");
         const [deptRes, studentsRes, recordsRes, notificationsRes] = await Promise.all([
-          axios.get('/api/departments', { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get('/api/departments/', { headers: { Authorization: `Bearer ${token}` } }),
           axios.get('/api/students/?limit=1000', { headers: { Authorization: `Bearer ${token}` } }),
           axios.get('/api/late?limit=5', { headers: { Authorization: `Bearer ${token}` } }),
           axios.get('/api/late/notifications?date_filter=' + new Date().toISOString().split('T')[0], { 
@@ -149,7 +149,7 @@ export const LateTrackerDashboard = () => {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.post('/api/late', {
+      await axios.post('/api/late/', {
         student_id: selectedStudent.id,
         action_status: actionStatus
       }, {

@@ -76,21 +76,21 @@ const MentorLeaveQueue = () => {
 const MenteeItem = ({ mentee, selected, onClick }) => (
   <button
     onClick={onClick}
-    className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-      selected ? 'bg-primary-50 border-l-4 border-l-primary-600' : ''
+    className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 dark:hover:bg-gray-100/50 transition-colors ${
+      selected ? 'bg-primary-50 dark:bg-gray-100 border-l-4 border-l-primary-600 dark:border-l-primary-500' : 'border-l-4 border-l-transparent'
     }`}
   >
     <div className="flex items-center justify-between">
       <div>
-        <p className="font-semibold text-gray-900 text-sm">
+        <p className={`font-semibold text-sm ${selected ? 'text-primary-900 dark:text-gray-900' : 'text-gray-900'}`}>
           {mentee.first_name} {mentee.last_name}
         </p>
-        <p className="text-xs text-gray-500 mt-0.5">
+        <p className={`text-xs mt-0.5 ${selected ? 'text-primary-600 dark:text-gray-500' : 'text-gray-500'}`}>
           Roll: {mentee.register_number}&nbsp;·&nbsp;Att:{' '}
           {mentee.attendance_pct != null ? `${mentee.attendance_pct}%` : '—'}
         </p>
       </div>
-      <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0 ml-2" />
+      <ChevronRight className={`w-4 h-4 flex-shrink-0 ml-2 ${selected ? 'text-primary-500 dark:text-gray-400' : 'text-gray-300'}`} />
     </div>
   </button>
 );

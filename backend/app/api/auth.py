@@ -69,6 +69,7 @@ def read_users_me(current_user: User = Depends(get_current_active_user), db: Ses
         "id": current_user.id,
         "email": current_user.email,
         "role": current_user.role.value,
+        "name": current_user.email.split('@')[0],
         **extra
     }
 

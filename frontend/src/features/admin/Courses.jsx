@@ -37,8 +37,8 @@ export const Courses = () => {
     try {
       setLoading(true);
       const [coursesRes, deptRes] = await Promise.all([
-        axios.get('/api/courses'),
-        axios.get('/api/departments')
+        axios.get('/api/courses/'),
+        axios.get('/api/departments/')
       ]);
       setCourses(coursesRes.data);
       setDepartments(deptRes.data);
@@ -104,7 +104,7 @@ export const Courses = () => {
       if (editingId) {
         await axios.put(`/api/courses/${editingId}`, payload);
       } else {
-        await axios.post('/api/courses', payload);
+        await axios.post('/api/courses/', payload);
       }
       
       await fetchData();

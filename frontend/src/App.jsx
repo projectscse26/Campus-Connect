@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import DashboardLayout from './layouts/DashboardLayout';
 import Login from './features/auth/Login';
 import { 
@@ -12,6 +13,7 @@ import {
 import { Departments } from './features/admin/Departments';
 import { Faculty } from './features/admin/Faculty';
 import { Students } from './features/admin/Students';
+import { Alumni } from './features/admin/Alumni';
 import { Authorities } from './features/admin/Authorities';
 import { Courses } from './features/admin/Courses';
 import { HodDashboard } from './features/hod/HodDashboard';
@@ -69,7 +71,6 @@ import { StudentLeaveApprovals } from './features/hod/StudentLeaveApprovals';
 import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
 import { Profile } from './features/profile/Profile';
 import LateEntryNotification from './features/student/LateEntryNotification';
-import { AuditLogs } from './features/admin/AuditLogs';
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
@@ -120,6 +121,11 @@ function AppRoutes() {
             <Students />
           </ProtectedRoute>
         } />
+        <Route path="/admin/alumni" element={
+          <ProtectedRoute allowedRole="admin">
+            <Alumni />
+          </ProtectedRoute>
+        } />
         <Route path="/admin/authorities" element={
           <ProtectedRoute allowedRole="admin">
             <Authorities />
@@ -138,11 +144,6 @@ function AppRoutes() {
         <Route path="/admin/latetracker" element={
           <ProtectedRoute allowedRole="admin">
             <LateManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/audit-logs" element={
-          <ProtectedRoute allowedRole="admin">
-            <AuditLogs />
           </ProtectedRoute>
         } />
         <Route path="/admin/announcements" element={
@@ -471,12 +472,16 @@ function AppRoutes() {
   );
 }
 
+
+
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
