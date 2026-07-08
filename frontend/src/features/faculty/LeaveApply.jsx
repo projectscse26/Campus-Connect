@@ -9,12 +9,12 @@ export const LeaveApply = () => {
   const { user } = useAuth();
   
   const [balance, setBalance] = useState({
-    casual_leaves_total: 12, casual_leaves_used: 0,
+    casual_leaves_total: 1, casual_leaves_used: 0,
     earned_leaves_total: 30, earned_leaves_used: 0,
     vacation_leaves_total: 14, vacation_leaves_used: 0,
     compensation_leaves_total: 5, compensation_leaves_used: 0,
     academic_leaves_total: 10, academic_leaves_used: 0,
-    restricted_leaves_total: 2, restricted_leaves_used: 0
+    restricted_leaves_total: 1, restricted_leaves_used: 0
   });
   const [facultyProfile, setFacultyProfile] = useState(null);
   const [allFaculty, setAllFaculty] = useState([]);
@@ -313,14 +313,14 @@ export const LeaveApply = () => {
                   <span className="text-blue-100">Casual Leave</span>
                   <span className="text-[10px] text-blue-200">1 per month</span>
                 </div>
-                <span className="text-lg font-bold">{(balance.casual_leaves_total || 12) - (balance.casual_leaves_used || 0)}/{balance.casual_leaves_total || 12}</span>
+                <span className="text-lg font-bold">{(balance.casual_leaves_total || 1) - (balance.casual_leaves_used || 0)}/{balance.casual_leaves_total || 1}</span>
               </div>
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <div className="flex flex-col">
                   <span className="text-blue-100">Restricted Leave</span>
                   <span className="text-[10px] text-blue-200">1 per sem</span>
                 </div>
-                <span className="text-lg font-bold">{(balance.restricted_leaves_total || 2) - (balance.restricted_leaves_used || 0)}/{balance.restricted_leaves_total || 2}</span>
+                <span className="text-lg font-bold">{(balance.restricted_leaves_total || 1) - (balance.restricted_leaves_used || 0)}/{balance.restricted_leaves_total || 1}</span>
               </div>
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <span className="text-blue-100">Earned Leave</span>

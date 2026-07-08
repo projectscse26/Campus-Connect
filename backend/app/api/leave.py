@@ -37,7 +37,61 @@ def get_leave_balances(
         db.commit()
         db.refresh(balance)
         
-    return balance
+    import datetime
+    today = datetime.date.today()
+    
+    # 1. Casual Leave used in current month
+    start_of_month = datetime.date(today.year, today.month, 1)
+    if today.month == 12:
+        end_of_month = datetime.date(today.year + 1, 1, 1)
+    else:
+        end_of_month = datetime.date(today.year, today.month + 1, 1)
+        
+    monthly_casual_reqs = db.query(FacultyLeaveRequest).filter(
+        FacultyLeaveRequest.faculty_id == faculty.id,
+        FacultyLeaveRequest.leave_type == "Casual Leave",
+        FacultyLeaveRequest.status == LeaveStatus.APPROVED,
+        FacultyLeaveRequest.from_date >= start_of_month,
+        FacultyLeaveRequest.from_date < end_of_month
+    ).all()
+    casual_used_this_month = sum(r.duration_days for r in monthly_casual_reqs)
+    
+    # 2. Restricted Leave used in current semester (Jan-Jun or Jul-Dec)
+    if today.month <= 6:
+        start_of_sem = datetime.date(today.year, 1, 1)
+        end_of_sem = datetime.date(today.year, 7, 1)
+    else:
+        start_of_sem = datetime.date(today.year, 7, 1)
+        end_of_sem = datetime.date(today.year + 1, 1, 1)
+        
+    sem_restricted_reqs = db.query(FacultyLeaveRequest).filter(
+        FacultyLeaveRequest.faculty_id == faculty.id,
+        FacultyLeaveRequest.leave_type == "Restricted Leave",
+        FacultyLeaveRequest.status == LeaveStatus.APPROVED,
+        FacultyLeaveRequest.from_date >= start_of_sem,
+        FacultyLeaveRequest.from_date < end_of_sem
+    ).all()
+    restricted_used_this_sem = sum(r.duration_days for r in sem_restricted_reqs)
+    
+    return {
+        "id": balance.id,
+        "faculty_id": balance.faculty_id,
+        "academic_year": balance.academic_year,
+        "casual_leaves_total": 1,
+        "casual_leaves_used": int(min(casual_used_this_month, 1)),
+        "restricted_leaves_total": 1,
+        "restricted_leaves_used": int(min(restricted_used_this_sem, 1)),
+        "sick_leaves_total": balance.sick_leaves_total,
+        "sick_leaves_used": balance.sick_leaves_used,
+        "earned_leaves_total": balance.earned_leaves_total,
+        "earned_leaves_used": balance.earned_leaves_used,
+        "vacation_leaves_total": balance.vacation_leaves_total,
+        "vacation_leaves_used": balance.vacation_leaves_used,
+        "compensation_leaves_total": balance.compensation_leaves_total,
+        "compensation_leaves_used": balance.compensation_leaves_used,
+        "academic_leaves_total": balance.academic_leaves_total,
+        "academic_leaves_used": balance.academic_leaves_used
+    }
 
 @router.post("/request", response_model=FacultyLeaveRequestResponse)
 def create_leave_request(
