@@ -94,6 +94,10 @@ class StudentLeaveRequest(Base):
 
     status = Column(SQLEnum(StudentLeaveStatus), default=StudentLeaveStatus.PENDING_MENTOR, nullable=False)
 
+    viewed_by_mentor = Column(Boolean, default=False, nullable=False)
+    viewed_by_ca = Column(Boolean, default=False, nullable=False)
+    viewed_by_hod = Column(Boolean, default=False, nullable=False)
+
     # Approval trail — order: Mentor → Class Advisor → HOD
     mentor_id          = Column(Integer, ForeignKey("faculty.id"), nullable=True)
     mentor_remarks     = Column(String(500), nullable=True)

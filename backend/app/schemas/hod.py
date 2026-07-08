@@ -14,6 +14,12 @@ class SectionUpdate(BaseModel):
     batch: Optional[str] = None
     class_advisor_id: Optional[int] = None
 
+class BasicFacultyResponse(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    model_config = ConfigDict(from_attributes=True)
+
 class SectionResponse(BaseModel):
     id: int
     department_id: int
@@ -21,6 +27,7 @@ class SectionResponse(BaseModel):
     year: int
     batch: str
     class_advisor_id: Optional[int] = None
+    class_advisor: Optional[BasicFacultyResponse] = None
     is_active: bool
     created_at: datetime
 

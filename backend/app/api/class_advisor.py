@@ -406,6 +406,18 @@ def get_student_profile(
 
 # ── Daily Attendance ──────────────────────────────────────
 
+@router.get("/attendance-settings")
+def get_attendance_settings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    _, section = get_advisor_section(current_user, db)
+    department = db.query(Department).filter(Department.id == section.department_id).first()
+    return {
+        "attendance_closed": department.attendance_closed if department else False
+    }
+
+
 @router.get("/attendance", response_model=List[AttendanceStudentRow])
 def get_attendance_for_date(
     date: date,
@@ -458,6 +470,14 @@ def save_attendance(
     current_user: User = Depends(get_current_active_user)
 ):
     faculty, section = get_advisor_section(current_user, db)
+
+    # Check if attendance is locked/closed for the department
+    department = db.query(Department).filter(Department.id == section.department_id).first()
+    if department and department.attendance_closed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Attendance is locked for your department by the HOD."
+        )
 
     # Only allow editing today's attendance
     if payload.date != date.today():

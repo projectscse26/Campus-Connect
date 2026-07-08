@@ -31,6 +31,7 @@ const MentorLeaveQueue = () => {
     try {
       await axios.put(`/api/student-portal/leave/${id}/mentor-action`, null, { params: { action, remarks } });
       load();
+      window.dispatchEvent(new Event('refetch-badges'));
     } catch (e) {
       alert(e.response?.data?.detail || 'Action failed');
     } finally {
@@ -115,6 +116,43 @@ export const Mentorship = () => {
   const [note, setNote]                   = useState('');
   const [addingNote, setAddingNote]       = useState(false);
   const [mobileView, setMobileView]       = useState('list'); // 'list' | 'detail'
+  const [leaveBadgeCount, setLeaveBadgeCount] = useState(0);
+
+  const fetchLeaveBadgeCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await axios.get('/api/notifications/badge-counts', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setLeaveBadgeCount(res.data['/faculty/mentorship'] || 0);
+    } catch (err) {
+      console.error('Failed to fetch leave badge count', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaveBadgeCount();
+    window.addEventListener('refetch-badges', fetchLeaveBadgeCount);
+    return () => window.removeEventListener('refetch-badges', fetchLeaveBadgeCount);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'leave') {
+      const markLeaveViewed = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          await axios.put('/api/notifications/mark-viewed?sector=leave-mentor', {}, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          window.dispatchEvent(new Event('refetch-badges'));
+        } catch (err) {
+          console.error('Failed to mark leave as viewed', err);
+        }
+      };
+      markLeaveViewed();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     axios.get('/api/faculty/me/mentees')
@@ -168,19 +206,27 @@ export const Mentorship = () => {
         {[
           { id: 'mentees', label: 'My Mentees' },
           { id: 'leave',   label: 'Leave Requests' },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-1.5 rounded-lg text-[13px] font-bold transition-all ${
-              activeTab === tab.id
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        ].map(tab => {
+          const hasBadge = tab.id === 'leave' && leaveBadgeCount > 0;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-1.5 rounded-lg text-[13px] font-bold transition-all flex items-center gap-1.5 ${
+                activeTab === tab.id
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span>{tab.label}</span>
+              {hasBadge && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm">
+                  {leaveBadgeCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Leave Requests Tab ── */}

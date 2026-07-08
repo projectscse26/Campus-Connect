@@ -96,6 +96,63 @@ export default function DashboardLayout() {
       return () => clearTimeout(t);
     }
   }, [isUserMenuOpen]);
+
+  const [badgeCounts, setBadgeCounts] = useState({});
+
+  const fetchBadgeCounts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await axios.get('/api/notifications/badge-counts', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setBadgeCounts(res.data);
+    } catch (err) {
+      console.error('Failed to fetch badge counts', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchBadgeCounts();
+      const interval = setInterval(fetchBadgeCounts, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    window.addEventListener('refetch-badges', fetchBadgeCounts);
+    return () => window.removeEventListener('refetch-badges', fetchBadgeCounts);
+  }, []);
+
+  useEffect(() => {
+    const markAsViewed = async () => {
+      let sector = null;
+      if (location.pathname === '/faculty/gatepass') sector = 'gatepass';
+      else if (location.pathname === '/faculty/late-entry') sector = 'late-entry';
+      else if (location.pathname === '/faculty/class-advisor/leave') sector = 'leave-ca';
+      else if (location.pathname === '/hod/leave') sector = 'leave-hod';
+      else if (location.pathname === '/hod/gatepass') sector = 'gatepass';
+      else if (location.pathname === '/authority/gatepass') sector = 'gatepass';
+
+      if (sector) {
+        try {
+          const token = localStorage.getItem('token');
+          await axios.put(`/api/notifications/mark-viewed?sector=${sector}`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          fetchBadgeCounts();
+        } catch (err) {
+          console.error('Failed to mark sector as viewed', err);
+        }
+      }
+    };
+
+    if (user) {
+      markAsViewed();
+    }
+  }, [location.pathname, user]);
+
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [hasUnread, setHasUnread] = useState(false);
@@ -177,6 +234,8 @@ export default function DashboardLayout() {
     { name: 'Leave Requests',     path: '/faculty/class-advisor/leave',               icon: Calendar },
   ];
 
+  const totalBadgeCount = Object.values(badgeCounts).reduce((acc, count) => acc + (count || 0), 0);
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans w-full relative">
       
@@ -223,18 +282,26 @@ export default function DashboardLayout() {
                 key={link.name}
                 to={link.path}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
+                className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
                   isActive 
                     ? 'bg-primary-50 dark:bg-gray-100 text-primary-600 dark:text-gray-900 font-bold' 
                     : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-100/50 hover:text-gray-900 dark:hover:text-gray-100 font-medium'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-primary-600 dark:text-gray-900' : 'text-gray-400 dark:text-gray-500'}`} />
-                <span className="text-[15px]">{link.name}</span>
+                <div className="flex items-center space-x-3">
+                  <Icon className={`w-5 h-5 ${isActive ? 'text-primary-600 dark:text-gray-900' : 'text-gray-400 dark:text-gray-500'}`} />
+                  <span className="text-[15px]">{link.name}</span>
+                </div>
+                {badgeCounts[link.path] > 0 && (
+                  <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center shadow-sm">
+                    {badgeCounts[link.path]}
+                  </span>
+                )}
               </Link>
             );
 
             if (link.name === 'Dashboard' && user.role === 'faculty' && user.is_class_advisor) {
+              const caTotalBadge = CA_SUB_LINKS.reduce((acc, sublink) => acc + (badgeCounts[sublink.path] || 0), 0);
               return (
                 <React.Fragment key={link.name}>
                   {renderLink}
@@ -251,10 +318,17 @@ export default function DashboardLayout() {
                         <GraduationCap className={`w-5 h-5 ${location.pathname.startsWith('/faculty/class-advisor') ? 'text-indigo-600 dark:text-gray-900' : 'text-gray-400 dark:text-gray-500'}`} />
                         <span className="text-[15px]">Class Advisor</span>
                       </div>
-                      {isCAOpen
-                        ? <ChevronDown className="w-4 h-4 text-gray-400" />
-                        : <ChevronRight className="w-4 h-4 text-gray-400" />
-                      }
+                      <div className="flex items-center space-x-2">
+                        {caTotalBadge > 0 && !isCAOpen && (
+                          <span className="bg-indigo-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center shadow-sm">
+                            {caTotalBadge}
+                          </span>
+                        )}
+                        {isCAOpen
+                          ? <ChevronDown className="w-4 h-4 text-gray-400" />
+                          : <ChevronRight className="w-4 h-4 text-gray-400" />
+                        }
+                      </div>
                     </button>
 
                     {isCAOpen && (
@@ -267,14 +341,21 @@ export default function DashboardLayout() {
                               key={sublink.path}
                               to={sublink.path}
                               onClick={() => setIsMobileMenuOpen(false)}
-                              className={`flex items-center space-x-2.5 px-3 py-2.5 rounded-xl transition-all text-[14px] ${
+                              className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[14px] ${
                                 isSubActive
                                   ? 'bg-indigo-50 dark:bg-gray-100 text-indigo-700 dark:text-gray-900 font-bold'
                                   : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-100/50 hover:text-gray-800 dark:hover:text-gray-100 font-medium'
                               }`}
                             >
-                              <SubIcon className={`w-4 h-4 ${isSubActive ? 'text-indigo-600 dark:text-gray-900' : 'text-gray-400 dark:text-gray-500'}`} />
-                              <span>{sublink.name}</span>
+                              <div className="flex items-center space-x-2.5">
+                                <SubIcon className={`w-4 h-4 ${isSubActive ? 'text-indigo-600 dark:text-gray-900' : 'text-gray-400 dark:text-gray-500'}`} />
+                                <span>{sublink.name}</span>
+                              </div>
+                              {badgeCounts[sublink.path] > 0 && (
+                                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm">
+                                  {badgeCounts[sublink.path]}
+                                </span>
+                              )}
                             </Link>
                           );
                         })}
@@ -314,10 +395,15 @@ export default function DashboardLayout() {
         <header className="h-[72px] bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-8 z-10 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <button 
-              className="lg:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+              className="lg:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors relative"
               onClick={() => setIsMobileMenuOpen(true)}
             >
               <Menu className="w-6 h-6" />
+              {totalBadgeCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[9px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-white">
+                  {totalBadgeCount}
+                </span>
+              )}
             </button>
             <div className="hidden sm:flex items-center text-gray-700 font-bold text-[14px] bg-gray-50 px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
               <Home className="w-4 h-4 mr-2 text-gray-400" />

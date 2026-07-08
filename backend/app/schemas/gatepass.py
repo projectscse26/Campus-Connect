@@ -41,6 +41,9 @@ class GatePassResponse(BaseModel):
     actual_in_time: Optional[datetime] = None
     status: GatePassStatus
     rejection_reason: Optional[str] = None
+    viewed_by_mentor: Optional[bool] = False
+    viewed_by_hod: Optional[bool] = False
+    viewed_by_om: Optional[bool] = False
     created_at: datetime
     updated_at: Optional[datetime] = None
     

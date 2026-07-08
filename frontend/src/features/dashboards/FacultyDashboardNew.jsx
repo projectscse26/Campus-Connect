@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { 
   BookOpen, Users, Edit3, TrendingUp, Clock, Bell, Calendar, AlertCircle, 
   Award, BarChart3, FileText, CheckCircle, AlertTriangle, Brain, ChevronRight,
-  CalendarDays, GraduationCap, ClipboardCheck, Target, Sparkles, Zap, Plus, Trash2, CheckCircle2, Circle, ListTodo
+  CalendarDays, GraduationCap, ClipboardCheck, Target, Sparkles, Zap, Plus, Trash2, CheckCircle2, Circle, ListTodo, MapPin
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -151,6 +152,46 @@ const TeacherAvatar = ({ gender }) => {
       {/* Holographic rings */}
       <div className="absolute -inset-2 border-2 border-cyan-400/20 rounded-full animate-ping-slow"></div>
       <div className="absolute -inset-4 border border-blue-400/10 rounded-full animate-spin-very-slow"></div>
+    </div>
+  );
+};
+
+// Notification Card Component with Badge
+const NotificationCard = ({ title, count, icon: Icon, colorClass, bgColorClass, href, onClick }) => {
+  const navigate = useNavigate();
+  
+  const handleClick = () => {
+    if (onClick) onClick();
+    if (href) navigate(href);
+  };
+
+  return (
+    <div 
+      onClick={handleClick}
+      className={`relative bg-white rounded-xl shadow-sm border border-gray-100 p-4 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg cursor-pointer animate-fade-in group`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className={`w-12 h-12 rounded-xl ${bgColorClass} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+            <Icon className={`w-6 h-6 ${colorClass}`} strokeWidth={2} />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-900">{title}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Click to view</p>
+          </div>
+        </div>
+        {count > 0 && (
+          <div className="relative">
+            <span className="absolute -top-1 -right-1 flex h-6 w-6">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-6 w-6 bg-red-500 items-center justify-center">
+                <span className="text-white text-xs font-bold">{count}</span>
+              </span>
+            </span>
+          </div>
+        )}
+      </div>
+      <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-hover:text-gray-600 group-hover:translate-x-1 transition-all" />
     </div>
   );
 };
@@ -512,12 +553,18 @@ const TodoApp = () => {
 
 export const FacultyDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedCourseId, setSelectedCourseId] = useState(null); // This will now be assignment ID
   const [showAIInsightsModal, setShowAIInsightsModal] = useState(false);
+  
+  // Notification counts state
+  const [pendingLeaveRequests, setPendingLeaveRequests] = useState(0);
+  const [pendingGatePassRequests, setPendingGatePassRequests] = useState(0);
+  const [pendingLateEntries, setPendingLateEntries] = useState(0);
 
   // Function to download student report as PDF
   const downloadStudentReport = async (studentId, studentName) => {
@@ -747,6 +794,42 @@ export const FacultyDashboard = () => {
     fetchDashboard();
   }, [selectedCourseId, selectedDate]);
 
+  // Fetch notification counts
+  useEffect(() => {
+    const fetchNotificationCounts = async () => {
+      try {
+        // Fetch leave requests count
+        const leaveRes = await axios.get('/api/leave/requests');
+        const pendingLeaves = leaveRes.data.filter(req => 
+          req.status === 'pending_faculty' || req.status === 'pending_mentor'
+        );
+        setPendingLeaveRequests(pendingLeaves.length);
+
+        // Fetch gate pass requests count
+        const gatePassRes = await axios.get('/api/gatepass/mentor');
+        const pendingGatePasses = gatePassRes.data.filter(gp => 
+          gp.status === 'pending_mentor'
+        );
+        setPendingGatePassRequests(pendingGatePasses.length);
+
+        // Fetch late entry notifications count
+        const lateEntryRes = await axios.get('/api/late-entry/my-mentees');
+        const unseenLateEntries = lateEntryRes.data.filter(entry => 
+          !entry.mentor_acknowledged
+        );
+        setPendingLateEntries(unseenLateEntries.length);
+      } catch (err) {
+        console.error('Failed to load notification counts:', err);
+      }
+    };
+
+    fetchNotificationCounts();
+    
+    // Refresh counts every 30 seconds
+    const interval = setInterval(fetchNotificationCounts, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -863,6 +946,40 @@ export const FacultyDashboard = () => {
               <p className="text-2xl sm:text-3xl font-bold text-emerald-700 dark:text-gray-900">{dashboardData?.total_students || 0}</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Pending Requests Notifications */}
+      <div className="space-y-3">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center px-1">
+          <Bell className="w-5 h-5 text-blue-600 mr-2" />
+          Pending Requests
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <NotificationCard
+            title="Leave Requests"
+            count={pendingLeaveRequests}
+            icon={Calendar}
+            colorClass="text-blue-600"
+            bgColorClass="bg-blue-50"
+            href="/faculty/leave"
+          />
+          <NotificationCard
+            title="Gate Pass Requests"
+            count={pendingGatePassRequests}
+            icon={MapPin}
+            colorClass="text-emerald-600"
+            bgColorClass="bg-emerald-50"
+            href="/faculty/gatepass"
+          />
+          <NotificationCard
+            title="Late Entry Notifications"
+            count={pendingLateEntries}
+            icon={Clock}
+            colorClass="text-amber-600"
+            bgColorClass="bg-amber-50"
+            href="/faculty/late-entry"
+          />
         </div>
       </div>
 
