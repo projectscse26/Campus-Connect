@@ -100,9 +100,9 @@ export default function LateEntryNotifications() {
   const unacknowledgedCount = notifications.filter((n) => !n.acknowledged_by_security).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 md:p-6">
+    <div className="bg-gray-50 pb-20">
       {/* Mobile Header */}
-      <div className="bg-blue-600 text-white p-4 md:hidden sticky top-0 z-10 shadow-md">
+      <div className="bg-blue-600 text-white p-4 md:hidden mb-4 shadow-md rounded-lg">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <Bell className="h-6 w-6" />
           Late Entry Notifications
@@ -123,7 +123,7 @@ export default function LateEntryNotifications() {
 
       <div className="max-w-6xl mx-auto space-y-4">
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-2 md:gap-4 mx-4 md:mx-0">
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
           <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-3 md:p-4 text-center">
             <p className="text-xs md:text-sm text-gray-600 font-medium mb-1">Total</p>
             <p className="text-2xl md:text-3xl font-bold text-blue-700">{notifications.length}</p>
@@ -139,10 +139,10 @@ export default function LateEntryNotifications() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white shadow-sm border border-gray-200 mx-4 md:mx-0 rounded-lg p-4">
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4">
           {/* Category Buttons */}
           {isFaculty && (
-            <div className="flex gap-2 mb-3 border-b border-gray-100 pb-3 overflow-x-auto">
+            <div className="flex flex-wrap gap-2 mb-3 border-b border-gray-100 pb-3">
               <button
                 onClick={() => setCategory("all_roles")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
@@ -177,7 +177,7 @@ export default function LateEntryNotifications() {
           )}
 
           {/* Time/Status Filter Buttons */}
-          <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+          <div className="flex flex-wrap gap-2 mb-3 pb-2">
             <button
               onClick={() => setFilter("all")}
               className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
@@ -224,7 +224,7 @@ export default function LateEntryNotifications() {
         </div>
 
         {/* Notifications List */}
-        <div className="bg-white shadow-sm border border-gray-200 mx-4 md:mx-0 rounded-lg p-4 md:p-6">
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 md:p-6">
           <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
             <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
             Notifications ({filteredNotifications.length})
