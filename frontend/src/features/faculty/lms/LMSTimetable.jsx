@@ -184,7 +184,7 @@ export const LMSTimetable = () => {
                         {cell ? (
                           <div className="w-full h-full bg-white border border-indigo-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
                             <span className="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wide">
-                              {courseDetails?.course.code || 'CLASS'}
+                              {courseDetails?.course.short_name || courseDetails?.course.code || 'CLASS'}
                             </span>
                             {cell.room && (
                               <span className="text-[9px] font-bold text-indigo-500 mt-0.5">
