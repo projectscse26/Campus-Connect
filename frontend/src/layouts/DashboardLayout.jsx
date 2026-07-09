@@ -204,7 +204,14 @@ export default function DashboardLayout() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  const navLinks = ROLE_NAV_LINKS[user.role] || [];
+  let navLinks = ROLE_NAV_LINKS[user.role] || [];
+  if (user.role === 'authority') {
+    const title = user.title ? user.title.toLowerCase().trim() : '';
+    if (title !== 'office manager') {
+      navLinks = navLinks.filter(link => link.name !== 'Gate Pass Approvals');
+    }
+  }
+
   const currentLink = navLinks.find(link => link.path === location.pathname);
 
   // For Class Advisor sub-pages, find a label

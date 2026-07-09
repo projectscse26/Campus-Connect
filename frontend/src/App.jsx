@@ -72,6 +72,7 @@ import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
 import { Profile } from './features/profile/Profile';
 import LateEntryNotification from './features/student/LateEntryNotification';
 import PrincipalDashboard from './features/authority/PrincipalDashboard';
+import DeanDashboard from './features/authority/DeanDashboard';
 import OMDashboard from './features/authority/OMDashboard';
 import AuthorityDashboardRouter from './features/authority/AuthorityDashboardRouter';
 // A simple protective wrapper that forces login and checks roles
@@ -438,6 +439,20 @@ function AppRoutes() {
         
         {/* Principal Dashboard Route */}
         <Route path="/principal" element={
+          <ProtectedRoute allowedRole="authority">
+            <PrincipalDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* Dean Dashboard Route */}
+        <Route path="/dean" element={
+          <ProtectedRoute allowedRole="authority">
+            <DeanDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* Vice Principal Dashboard Route (Uses PrincipalDashboard layout) */}
+        <Route path="/vice-principal" element={
           <ProtectedRoute allowedRole="authority">
             <PrincipalDashboard />
           </ProtectedRoute>
