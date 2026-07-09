@@ -122,115 +122,84 @@ export const LMSTimetable = () => {
           <p className="text-gray-400 text-sm max-w-sm">No schedule has been configured for this course assignment in the current semester.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left: Summary cards */}
-          <div className="lg:col-span-4 space-y-4">
-            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Schedule List</h2>
-            <div className="space-y-3">
-              {slots.map((slot) => {
-                const period = PERIODS.find(p => p.start === slot.start_time);
-                return (
-                  <div key={slot.id} className="bg-white border border-gray-100 shadow-sm rounded-xl p-4 flex items-start gap-4 hover:border-pink-200 transition-all">
-                    <div className="p-3 bg-pink-50 text-pink-600 rounded-xl font-bold text-sm tracking-wider uppercase shrink-0 min-w-[64px] text-center">
-                      {slot.day}
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        Period {period?.label || 'N/A'} ({period?.time || `${slot.start_time} - ${slot.end_time}`})
-                      </div>
-                      <div className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-gray-400" />
-                        Room: {slot.room || 'Not assigned'}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Right: Timetable weekly grid view */}
-          <div className="lg:col-span-8 space-y-4">
-            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Weekly Grid View</h2>
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
-              <div className="min-w-[760px] p-4">
-                {/* Header row */}
-                <div className="flex bg-gray-50 border-b border-gray-200 rounded-t-xl">
-                  <div className="w-16 shrink-0 border-r border-gray-200 p-3 flex flex-col justify-center items-center font-bold text-gray-500 text-xs">
-                    DAY /<br />TIME
-                  </div>
-                  {PERIODS.map(period => (
-                    <div
-                      key={period.id}
-                      className={`flex flex-col justify-center items-center p-2 text-xs border-r border-gray-200 shrink-0 ${
-                        period.type === 'break'
-                          ? 'w-10 bg-gray-100 text-gray-400 font-medium'
-                          : 'w-[96px] bg-white font-bold text-gray-700'
-                      }`}
-                    >
-                      {period.type === 'period' ? (
-                        <>
-                          <span className="text-pink-600 mb-0.5 text-[10px]">Period {period.label}</span>
-                          <span className="font-normal text-[9px] text-gray-500">
-                            {period.start}
-                          </span>
-                        </>
-                      ) : (
-                        <div className="[writing-mode:vertical-rl] tracking-wider uppercase text-[9px]">
-                          {period.label}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+            <div className="min-w-[760px] p-4">
+              {/* Header row */}
+              <div className="flex bg-gray-50 border-b border-gray-200 rounded-t-xl">
+                <div className="w-16 shrink-0 border-r border-gray-200 p-3 flex flex-col justify-center items-center font-bold text-gray-500 text-xs">
+                  DAY /<br />TIME
                 </div>
-
-                {/* Day rows */}
-                {DAYS.map(day => (
-                  <div key={day.id} className="flex border-b border-gray-100 last:border-b-0 hover:bg-gray-50/20 transition-colors">
-                    <div className="w-16 shrink-0 border-r border-gray-200 bg-gray-50 p-3 flex items-center justify-center font-bold text-gray-700 text-xs uppercase">
-                      {day.label}
-                    </div>
-
-                    {PERIODS.map(period => {
-                      if (period.type === 'break') {
-                        return (
-                          <div
-                            key={`${day.id}-${period.id}`}
-                            className="w-10 shrink-0 border-r border-gray-200 bg-gray-100/30"
-                          />
-                        );
-                      }
-
-                      const cell = grid[day.id]?.[period.id];
-
-                      return (
-                        <div
-                          key={`${day.id}-${period.id}`}
-                          className={`w-[96px] shrink-0 border-r border-gray-200 p-1.5 flex items-center justify-center ${
-                            cell ? 'bg-pink-50/50' : 'bg-white'
-                          }`}
-                        >
-                          {cell ? (
-                            <div className="w-full h-full bg-pink-100/60 border-2 border-pink-300 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
-                              <span className="text-[10px] font-extrabold text-pink-700 uppercase tracking-wide">
-                                {courseDetails?.course.code || 'CLASS'}
-                              </span>
-                              {cell.room && (
-                                <span className="text-[9px] font-bold text-pink-500 mt-0.5">
-                                  Rm {cell.room}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="h-full min-h-[38px]" />
-                          )}
-                        </div>
-                      );
-                    })}
+                {PERIODS.map(period => (
+                  <div
+                    key={period.id}
+                    className={`flex flex-col justify-center items-center p-2 text-xs border-r border-gray-200 shrink-0 ${
+                      period.type === 'break'
+                        ? 'w-10 bg-gray-100 text-gray-400 font-medium'
+                        : 'w-[96px] bg-white font-bold text-gray-700'
+                    }`}
+                  >
+                    {period.type === 'period' ? (
+                      <>
+                        <span className="text-pink-600 mb-0.5 text-[10px]">Period {period.label}</span>
+                        <span className="font-normal text-[9px] text-gray-500">
+                          {period.start}
+                        </span>
+                      </>
+                    ) : (
+                      <div className="[writing-mode:vertical-rl] tracking-wider uppercase text-[9px]">
+                        {period.label}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
+
+              {/* Day rows */}
+              {DAYS.map(day => (
+                <div key={day.id} className="flex border-b border-gray-100 last:border-b-0 hover:bg-gray-50/20 transition-colors">
+                  <div className="w-16 shrink-0 border-r border-gray-200 bg-gray-50 p-3 flex items-center justify-center font-bold text-gray-700 text-xs uppercase">
+                    {day.label}
+                  </div>
+
+                  {PERIODS.map(period => {
+                    if (period.type === 'break') {
+                      return (
+                        <div
+                          key={`${day.id}-${period.id}`}
+                          className="w-10 shrink-0 border-r border-gray-200 bg-gray-100/30"
+                        />
+                      );
+                    }
+
+                    const cell = grid[day.id]?.[period.id];
+
+                    return (
+                      <div
+                        key={`${day.id}-${period.id}`}
+                        className={`w-[96px] shrink-0 border-r border-gray-200 p-1.5 flex items-center justify-center ${
+                          cell ? 'bg-pink-50/50' : 'bg-white'
+                        }`}
+                      >
+                        {cell ? (
+                          <div className="w-full h-full bg-pink-100/60 border-2 border-pink-300 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
+                            <span className="text-[10px] font-extrabold text-pink-700 uppercase tracking-wide">
+                              {courseDetails?.course.code || 'CLASS'}
+                            </span>
+                            {cell.room && (
+                              <span className="text-[9px] font-bold text-pink-500 mt-0.5">
+                                Rm {cell.room}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="h-full min-h-[38px]" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </div>
         </div>
