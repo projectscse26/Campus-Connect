@@ -21,9 +21,9 @@ class LeaveStatus(str, enum.Enum):
     WITHDRAWN = "withdrawn"
 
 class ArrangementStatus(str, enum.Enum):
-    PENDING = "pending"
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
 
 class FacultyLeaveRequest(Base):
     __tablename__ = "faculty_leave_requests"
@@ -130,7 +130,7 @@ class FacultyLeaveBalance(Base):
     faculty_id = Column(Integer, ForeignKey("faculty.id"), nullable=False)
     academic_year = Column(String(20), nullable=False) # e.g., '2023-2024'
     
-    casual_leaves_total = Column(Integer, default=15)
+    casual_leaves_total = Column(Integer, default=12) # CL: 12 days total (1 per month)
     casual_leaves_used = Column(Integer, default=0)
     
     sick_leaves_total = Column(Integer, default=10)
@@ -138,6 +138,18 @@ class FacultyLeaveBalance(Base):
     
     earned_leaves_total = Column(Integer, default=30)
     earned_leaves_used = Column(Integer, default=0)
+
+    restricted_leaves_total = Column(Integer, default=2) # RH: 2 days total (1 per semester)
+    restricted_leaves_used = Column(Integer, default=0)
+
+    vacation_leaves_total = Column(Integer, default=12)
+    vacation_leaves_used = Column(Integer, default=0)
+
+    compensation_leaves_total = Column(Integer, default=5)
+    compensation_leaves_used = Column(Integer, default=0)
+
+    academic_leaves_total = Column(Integer, default=10)
+    academic_leaves_used = Column(Integer, default=0)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

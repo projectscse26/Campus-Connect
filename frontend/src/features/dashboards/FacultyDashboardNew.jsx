@@ -805,14 +805,14 @@ export const FacultyDashboard = () => {
         );
         setPendingLeaveRequests(pendingLeaves.length);
 
-        // Fetch gate pass requests count
+        // Fetch gate pass requests count (for mentors)
         const gatePassRes = await axios.get('/api/gatepass/mentor');
         const pendingGatePasses = gatePassRes.data.filter(gp => 
           gp.status === 'pending_mentor' || gp.status === 'pending_class_advisor'
         );
         setPendingGatePassRequests(pendingGatePasses.length);
 
-        // Fetch late entry notifications count
+        // Fetch late entry notifications count (for mentors)
         const lateEntryRes = await axios.get('/api/late-entry/my-mentees');
         const unseenLateEntries = lateEntryRes.data.filter(entry => 
           !entry.mentor_acknowledged
@@ -820,6 +820,10 @@ export const FacultyDashboard = () => {
         setPendingLateEntries(unseenLateEntries.length);
       } catch (err) {
         console.error('Failed to load notification counts:', err);
+        // Set counts to 0 on error to avoid showing undefined
+        setPendingLeaveRequests(0);
+        setPendingGatePassRequests(0);
+        setPendingLateEntries(0);
       }
     };
 
@@ -953,16 +957,17 @@ export const FacultyDashboard = () => {
       <div className="space-y-3">
         <h3 className="text-lg font-bold text-gray-900 flex items-center px-1">
           <Bell className="w-5 h-5 text-blue-600 mr-2" />
-          Pending Requests
+          Mentee Requests
+          <span className="ml-2 text-xs font-normal text-gray-500">(Requires Your Approval)</span>
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <NotificationCard
-            title="Leave Requests"
+            title="Student Leave Requests"
             count={pendingLeaveRequests}
             icon={Calendar}
             colorClass="text-blue-600"
             bgColorClass="bg-blue-50"
-            href="/faculty/leave"
+            href="/faculty/mentorship"
           />
           <NotificationCard
             title="Gate Pass Requests"

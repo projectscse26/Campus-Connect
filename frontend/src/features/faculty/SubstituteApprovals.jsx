@@ -26,11 +26,17 @@ export const SubstituteApprovals = () => {
   const handleAction = async (arr_id, status) => {
     setActionLoading(arr_id);
     try {
-      await axios.put(`/api/leave/substitute-requests/${arr_id}?status=${status}`);
+      const res = await axios.put(`/api/leave/substitute-requests/${arr_id}?status=${status}`);
+      
+      // Show success message with appropriate context
+      const message = res.data?.message || 'Status updated successfully';
+      alert(message);
+      
       // Refresh list
       fetchRequests();
     } catch (err) {
       console.error(err);
+      alert(err.response?.data?.detail || 'Failed to update status');
     } finally {
       setActionLoading(null);
     }
@@ -52,6 +58,19 @@ export const SubstituteApprovals = () => {
         </Link>
         <h1 className="text-3xl font-bold text-[#0f172a] tracking-tight">Substitute Approvals</h1>
         <p className="text-sm text-gray-500 mt-1">Accept or decline class substitution requests from other faculty members.</p>
+        
+        {/* Info Banner */}
+        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+          <div className="mt-0.5 text-blue-600 flex-shrink-0">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="flex-1 text-sm text-blue-800">
+            <p className="font-bold mb-1">Your Approval is Required</p>
+            <p>Faculty leave requests will only be forwarded to HOD after <strong>all substitutes accept</strong> their duty arrangements. If you decline, the entire leave request will be rejected.</p>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -72,7 +91,7 @@ export const SubstituteApprovals = () => {
                       <p className="text-sm font-bold text-gray-800">{arr.subject} — {arr.class_section}</p>
                       <p className="text-xs text-gray-500 mt-1 flex items-center"><Clock className="w-3.5 h-3.5 mr-1"/> Period: {arr.period}</p>
                     </div>
-                    {arr.status === 'pending' ? (
+                    {arr.status?.toLowerCase() === 'pending' ? (
                       <div className="flex space-x-2 w-full sm:w-auto">
                         <button 
                           onClick={() => handleAction(arr.id, 'accepted')}
@@ -89,7 +108,7 @@ export const SubstituteApprovals = () => {
                           <XCircle className="w-4 h-4 sm:w-3.5 sm:h-3.5 mr-1" /> Decline
                         </button>
                       </div>
-                    ) : arr.status === 'accepted' ? (
+                    ) : arr.status?.toLowerCase() === 'accepted' ? (
                       <span className="text-green-600 font-bold text-sm flex items-center"><CheckCircle className="w-4 h-4 mr-1" /> Accepted</span>
                     ) : (
                       <span className="text-red-600 font-bold text-sm flex items-center"><XCircle className="w-4 h-4 mr-1" /> Declined</span>

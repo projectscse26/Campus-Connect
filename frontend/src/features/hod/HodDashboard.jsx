@@ -182,6 +182,9 @@ export const HodDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [actionRemarks, setActionRemarks] = useState({});
+  const [actionInProgress, setActionInProgress] = useState(null);
+
   const [studentAttendanceSummary, setStudentAttendanceSummary] = useState({
     overallRate: 0,
     isMarkedToday: false,
@@ -288,6 +291,27 @@ export const HodDashboard = () => {
     } catch (err) {
       console.error(err);
       alert('Failed to update department settings');
+    }
+  };
+
+  const handleFacultyLeaveAction = async (id, action) => {
+    setActionInProgress(id);
+    const remarks = actionRemarks[id] || '';
+    try {
+      await axios.put(`/api/leave/requests/${id}/approve`, null, {
+        params: { action, reason: remarks }
+      });
+      setActionRemarks(prev => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      });
+      fetchData();
+      window.dispatchEvent(new Event('refetch-badges'));
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to action leave request');
+    } finally {
+      setActionInProgress(null);
     }
   };
 
@@ -867,17 +891,40 @@ export const HodDashboard = () => {
               {pendingLeaves.length > 0 ? (
                 <div className="divide-y divide-slate-100/60 dark:divide-gray-200">
                   {pendingLeaves.slice(0, 4).map(req => (
-                    <div key={req.id} className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 group hover:bg-slate-50/20 dark:hover:bg-gray-100/50 px-2 rounded-xl transition-colors duration-200">
-                      <div>
+                    <div key={req.id} className="py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group hover:bg-slate-50/20 dark:hover:bg-gray-100/50 px-2 rounded-xl transition-colors duration-200">
+                      <div className="flex-1 min-w-0 text-left">
                         <p className="text-xs font-bold text-slate-900 dark:text-gray-900 group-hover:text-primary-650 transition-colors">{req.faculty_name}</p>
                         <p className="text-[11px] text-slate-505 dark:text-gray-700 mt-1">
-                          Type: <span className="font-semibold text-slate-700 dark:text-gray-900 capitalize">{req.leave_type}</span> · Dates: <span className="font-semibold text-slate-700 dark:text-gray-900">{new Date(req.from_date).toLocaleDateString()} to {new Date(req.to_date).toLocaleDateString()}</span>
+                          Type: <span className="font-semibold text-slate-700 dark:text-gray-900 capitalize">{req.leave_type}</span> · Dates: <span className="font-semibold text-slate-700 dark:text-gray-900">{new Date(req.from_date).toLocaleDateString()} to {new Date(req.to_date).toLocaleDateString()}</span> ({req.duration_days}d)
                         </p>
                         <p className="text-[11px] text-slate-405 dark:text-gray-600 mt-1.5 line-clamp-1 italic bg-slate-50 dark:bg-gray-100 p-2 rounded-lg border border-slate-100/60 dark:border-gray-200">Reason: "{req.reason}"</p>
                       </div>
-                      <span className="text-[10px] font-bold text-slate-455 dark:text-gray-700 bg-slate-105 dark:bg-gray-100 border border-slate-200/60 dark:border-gray-200 px-3 py-1.5 rounded-xl shrink-0">
-                        Submitted {timeAgo(req.created_at)}
-                      </span>
+                      
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto shrink-0">
+                        <input
+                          type="text"
+                          placeholder="Remarks..."
+                          value={actionRemarks[req.id] || ''}
+                          onChange={(e) => setActionRemarks(prev => ({ ...prev, [req.id]: e.target.value }))}
+                          className="px-2.5 py-1.5 text-[11px] border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 w-full sm:w-36 text-slate-700"
+                        />
+                        <div className="flex gap-1.5 justify-end">
+                          <button
+                            onClick={() => handleFacultyLeaveAction(req.id, 'reject')}
+                            disabled={actionInProgress === req.id}
+                            className="px-2.5 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold text-[10px] rounded-lg border border-rose-200/50 transition-colors cursor-pointer"
+                          >
+                            Reject
+                          </button>
+                          <button
+                            onClick={() => handleFacultyLeaveAction(req.id, 'approve')}
+                            disabled={actionInProgress === req.id}
+                            className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-[10px] rounded-lg border border-emerald-200/50 transition-colors cursor-pointer"
+                          >
+                            Approve
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
