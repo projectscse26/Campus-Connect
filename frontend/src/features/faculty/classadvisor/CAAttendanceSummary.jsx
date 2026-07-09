@@ -3,7 +3,7 @@ import axios from 'axios';
 import { BarChart2, AlertTriangle, Users, ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckCircle, XCircle, Clock, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 
 export const CAAttendanceSummary = () => {
   const [data, setData] = useState([]);
@@ -170,7 +170,7 @@ export const CAAttendanceSummary = () => {
           tableStartY = 30;
         }
 
-        autoTable(doc, {
+        doc.autoTable({
           head: [headers],
           body: rows,
           startY: tableStartY,

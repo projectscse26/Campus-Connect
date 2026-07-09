@@ -798,21 +798,21 @@ export const FacultyDashboard = () => {
   useEffect(() => {
     const fetchNotificationCounts = async () => {
       try {
-        // Fetch leave requests count
+        // Fetch leave requests count (for mentors)
         const leaveRes = await axios.get('/api/leave/requests');
         const pendingLeaves = leaveRes.data.filter(req => 
-          req.status === 'pending_faculty' || req.status === 'pending_mentor'
+          req.status === 'pending_mentor'
         );
         setPendingLeaveRequests(pendingLeaves.length);
 
-        // Fetch gate pass requests count
+        // Fetch gate pass requests count (for mentors)
         const gatePassRes = await axios.get('/api/gatepass/mentor');
         const pendingGatePasses = gatePassRes.data.filter(gp => 
           gp.status === 'pending_mentor'
         );
         setPendingGatePassRequests(pendingGatePasses.length);
 
-        // Fetch late entry notifications count
+        // Fetch late entry notifications count (for mentors)
         const lateEntryRes = await axios.get('/api/late-entry/my-mentees');
         const unseenLateEntries = lateEntryRes.data.filter(entry => 
           !entry.mentor_acknowledged
@@ -820,6 +820,10 @@ export const FacultyDashboard = () => {
         setPendingLateEntries(unseenLateEntries.length);
       } catch (err) {
         console.error('Failed to load notification counts:', err);
+        // Set counts to 0 on error to avoid showing undefined
+        setPendingLeaveRequests(0);
+        setPendingGatePassRequests(0);
+        setPendingLateEntries(0);
       }
     };
 
@@ -950,38 +954,41 @@ export const FacultyDashboard = () => {
       </div>
 
       {/* Pending Requests Notifications */}
-      <div className="space-y-3">
-        <h3 className="text-lg font-bold text-gray-900 flex items-center px-1">
-          <Bell className="w-5 h-5 text-blue-600 mr-2" />
-          Pending Requests
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <NotificationCard
-            title="Leave Requests"
-            count={pendingLeaveRequests}
-            icon={Calendar}
-            colorClass="text-blue-600"
-            bgColorClass="bg-blue-50"
-            href="/faculty/leave"
-          />
-          <NotificationCard
-            title="Gate Pass Requests"
-            count={pendingGatePassRequests}
-            icon={MapPin}
-            colorClass="text-emerald-600"
-            bgColorClass="bg-emerald-50"
-            href="/faculty/gatepass"
-          />
-          <NotificationCard
-            title="Late Entry Notifications"
-            count={pendingLateEntries}
-            icon={Clock}
-            colorClass="text-amber-600"
-            bgColorClass="bg-amber-50"
-            href="/faculty/late-entry"
-          />
+      {user?.is_mentor && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center px-1">
+            <Bell className="w-5 h-5 text-blue-600 mr-2" />
+            Mentee Requests
+            <span className="ml-2 text-xs font-normal text-gray-500">(Requires Your Approval)</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <NotificationCard
+              title="Student Leave Requests"
+              count={pendingLeaveRequests}
+              icon={Calendar}
+              colorClass="text-blue-600"
+              bgColorClass="bg-blue-50"
+              href="/faculty/mentorship"
+            />
+            <NotificationCard
+              title="Gate Pass Requests"
+              count={pendingGatePassRequests}
+              icon={MapPin}
+              colorClass="text-emerald-600"
+              bgColorClass="bg-emerald-50"
+              href="/faculty/gatepass"
+            />
+            <NotificationCard
+              title="Late Entry Notifications"
+              count={pendingLateEntries}
+              icon={Clock}
+              colorClass="text-amber-600"
+              bgColorClass="bg-amber-50"
+              href="/faculty/late-entry"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -1021,13 +1028,15 @@ export const FacultyDashboard = () => {
                 bgColorClass="bg-gradient-to-r from-amber-50 to-amber-100"
                 href="/faculty/announcements"
               />
-              <QuickAccessCard 
-                title="Mentorship"
-                icon={Users}
-                colorClass="text-emerald-600"
-                bgColorClass="bg-gradient-to-r from-emerald-50 to-emerald-100"
-                href="/faculty/mentorship"
-              />
+              {user?.is_mentor && (
+                <QuickAccessCard 
+                  title="Mentorship"
+                  icon={Users}
+                  colorClass="text-emerald-600"
+                  bgColorClass="bg-gradient-to-r from-emerald-50 to-emerald-100"
+                  href="/faculty/mentorship"
+                />
+              )}
             </div>
           </div>
 

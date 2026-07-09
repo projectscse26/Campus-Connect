@@ -49,7 +49,7 @@ def hod_dashboard(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    department, _ = get_hod_department(current_user, db)
+    department, faculty_profile = get_hod_department(current_user, db)
 
     faculty_count = db.query(Faculty).filter(Faculty.department_id == department.id).count()
     student_count = db.query(Student).filter(Student.department_id == department.id).count()
@@ -60,6 +60,10 @@ def hod_dashboard(
         CourseAssignment.is_active == True
     ).count()
 
+    # Get HOD's full name and qualifications
+    hod_name = f"{faculty_profile.first_name} {faculty_profile.last_name}" if faculty_profile else None
+    hod_title = faculty_profile.qualification if faculty_profile and faculty_profile.qualification else None
+
     return HodDashboardResponse(
         department_name=department.name,
         department_code=department.code,
@@ -67,7 +71,9 @@ def hod_dashboard(
         student_count=student_count,
         course_count=course_count,
         section_count=section_count,
-        assignment_count=assignment_count
+        assignment_count=assignment_count,
+        hod_name=hod_name,
+        hod_title=hod_title
     )
 
 # ── Department Settings ───────────────────────────────

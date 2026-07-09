@@ -499,7 +499,7 @@ def get_my_grades_for_course(
         {
             "grade_type": g.grade_type.value if g.grade_type else None,
             "marks_obtained": float(g.marks_obtained) if g.marks_obtained is not None else None,
-            "max_marks": float(g.max_marks),
+            "max_marks": float(GRADE_MAX_MARKS.get(g.grade_type)) if g.grade_type in GRADE_MAX_MARKS else float(g.max_marks),
             "is_absent": g.is_absent,
             "remarks": g.remarks,
         }

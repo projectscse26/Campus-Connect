@@ -1,0 +1,7 @@
+project-includes = [
+    "backend"
+]
+project-excludes = [
+    "**/venv/**",
+    "**/_pyrefly_virtual_/**"
+]

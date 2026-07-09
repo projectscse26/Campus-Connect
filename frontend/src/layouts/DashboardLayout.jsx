@@ -62,6 +62,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Analytics', path: '/authority/analytics', icon: BookOpen },
     { name: 'Discipline', path: '/authority/discipline', icon: ShieldAlert },
     { name: 'Late Tracker', path: '/authority/latetracker', icon: Clock },
+    { name: 'Leave Approvals', path: '/authority/leave', icon: Calendar },
     { name: 'Gate Pass Approvals', path: '/authority/gatepass', icon: Clock },
     { name: 'Announcements', path: '/authority/announcements', icon: Bell },
   ]
@@ -204,7 +205,10 @@ export default function DashboardLayout() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  const navLinks = ROLE_NAV_LINKS[user.role] || [];
+  const baseNavLinks = ROLE_NAV_LINKS[user.role] || [];
+  const navLinks = user.role === 'faculty'
+    ? baseNavLinks.filter(link => link.name !== 'Mentorship' || user.is_mentor)
+    : baseNavLinks;
   const currentLink = navLinks.find(link => link.path === location.pathname);
 
   // For Class Advisor sub-pages, find a label

@@ -8,9 +8,130 @@ from app.core.security import get_current_active_user as get_current_user
 from app.models.user import User, UserRole
 from app.models.faculty import Faculty
 from app.models.leave import FacultyLeaveRequest, FacultyDutyArrangement, FacultyLeaveBalance, LeaveStatus, ArrangementStatus
+from app.models.academic import CourseAssignment, Course, Section
+from app.models.lms import TimetableSlot, DayOfWeek
+from app.models.department import Department
 from app.schemas.leave import FacultyLeaveRequestCreate, FacultyLeaveRequestResponse, FacultyDutyArrangementResponse, FacultyLeaveBalanceResponse
 
 router = APIRouter()
+
+@router.get("/leave-preparation-data")
+def get_leave_preparation_data(
+    from_date: str,
+    to_date: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all data needed for faculty to prepare leave request:
+    1. Their timetable slots for the leave period
+    2. All other faculty who can substitute
+    3. Class advisor responsibilities if any
+    """
+    if current_user.role != UserRole.FACULTY:
+        raise HTTPException(status_code=403, detail="Only faculty can access this")
+        
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+    
+    from datetime import datetime, timedelta
+    
+    # Parse dates
+    start_date = datetime.strptime(from_date, "%Y-%m-%d").date()
+    end_date = datetime.strptime(to_date, "%Y-%m-%d").date()
+    
+    # Get day names for the leave period
+    day_names = []
+    current = start_date
+    while current <= end_date:
+        day_name = current.strftime("%a").lower()[:3]  # mon, tue, wed, etc.
+        if day_name not in day_names and day_name in ['mon', 'tue', 'wed', 'thu', 'fri', 'sat']:
+            day_names.append(day_name)
+        current += timedelta(days=1)
+    
+    # Get faculty's timetable slots for those days
+    my_assignments = db.query(CourseAssignment).filter(
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).all()
+    
+    assignment_ids = [a.id for a in my_assignments]
+    
+    timetable_slots = db.query(TimetableSlot).filter(
+        TimetableSlot.course_assignment_id.in_(assignment_ids),
+        TimetableSlot.day.in_(day_names)
+    ).all()
+    
+    # Build timetable data with course and section info
+    my_schedule = []
+    for slot in timetable_slots:
+        assignment = db.query(CourseAssignment).filter(CourseAssignment.id == slot.course_assignment_id).first()
+        if assignment:
+            course = db.query(Course).filter(Course.id == assignment.course_id).first()
+            section = db.query(Section).filter(Section.id == assignment.section_id).first()
+            department = db.query(Department).filter(Department.id == section.department_id).first() if section else None
+            
+            if course and section:
+                my_schedule.append({
+                    "slot_id": slot.id,
+                    "assignment_id": assignment.id,
+                    "day": slot.day,
+                    "start_time": slot.start_time.strftime("%H:%M") if slot.start_time else "",
+                    "end_time": slot.end_time.strftime("%H:%M") if slot.end_time else "",
+                    "room": slot.room,
+                    "course_code": course.code,
+                    "course_name": course.name,
+                    "course_short_name": course.short_name or course.code,
+                    "section_name": section.name,
+                    "year": section.year,
+                    "department_short": department.code if department else "DEPT",
+                    "class_section": f"{department.code if department else 'Dept'} Year-{section.year} {section.name}",
+                    "period_display": f"{slot.start_time.strftime('%H:%M') if slot.start_time else ''} - {slot.end_time.strftime('%H:%M') if slot.end_time else ''}"
+                })
+    
+    # Get all other active faculty (excluding current faculty)
+    all_other_faculty = db.query(Faculty).filter(
+        Faculty.id != faculty.id,
+        Faculty.is_active == True
+    ).all()
+    
+    faculty_list = []
+    for f in all_other_faculty:
+        dept = db.query(Department).filter(Department.id == f.department_id).first()
+        faculty_list.append({
+            "id": f.id,
+            "name": f"{f.first_name} {f.last_name}",
+            "designation": f.designation,
+            "department": dept.name if dept else "N/A"
+        })
+    
+    # Check if current faculty is a class advisor
+    advised_sections = db.query(Section).filter(
+        Section.class_advisor_id == faculty.id,
+        Section.is_active == True
+    ).all()
+    
+    class_advisor_duties = []
+    for sec in advised_sections:
+        dept = db.query(Department).filter(Department.id == sec.department_id).first()
+        class_advisor_duties.append({
+            "section_id": sec.id,
+            "section_name": sec.name,
+            "year": sec.year,
+            "batch": sec.batch,
+            "department": dept.name if dept else "N/A",
+            "class_display": f"{dept.code if dept else 'Dept'} Year-{sec.year} {sec.name}",
+            "duty_type": "Class Advisor"
+        })
+    
+    return {
+        "my_schedule": my_schedule,
+        "available_faculty": faculty_list,
+        "class_advisor_duties": class_advisor_duties,
+        "total_periods_to_cover": len(my_schedule),
+        "requires_class_advisor_substitute": len(class_advisor_duties) > 0
+    }
 
 @router.get("/balances", response_model=FacultyLeaveBalanceResponse)
 def get_leave_balances(
@@ -37,7 +158,63 @@ def get_leave_balances(
         db.commit()
         db.refresh(balance)
         
-    return balance
+    import datetime
+    today = datetime.date.today()
+    
+    # 1. Casual Leave used in current month
+    start_of_month = datetime.date(today.year, today.month, 1)
+    if today.month == 12:
+        end_of_month = datetime.date(today.year + 1, 1, 1)
+    else:
+        end_of_month = datetime.date(today.year, today.month + 1, 1)
+        
+    monthly_casual_reqs = db.query(FacultyLeaveRequest).filter(
+        FacultyLeaveRequest.faculty_id == faculty.id,
+        FacultyLeaveRequest.leave_type == "Casual Leave",
+        FacultyLeaveRequest.status == LeaveStatus.APPROVED,
+        FacultyLeaveRequest.from_date >= start_of_month,
+        FacultyLeaveRequest.from_date < end_of_month
+    ).all()
+    casual_used_this_month = sum(r.duration_days for r in monthly_casual_reqs)
+    
+    # 2. Restricted Leave used in current semester (Jan-Jun or Jul-Dec)
+    if today.month <= 6:
+        start_of_sem = datetime.date(today.year, 1, 1)
+        end_of_sem = datetime.date(today.year, 7, 1)
+    else:
+        start_of_sem = datetime.date(today.year, 7, 1)
+        end_of_sem = datetime.date(today.year + 1, 1, 1)
+        
+    sem_restricted_reqs = db.query(FacultyLeaveRequest).filter(
+        FacultyLeaveRequest.faculty_id == faculty.id,
+        FacultyLeaveRequest.leave_type == "Restricted Leave",
+        FacultyLeaveRequest.status == LeaveStatus.APPROVED,
+        FacultyLeaveRequest.from_date >= start_of_sem,
+        FacultyLeaveRequest.from_date < end_of_sem
+    ).all()
+    restricted_used_this_sem = sum(r.duration_days for r in sem_restricted_reqs)
+    # 3. Earned Leave total (accrued 1 per completed month since June)
+    completed_months = today.month - 6 if today.month >= 6 else today.month + 6
+
+    return {
+        "id": balance.id,
+        "faculty_id": balance.faculty_id,
+        "academic_year": balance.academic_year,
+        "casual_leaves_total": 1,
+        "casual_leaves_used": int(min(casual_used_this_month, 1)),
+        "restricted_leaves_total": 1,
+        "restricted_leaves_used": int(min(restricted_used_this_sem, 1)),
+        "sick_leaves_total": balance.sick_leaves_total,
+        "sick_leaves_used": balance.sick_leaves_used,
+        "earned_leaves_total": int(completed_months),
+        "earned_leaves_used": balance.earned_leaves_used,
+        "vacation_leaves_total": balance.vacation_leaves_total,
+        "vacation_leaves_used": balance.vacation_leaves_used,
+        "compensation_leaves_total": balance.compensation_leaves_total,
+        "compensation_leaves_used": balance.compensation_leaves_used,
+        "academic_leaves_total": balance.academic_leaves_total,
+        "academic_leaves_used": balance.academic_leaves_used
+    }
 
 @router.post("/request", response_model=FacultyLeaveRequestResponse)
 def create_leave_request(
@@ -54,7 +231,12 @@ def create_leave_request(
     if duration <= 0:
         raise HTTPException(status_code=400, detail="Invalid date range")
 
-    # Create the request
+    # Validate that arrangements are provided
+    if not request.arrangements or len(request.arrangements) == 0:
+        raise HTTPException(status_code=400, detail="At least one substitute arrangement must be provided")
+
+    # Create the request with PENDING_SUBSTITUTE status
+    # It will only move to PENDING_HOD after all substitutes accept
     leave_req = FacultyLeaveRequest(
         faculty_id=faculty.id,
         leave_type=request.leave_type,
@@ -63,7 +245,7 @@ def create_leave_request(
         duration_days=duration,
         reason=request.reason,
         attachment_url=request.attachment_url,
-        status=LeaveStatus.PENDING_SUBSTITUTE if request.arrangements else LeaveStatus.PENDING_HOD
+        status=LeaveStatus.PENDING_SUBSTITUTE
     )
     db.add(leave_req)
     db.flush() # Get ID
@@ -75,13 +257,94 @@ def create_leave_request(
             substitute_faculty_id=arr.substitute_faculty_id,
             subject=arr.subject,
             class_section=arr.class_section,
-            period=arr.period
+            period=arr.period,
+            status=ArrangementStatus.PENDING
         )
         db.add(duty)
         
     db.commit()
     db.refresh(leave_req)
     
+    return get_leave_request_detail(leave_req.id, db)
+
+@router.put("/requests/{request_id}/withdraw")
+def withdraw_leave_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.FACULTY:
+        raise HTTPException(status_code=403, detail="Only faculty can withdraw their own requests")
+        
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    req = db.query(FacultyLeaveRequest).filter(FacultyLeaveRequest.id == request_id, FacultyLeaveRequest.faculty_id == faculty.id).first()
+    
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found or not owned by you")
+        
+    if req.status in [LeaveStatus.APPROVED, LeaveStatus.REJECTED]:
+        raise HTTPException(status_code=400, detail="Cannot withdraw already processed requests")
+    
+    # Can withdraw any pending request (PENDING_SUBSTITUTE, PENDING_HOD, PENDING_DEAN, PENDING_OM)
+    db.query(FacultyDutyArrangement).filter(FacultyDutyArrangement.leave_request_id == request_id).delete()
+    db.delete(req)
+    db.commit()
+    return {"message": "Request withdrawn and deleted successfully"}
+
+@router.put("/requests/{request_id}", response_model=FacultyLeaveRequestResponse)
+def update_leave_request(
+    request_id: int,
+    request: FacultyLeaveRequestCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.FACULTY:
+        raise HTTPException(status_code=403, detail="Access denied")
+        
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    leave_req = db.query(FacultyLeaveRequest).filter(FacultyLeaveRequest.id == request_id, FacultyLeaveRequest.faculty_id == faculty.id).first()
+    
+    if not leave_req:
+        raise HTTPException(status_code=404, detail="Request not found")
+        
+    if leave_req.status in [LeaveStatus.APPROVED, LeaveStatus.REJECTED]:
+        raise HTTPException(status_code=400, detail="Processed requests cannot be modified")
+        
+    # Only allow edits if still in PENDING_SUBSTITUTE state
+    if leave_req.status != LeaveStatus.PENDING_SUBSTITUTE:
+        raise HTTPException(status_code=400, detail="Cannot modify request after substitute approval has started")
+        
+    duration = (request.to_date - request.from_date).days + 1
+    if duration <= 0:
+        raise HTTPException(status_code=400, detail="Invalid date range")
+    
+    # Validate that arrangements are provided
+    if not request.arrangements or len(request.arrangements) == 0:
+        raise HTTPException(status_code=400, detail="At least one substitute arrangement must be provided")
+        
+    leave_req.leave_type = request.leave_type
+    leave_req.from_date = request.from_date
+    leave_req.to_date = request.to_date
+    leave_req.duration_days = duration
+    leave_req.reason = request.reason
+    leave_req.attachment_url = request.attachment_url
+    leave_req.status = LeaveStatus.PENDING_SUBSTITUTE
+    
+    db.query(FacultyDutyArrangement).filter(FacultyDutyArrangement.leave_request_id == request_id).delete()
+    
+    for arr in request.arrangements:
+        duty = FacultyDutyArrangement(
+            leave_request_id=leave_req.id,
+            substitute_faculty_id=arr.substitute_faculty_id,
+            subject=arr.subject,
+            class_section=arr.class_section,
+            period=arr.period,
+            status=ArrangementStatus.PENDING
+        )
+        db.add(duty)
+        
+    db.commit()
+    db.refresh(leave_req)
     return get_leave_request_detail(leave_req.id, db)
 
 @router.get("/my-requests", response_model=List[FacultyLeaveRequestResponse])
@@ -208,6 +471,9 @@ def update_substitute_request(
     if not arr:
         raise HTTPException(status_code=404, detail="Arrangement not found")
         
+    if arr.status != ArrangementStatus.PENDING:
+        raise HTTPException(status_code=400, detail="This arrangement has already been processed")
+        
     if status.lower() == "accepted":
         arr.status = ArrangementStatus.ACCEPTED
     elif status.lower() == "rejected":
@@ -219,18 +485,25 @@ def update_substitute_request(
     
     # Check if all arrangements for the request are accepted
     req = db.query(FacultyLeaveRequest).filter(FacultyLeaveRequest.id == arr.leave_request_id).first()
-    all_accepted = all(a.status == ArrangementStatus.ACCEPTED for a in req.arrangements)
+    
+    # If any arrangement is rejected, reject the entire leave request
     any_rejected = any(a.status == ArrangementStatus.REJECTED for a in req.arrangements)
     
     if any_rejected:
         req.status = LeaveStatus.REJECTED
-        req.rejection_reason = "Substitute faculty rejected the duty arrangement."
+        req.rejection_reason = "One or more substitute faculty rejected the duty arrangement."
         db.commit()
-    elif all_accepted and req.status == LeaveStatus.PENDING_SUBSTITUTE:
+        return {"message": "Arrangement rejected. Leave request has been rejected."}
+    
+    # Only move to PENDING_HOD if ALL arrangements are accepted
+    all_accepted = all(a.status == ArrangementStatus.ACCEPTED for a in req.arrangements)
+    
+    if all_accepted and req.status == LeaveStatus.PENDING_SUBSTITUTE:
         req.status = LeaveStatus.PENDING_HOD
         db.commit()
+        return {"message": "All substitutes have accepted. Leave request forwarded to HOD for approval."}
         
-    return {"message": "Status updated successfully"}
+    return {"message": "Status updated successfully. Waiting for other substitute approvals."}
 
 @router.put("/requests/{request_id}/approve")
 def approve_leave_request(
@@ -266,14 +539,23 @@ def approve_leave_request(
             
             # Deduct leave balance
             academic_year = "2023-2024"
-            balance = db.query(LeaveBalance).filter(LeaveBalance.faculty_id == req.faculty_id, LeaveBalance.academic_year == academic_year).first()
+            balance = db.query(FacultyLeaveBalance).filter(FacultyLeaveBalance.faculty_id == req.faculty_id, FacultyLeaveBalance.academic_year == academic_year).first()
             if balance:
-                if "casual" in req.leave_type.lower():
+                ltype = req.leave_type.lower()
+                if "casual" in ltype:
                     balance.casual_leaves_used += req.duration_days
-                elif "sick" in req.leave_type.lower() or "medical" in req.leave_type.lower():
-                    balance.sick_leaves_used += req.duration_days
-                else:
+                elif "restricted" in ltype or "rh" in ltype:
+                    balance.restricted_leaves_used += req.duration_days
+                elif "earned" in ltype:
                     balance.earned_leaves_used += req.duration_days
+                elif "vacation" in ltype:
+                    balance.vacation_leaves_used += req.duration_days
+                elif "compensation" in ltype:
+                    balance.compensation_leaves_used += req.duration_days
+                elif "academic" in ltype or "od" in ltype or "duty" in ltype:
+                    balance.academic_leaves_used += req.duration_days
+                elif "sick" in ltype or "medical" in ltype:
+                    balance.sick_leaves_used += req.duration_days
     else:
         raise HTTPException(status_code=403, detail="Not authorized to approve at this stage")
         
