@@ -41,9 +41,29 @@ def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2Passw
         "id": user.id,
         "email": user.email,
         "role": user.role.value,
-        "name": user.email.split('@')[0] # Fallback until profiles are populated
+        "name": user.email.split('@')[0], # Fallback until profiles are populated
+        "is_class_advisor": False,
+        "advisor_section_id": None,
+        "is_mentor": False
     }
     
+    if user.role.value in ("faculty", "hod"):
+        from app.models.faculty import Faculty
+        from app.models.academic import Section, MentorAssignment
+        faculty = db.query(Faculty).filter(Faculty.user_id == user.id).first()
+        if faculty:
+            section = db.query(Section).filter(
+                Section.class_advisor_id == faculty.id,
+                Section.is_active == True
+            ).first()
+            if section:
+                user_data["is_class_advisor"] = True
+                user_data["advisor_section_id"] = section.id
+            is_mentor = db.query(MentorAssignment).filter(
+                MentorAssignment.mentor_id == faculty.id
+            ).first() is not None
+            user_data["is_mentor"] = is_mentor
+
     # Add title for authority users
     if user.role.value == "authority":
         from app.models.authority import Authority
@@ -55,13 +75,13 @@ def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2Passw
 
 from app.core.security import get_current_active_user
 from app.models.faculty import Faculty
-from app.models.academic import Section
+from app.models.academic import Section, MentorAssignment
 
 @router.get("/me")
 def read_users_me(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
     from app.models.authority import Authority
     
-    extra = {"is_class_advisor": False, "advisor_section_id": None}
+    extra = {"is_class_advisor": False, "advisor_section_id": None, "is_mentor": False}
 
     if current_user.role in ("faculty", "hod"):
         faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
@@ -73,6 +93,11 @@ def read_users_me(current_user: User = Depends(get_current_active_user), db: Ses
             if section:
                 extra["is_class_advisor"] = True
                 extra["advisor_section_id"] = section.id
+            
+            is_mentor = db.query(MentorAssignment).filter(
+                MentorAssignment.mentor_id == faculty.id
+            ).first() is not None
+            extra["is_mentor"] = is_mentor
     
     # Add title for authority users
     if current_user.role == "authority":

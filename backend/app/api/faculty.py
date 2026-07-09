@@ -12,7 +12,7 @@ from app.models.department import Department
 from app.models.academic import CourseAssignment, Section, MentorAssignment
 from app.models.attendance import Attendance, AttendanceStatus
 from app.models.student import Student
-from app.models.grade import Grade, GradeType
+from app.models.grade import Grade, GradeType, GRADE_MAX_MARKS, GRADE_PASS_MARKS
 from app.models.mentorship import AdvisingLog
 from app.models.lms import LMSResource, ResourceType, Announcement, TimetableSlot
 from app.schemas.faculty import (
@@ -607,17 +607,140 @@ def get_mentee_detail(student_id: int, db: Session = Depends(get_db), current_us
         raise HTTPException(status_code=404, detail="Student not found")
     total = db.query(Attendance).filter(Attendance.student_id == student_id).count()
     present = db.query(Attendance).filter(Attendance.student_id == student_id, Attendance.status == AttendanceStatus.PRESENT).count()
-    att_pct = round((present / total * 100), 1) if total > 0 else None
+    od = db.query(Attendance).filter(Attendance.student_id == student_id, Attendance.status == AttendanceStatus.ON_DUTY).count()
+    late = db.query(Attendance).filter(Attendance.student_id == student_id, Attendance.status == AttendanceStatus.LATE).count()
+    
+    # We count PRESENT, ON_DUTY, and LATE as attended classes
+    attended = present + od + late
+    att_pct = round((attended / total * 100), 1) if total > 0 else None
+    
     grades = db.query(Grade).filter(Grade.student_id == student_id).all()
     backlogs = sum(1 for g in grades if g.max_marks and g.marks_obtained is not None and (float(g.marks_obtained) / float(g.max_marks)) < 0.40)
+    
     logs = db.query(AdvisingLog).filter(AdvisingLog.mentor_id == faculty.id, AdvisingLog.student_id == student_id).order_by(AdvisingLog.created_at.desc()).all()
+    
+    # 1. Personal & Guardian Details
+    personal_details = {
+        "gender": student.gender,
+        "date_of_birth": student.date_of_birth.isoformat() if student.date_of_birth else None,
+        "blood_group": student.blood_group,
+        "nationality": student.nationality,
+        "community": student.community,
+        "phone": student.phone,
+        "personal_email": student.personal_email,
+        "address": f"{student.address_line1 or ''}, {student.address_line2 or ''}, {student.city or ''}, {student.state or ''} - {student.pincode or ''}".strip(", "),
+        "father_name": student.father_name,
+        "father_phone": student.father_phone,
+        "father_occupation": student.father_occupation,
+        "mother_name": student.mother_name,
+        "mother_phone": student.mother_phone,
+        "mother_occupation": student.mother_occupation,
+        "annual_income": float(student.annual_income) if student.annual_income else None,
+        "tenth_school": student.tenth_school,
+        "tenth_percentage": float(student.tenth_percentage) if student.tenth_percentage else None,
+        "twelfth_school": student.twelfth_school,
+        "twelfth_percentage": float(student.twelfth_percentage) if student.twelfth_percentage else None,
+        "accommodation": student.accommodation,
+        "transportation": student.transportation,
+        "bus_number": student.bus_number
+    }
+
+    # 2. Detailed Course-wise Attendance Summary & Logs
+    from app.models.academic import Course
+    att_records = db.query(Attendance).options(joinedload(Attendance.course)).filter(Attendance.student_id == student_id).all()
+    
+    course_att = {}
+    for att in att_records:
+        c_id = att.course_id
+        if c_id not in course_att:
+            course_att[c_id] = {"code": att.course.code, "name": att.course.name, "total": 0, "present": 0}
+        course_att[c_id]["total"] += 1
+        if att.status in (AttendanceStatus.PRESENT, AttendanceStatus.ON_DUTY, AttendanceStatus.LATE):
+            course_att[c_id]["present"] += 1
+
+    att_summary = []
+    for c_id, stats in course_att.items():
+        pct = round((stats["present"] / stats["total"] * 100), 1) if stats["total"] > 0 else 0
+        att_summary.append({
+            "course_id": c_id,
+            "course_code": stats["code"],
+            "course_name": stats["name"],
+            "total_classes": stats["total"],
+            "attended_classes": stats["present"],
+            "percentage": pct
+        })
+
+    att_details = [{
+        "id": a.id,
+        "date": a.date.isoformat(),
+        "hour": a.hour,
+        "status": a.status.value,
+        "course_code": a.course.code,
+        "course_name": a.course.name
+    } for a in sorted(att_records, key=lambda x: x.date, reverse=True)[:50]]
+
+    # 3. Detailed Marks & Grades
+    grade_records = db.query(Grade).options(joinedload(Grade.course)).filter(Grade.student_id == student_id).all()
+    grades_list = [{
+        "id": g.id,
+        "course_code": g.course.code,
+        "course_name": g.course.name,
+        "grade_type": g.grade_type.value,
+        "marks_obtained": float(g.marks_obtained) if g.marks_obtained is not None else None,
+        "max_marks": float(GRADE_MAX_MARKS.get(g.grade_type)) if g.grade_type in GRADE_MAX_MARKS else float(g.max_marks),
+        "remarks": g.remarks,
+        "semester": g.semester,
+        "is_published": g.is_published,
+        "is_absent": g.is_absent
+    } for g in grade_records]
+
+    # 4. Discipline Records
+    from app.models.discipline import DisciplineRecord
+    discipline_records = db.query(DisciplineRecord).options(joinedload(DisciplineRecord.reported_by)).filter(DisciplineRecord.student_id == student_id).all()
+    discipline_list = [{
+        "id": dr.id,
+        "incident_type": dr.incident_type.value,
+        "incident_date": dr.incident_date.isoformat(),
+        "remarks": dr.remarks,
+        "action_status": dr.action_status.value,
+        "action_taken": dr.action_taken,
+        "reported_by_name": dr.reported_by.email.split('@')[0] if dr.reported_by else "System"
+    } for dr in discipline_records]
+
+    # 5. Leave History
+    from app.models.leave import StudentLeaveRequest
+    leave_requests = db.query(StudentLeaveRequest).filter(StudentLeaveRequest.student_id == student_id).order_by(StudentLeaveRequest.from_date.desc()).all()
+    leave_list = [{
+        "id": lr.id,
+        "from_date": lr.from_date.isoformat(),
+        "to_date": lr.to_date.isoformat(),
+        "duration_days": lr.duration_days,
+        "reason": lr.reason,
+        "status": lr.status.value,
+        "mentor_remarks": lr.mentor_remarks,
+        "class_advisor_remarks": lr.class_advisor_remarks,
+        "hod_remarks": lr.hod_remarks
+    } for lr in leave_requests]
+
     return {
-        "id": student.id, "first_name": student.first_name, "last_name": student.last_name,
-        "register_number": student.register_number, "college_email": student.college_email,
-        "current_semester": student.current_semester, "current_year": student.current_year,
+        "id": student.id, 
+        "first_name": student.first_name, 
+        "last_name": student.last_name,
+        "register_number": student.register_number, 
+        "college_email": student.college_email,
+        "current_semester": student.current_semester, 
+        "current_year": student.current_year,
         "department": student.department.name if student.department else None,
-        "section": student.section.name if student.section else None, "batch": student.batch,
-        "attendance_percentage": att_pct, "backlog_count": backlogs,
+        "section": student.section.name if student.section else None, 
+        "batch": student.batch,
+        "attendance_percentage": att_pct, 
+        "backlog_count": backlogs,
+        "personal_details": personal_details,
+        "attendance_summary": att_summary,
+        "attendance_details": att_details,
+        "grades": grades_list,
+        "discipline_records": discipline_list,
+        "leave_history": leave_list,
         "advising_logs": [{"id": l.id, "note": l.note, "created_at": l.created_at} for l in logs],
     }
 
@@ -1368,8 +1491,8 @@ def get_gradebook(
     ).all()
     grade_map = {g.student_id: g for g in existing_grades}
 
-    max_marks = 100  # Default max marks
-    pass_mark = 40  # Default pass mark (40%)
+    max_marks = float(GRADE_MAX_MARKS.get(gt, 100))
+    pass_mark = float(GRADE_PASS_MARKS.get(gt, 40))
 
     roster = []
     for s in students:
@@ -1429,7 +1552,7 @@ def save_grades(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid grade_type")
 
-    max_marks = 100  # Default max marks
+    max_marks = float(GRADE_MAX_MARKS.get(gt, 100))
     entries = payload.get("entries", [])
 
     saved = 0
@@ -1558,7 +1681,7 @@ def export_grades_csv(
     ).all()
     grade_map = {g.student_id: g for g in grades}
 
-    max_marks = 100  # Default max marks
+    max_marks = float(GRADE_MAX_MARKS.get(gt, 100))
 
     output = io.StringIO()
     writer = csv.writer(output)

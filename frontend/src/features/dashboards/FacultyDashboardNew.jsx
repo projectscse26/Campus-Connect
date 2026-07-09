@@ -954,39 +954,41 @@ export const FacultyDashboard = () => {
       </div>
 
       {/* Pending Requests Notifications */}
-      <div className="space-y-3">
-        <h3 className="text-lg font-bold text-gray-900 flex items-center px-1">
-          <Bell className="w-5 h-5 text-blue-600 mr-2" />
-          Mentee Requests
-          <span className="ml-2 text-xs font-normal text-gray-500">(Requires Your Approval)</span>
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <NotificationCard
-            title="Student Leave Requests"
-            count={pendingLeaveRequests}
-            icon={Calendar}
-            colorClass="text-blue-600"
-            bgColorClass="bg-blue-50"
-            href="/faculty/mentorship"
-          />
-          <NotificationCard
-            title="Gate Pass Requests"
-            count={pendingGatePassRequests}
-            icon={MapPin}
-            colorClass="text-emerald-600"
-            bgColorClass="bg-emerald-50"
-            href="/faculty/gatepass"
-          />
-          <NotificationCard
-            title="Late Entry Notifications"
-            count={pendingLateEntries}
-            icon={Clock}
-            colorClass="text-amber-600"
-            bgColorClass="bg-amber-50"
-            href="/faculty/late-entry"
-          />
+      {user?.is_mentor && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center px-1">
+            <Bell className="w-5 h-5 text-blue-600 mr-2" />
+            Mentee Requests
+            <span className="ml-2 text-xs font-normal text-gray-500">(Requires Your Approval)</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <NotificationCard
+              title="Student Leave Requests"
+              count={pendingLeaveRequests}
+              icon={Calendar}
+              colorClass="text-blue-600"
+              bgColorClass="bg-blue-50"
+              href="/faculty/mentorship"
+            />
+            <NotificationCard
+              title="Gate Pass Requests"
+              count={pendingGatePassRequests}
+              icon={MapPin}
+              colorClass="text-emerald-600"
+              bgColorClass="bg-emerald-50"
+              href="/faculty/gatepass"
+            />
+            <NotificationCard
+              title="Late Entry Notifications"
+              count={pendingLateEntries}
+              icon={Clock}
+              colorClass="text-amber-600"
+              bgColorClass="bg-amber-50"
+              href="/faculty/late-entry"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -1026,13 +1028,15 @@ export const FacultyDashboard = () => {
                 bgColorClass="bg-gradient-to-r from-amber-50 to-amber-100"
                 href="/faculty/announcements"
               />
-              <QuickAccessCard 
-                title="Mentorship"
-                icon={Users}
-                colorClass="text-emerald-600"
-                bgColorClass="bg-gradient-to-r from-emerald-50 to-emerald-100"
-                href="/faculty/mentorship"
-              />
+              {user?.is_mentor && (
+                <QuickAccessCard 
+                  title="Mentorship"
+                  icon={Users}
+                  colorClass="text-emerald-600"
+                  bgColorClass="bg-gradient-to-r from-emerald-50 to-emerald-100"
+                  href="/faculty/mentorship"
+                />
+              )}
             </div>
           </div>
 

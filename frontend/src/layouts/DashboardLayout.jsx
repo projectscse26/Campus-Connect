@@ -205,7 +205,10 @@ export default function DashboardLayout() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  const navLinks = ROLE_NAV_LINKS[user.role] || [];
+  const baseNavLinks = ROLE_NAV_LINKS[user.role] || [];
+  const navLinks = user.role === 'faculty'
+    ? baseNavLinks.filter(link => link.name !== 'Mentorship' || user.is_mentor)
+    : baseNavLinks;
   const currentLink = navLinks.find(link => link.path === location.pathname);
 
   // For Class Advisor sub-pages, find a label
