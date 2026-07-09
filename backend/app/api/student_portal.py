@@ -506,6 +506,9 @@ def _format_leave(req: StudentLeaveRequest) -> dict:
         "hod_remarks":               req.hod_remarks,
         "hod_actioned_at":           req.hod_actioned_at.isoformat() if req.hod_actioned_at else None,
         "rejection_reason":          req.rejection_reason,
+        "viewed_by_mentor":          req.viewed_by_mentor,
+        "viewed_by_ca":              req.viewed_by_ca,
+        "viewed_by_hod":             req.viewed_by_hod,
         "created_at":                req.created_at.isoformat() if req.created_at else None,
         "updated_at":                req.updated_at.isoformat() if req.updated_at else None,
     }

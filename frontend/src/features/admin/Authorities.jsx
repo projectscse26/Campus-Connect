@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Shield, Plus, X, Search, Edit2, Trash2 } from 'lucide-react';
+import { Shield, Plus, X, Search, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
 
 const TITLE_OPTIONS = [
   'Principal',
@@ -19,6 +19,7 @@ export const Authorities = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [editingUserId, setEditingUserId] = useState(null);
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -31,6 +32,13 @@ export const Authorities = () => {
   });
   const [formError, setFormError] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
+
+  // Password Reset state
+  const [resetPasswordText, setResetPasswordText] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
+  const [resetPasswordError, setResetPasswordError] = useState(null);
+
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchData = async () => {
@@ -52,6 +60,7 @@ export const Authorities = () => {
   const handleOpenModal = (auth = null) => {
     if (auth) {
       setEditingId(auth.id);
+      setEditingUserId(auth.user_id);
       setFormData({
         first_name: auth.first_name,
         last_name: auth.last_name,
@@ -63,6 +72,7 @@ export const Authorities = () => {
       });
     } else {
       setEditingId(null);
+      setEditingUserId(null);
       setFormData({
         first_name: '',
         last_name: '',
@@ -74,12 +84,37 @@ export const Authorities = () => {
       });
     }
     setFormError(null);
+    setResetPasswordText('');
+    setResetPasswordError(null);
+    setResetPasswordSuccess(false);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingId(null);
+    setEditingUserId(null);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordText || resetPasswordText.length < 6) {
+      setResetPasswordError("Password must be at least 6 characters.");
+      return;
+    }
+    setIsResettingPassword(true);
+    setResetPasswordError(null);
+    try {
+      await axios.post(`/api/admin/users/${editingUserId}/reset-password`, {
+        new_password: resetPasswordText
+      });
+      setResetPasswordSuccess(true);
+      setResetPasswordText('');
+      setTimeout(() => setResetPasswordSuccess(false), 3000);
+    } catch (err) {
+      setResetPasswordError(err.response?.data?.detail || 'Failed to reset password');
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -305,6 +340,33 @@ export const Authorities = () => {
                 )}
               </div>
             </form>
+
+            {editingId && (
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <h3 className="text-sm font-bold text-gray-900 mb-3">Password Management</h3>
+                <div className="flex items-start sm:items-center flex-col sm:flex-row gap-3">
+                  <div className="flex-1 w-full">
+                    <input 
+                      type="text" 
+                      placeholder="New Temporary Password"
+                      value={resetPasswordText}
+                      onChange={(e) => setResetPasswordText(e.target.value)}
+                      className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    disabled={isResettingPassword || !resetPasswordText || resetPasswordText.length < 6}
+                    className="w-full sm:w-auto px-4 py-2 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {isResettingPassword ? 'Resetting...' : 'Reset Password'}
+                  </button>
+                </div>
+                {resetPasswordError && <p className="text-red-500 text-xs font-bold mt-2">{resetPasswordError}</p>}
+                {resetPasswordSuccess && <p className="text-green-600 text-xs font-bold mt-2 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1" /> Password reset successfully!</p>}
+              </div>
+            )}
 
             <div className="p-6 border-t border-gray-100 flex justify-end space-x-3 bg-white">
               <button type="button" onClick={handleCloseModal}

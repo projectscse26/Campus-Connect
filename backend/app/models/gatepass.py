@@ -27,6 +27,10 @@ class GatePass(Base):
     
     status = Column(SQLEnum(GatePassStatus), default=GatePassStatus.PENDING_MENTOR, nullable=False)
     
+    viewed_by_mentor = Column(Boolean, default=False, nullable=False)
+    viewed_by_hod = Column(Boolean, default=False, nullable=False)
+    viewed_by_om = Column(Boolean, default=False, nullable=False)
+    
     # Audit trail
     mentor_id = Column(Integer, ForeignKey("faculty.id"), nullable=True)
     mentor_approved_at = Column(DateTime(timezone=True), nullable=True)

@@ -93,6 +93,20 @@ export const CADailyAttendance = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [attendanceLocked, setAttendanceLocked] = useState(false);
+
+  const fetchSettings = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/class-advisor/attendance-settings');
+      setAttendanceLocked(res.data.attendance_closed);
+    } catch (err) {
+      console.error('Failed to fetch settings', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   const fetchAttendance = useCallback((dateStr) => {
     setLoading(true);
@@ -121,6 +135,7 @@ export const CADailyAttendance = () => {
 
   const handleSave = async () => {
     if (selectedDate !== today) { alert('Attendance can only be saved for today.'); return; }
+    if (attendanceLocked) { alert('Attendance is locked for your department by the HOD.'); return; }
     setSaving(true);
     try {
       await axios.post('/api/class-advisor/attendance', {
@@ -136,6 +151,7 @@ export const CADailyAttendance = () => {
   };
 
   const isToday = selectedDate === today;
+  const canEdit = isToday && !attendanceLocked;
   const presentCount = students.filter(s => s.status === 'present').length;
   const absentCount  = students.filter(s => s.status === 'absent').length;
   const unmarked     = students.filter(s => !s.status).length;
@@ -177,7 +193,12 @@ export const CADailyAttendance = () => {
         </div>
         
         <div className="flex items-center gap-3">
-          {!isToday && (
+          {attendanceLocked && (
+            <span className="px-3 py-1.5 bg-red-50 text-red-700 text-xs font-bold rounded-lg border border-red-200 shadow-sm animate-pulse">
+              Locked by HOD
+            </span>
+          )}
+          {!isToday && !attendanceLocked && (
             <span className="px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-semibold rounded-lg border border-amber-200">
               Read Only Mode
             </span>
@@ -237,7 +258,7 @@ export const CADailyAttendance = () => {
         {/* Table Header */}
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700">Student List</h2>
-          {isToday && totalStudents > 0 && (
+          {canEdit && totalStudents > 0 && (
             <div className="flex gap-2">
               <button onClick={() => markAll('present')} className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors">
                 Mark All Present
@@ -270,7 +291,7 @@ export const CADailyAttendance = () => {
                     <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">{s.register_number}</p>
                   </div>
                   
-                  {isToday ? (
+                  {canEdit ? (
                     <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
                       <button
                         onClick={() => setStatus(s.student_id, 'present')}
@@ -310,7 +331,7 @@ export const CADailyAttendance = () => {
       </div>
 
       {/* Action Footer */}
-      {isToday && totalStudents > 0 && (
+      {canEdit && totalStudents > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-3 sm:p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
           <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
             <div className="text-sm text-gray-600 w-full sm:w-auto text-center sm:text-left">
