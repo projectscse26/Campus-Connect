@@ -142,8 +142,8 @@ export const LMSTimetable = () => {
                     {period.type === 'period' ? (
                       <>
                         <span className="text-indigo-600 mb-0.5 text-[10px]">Period {period.label}</span>
-                        <span className="font-normal text-[9px] text-gray-500">
-                          {period.start}
+                        <span className="font-normal text-[9px] text-gray-500 text-center leading-tight">
+                          {period.time}
                         </span>
                       </>
                     ) : (
