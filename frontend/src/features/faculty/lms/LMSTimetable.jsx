@@ -101,13 +101,13 @@ export const LMSTimetable = () => {
           <div className="flex items-center gap-3 mb-2">
             <Link 
               to={`/faculty/courses/${assignmentId}/lms`} 
-              className="text-gray-500 hover:text-pink-600 transition-colors flex items-center gap-1 text-sm font-medium"
+              className="text-gray-500 hover:text-indigo-600 transition-colors flex items-center gap-1 text-sm font-medium"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Dashboard
             </Link>
           </div>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-            <Calendar className="w-8 h-8 text-pink-600 animate-pulse" /> Course Timetable
+            <Calendar className="w-8 h-8 text-indigo-600 animate-pulse" /> Course Timetable
           </h1>
           <p className="text-sm text-gray-500 mt-1 font-medium">
             {courseDetails ? `${courseDetails.course.code} - ${courseDetails.course.name} (Year-${courseDetails.section.year} ${courseDetails.section.name})` : 'View the weekly schedule for this course'}
@@ -141,7 +141,7 @@ export const LMSTimetable = () => {
                   >
                     {period.type === 'period' ? (
                       <>
-                        <span className="text-pink-600 mb-0.5 text-[10px]">Period {period.label}</span>
+                        <span className="text-indigo-600 mb-0.5 text-[10px]">Period {period.label}</span>
                         <span className="font-normal text-[9px] text-gray-500">
                           {period.start}
                         </span>
@@ -178,16 +178,16 @@ export const LMSTimetable = () => {
                       <div
                         key={`${day.id}-${period.id}`}
                         className={`w-[96px] shrink-0 border-r border-gray-200 p-1.5 flex items-center justify-center ${
-                          cell ? 'bg-pink-50/50' : 'bg-white'
+                          cell ? 'bg-indigo-50/40' : 'bg-white'
                         }`}
                       >
                         {cell ? (
-                          <div className="w-full h-full bg-pink-100/60 border-2 border-pink-300 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
-                            <span className="text-[10px] font-extrabold text-pink-700 uppercase tracking-wide">
+                          <div className="w-full h-full bg-white border border-indigo-200 rounded-lg p-1.5 text-center flex flex-col justify-center items-center shadow-sm">
+                            <span className="text-[10px] font-extrabold text-indigo-700 uppercase tracking-wide">
                               {courseDetails?.course.code || 'CLASS'}
                             </span>
                             {cell.room && (
-                              <span className="text-[9px] font-bold text-pink-500 mt-0.5">
+                              <span className="text-[9px] font-bold text-indigo-500 mt-0.5">
                                 Rm {cell.room}
                               </span>
                             )}
