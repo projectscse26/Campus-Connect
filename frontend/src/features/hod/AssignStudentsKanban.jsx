@@ -39,7 +39,7 @@ export default function AssignStudentsKanban({ section, onClose, onSaveComplete 
   };
 
   const handleDragEnd = (result) => {
-    const { source, destination } = result;
+    const { source, destination, draggableId } = result;
 
     // Dropped outside a valid droppable
     if (!destination) return;
@@ -49,10 +49,16 @@ export default function AssignStudentsKanban({ section, onClose, onSaveComplete 
       return;
     }
 
+    const studentId = parseInt(draggableId);
     let sourceList = source.droppableId === 'unassigned' ? [...unassigned] : [...assigned];
     let destList = destination.droppableId === 'unassigned' ? [...unassigned] : [...assigned];
 
-    const [movedItem] = sourceList.splice(source.index, 1);
+    // Find the actual student by ID (not by index)
+    const movedItem = sourceList.find(s => s.id === studentId);
+    if (!movedItem) return;
+    
+    // Remove from source list
+    sourceList = sourceList.filter(s => s.id !== studentId);
     
     // If moving within the same list
     if (source.droppableId === destination.droppableId) {
@@ -60,8 +66,8 @@ export default function AssignStudentsKanban({ section, onClose, onSaveComplete 
       if (source.droppableId === 'unassigned') setUnassigned(sourceList);
       else setAssigned(sourceList);
     } else {
-      // Moving between lists
-      destList.splice(destination.index, 0, movedItem);
+      // Moving between lists - add to destination at the end
+      destList.push(movedItem);
       if (source.droppableId === 'unassigned') {
         setUnassigned(sourceList);
         setAssigned(destList);
