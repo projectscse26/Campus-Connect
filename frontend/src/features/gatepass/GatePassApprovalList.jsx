@@ -42,6 +42,7 @@ export const GatePassApprovalList = ({ roleTitle, apiEndpoint }) => {
       setRejectingId(null);
       setRejectReason('');
       fetchGatePasses();
+      window.dispatchEvent(new Event('refetch-badges'));
     } catch (err) {
       console.error(err);
       alert('Action failed');

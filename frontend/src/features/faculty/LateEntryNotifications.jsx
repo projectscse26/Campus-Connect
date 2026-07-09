@@ -56,6 +56,7 @@ export default function LateEntryNotifications() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       fetchNotifications();
+      window.dispatchEvent(new Event('refetch-badges'));
     } catch (error) {
       console.error("Error marking notification as viewed:", error);
       alert(error.response?.data?.detail || "Failed to mark as viewed");
@@ -73,6 +74,7 @@ export default function LateEntryNotifications() {
       );
       alert('✓ Request acknowledged');
       fetchNotifications();
+      window.dispatchEvent(new Event('refetch-badges'));
     } catch (error) {
       console.error("Error acknowledging notification:", error);
       alert(error.response?.data?.detail || "Failed to acknowledge");

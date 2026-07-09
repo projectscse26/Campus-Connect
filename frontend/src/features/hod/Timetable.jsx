@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Calendar, Save, Trash2, Check, BookOpen, Clock, Eraser } from 'lucide-react';
+import { Calendar, Save, Trash2, Check, BookOpen, Clock, Eraser, Download } from 'lucide-react';
+import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
+import { PrintableTimetable } from './PrintableTimetable';
 
 const PERIODS = [
   { id: 1, label: '1', time: '8.45 - 9.30am', type: 'period', start: '08:45', end: '09:30' },
@@ -43,6 +46,33 @@ export function Timetable() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+  const printableRef = useRef(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!printableRef.current || !selectedSection) return;
+    setIsDownloading(true);
+    try {
+      const imgData = await toPng(printableRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: '#ffffff'
+      });
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [1000, 1414] // A4 aspect ratio in portrait
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, 1000, 1414);
+      const sectionName = sections.find(s => s.id.toString() === selectedSection)?.name || 'Timetable';
+      pdf.save(`Timetable_${sectionName}.pdf`);
+    } catch (err) {
+      console.error("Failed to generate PDF", err);
+      alert("Failed to generate PDF: " + (err.message || err.toString()));
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSections = async () => {
@@ -203,6 +233,18 @@ export function Timetable() {
             <Eraser className="w-5 h-5 mr-2" />
             Erase All
           </button>
+          <button
+            onClick={handleDownload}
+            disabled={saving || isDownloading || !selectedSection}
+            className="flex items-center px-4 py-2 rounded-xl text-blue-600 bg-blue-50 font-medium hover:bg-blue-100 transition-all shadow-sm"
+          >
+            {isDownloading ? (
+               <span className="w-5 h-5 border-2 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mr-2" />
+            ) : (
+               <Download className="w-5 h-5 mr-2" />
+            )}
+            Download
+          </button>
           <button 
             onClick={handleSave}
             disabled={saving || !selectedSection}
@@ -357,6 +399,17 @@ export function Timetable() {
           <p>Please select a section from the dropdown above to manage its timetable.</p>
         </div>
       )}
+      
+      <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+        <PrintableTimetable 
+          ref={printableRef}
+          grid={grid}
+          assignments={assignments}
+          sectionData={sections.find(s => s.id.toString() === selectedSection)}
+          DAYS={DAYS}
+          PERIODS={PERIODS}
+        />
+      </div>
     </div>
   );
 }

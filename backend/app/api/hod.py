@@ -803,7 +803,8 @@ def get_attendance_summary(
             "name": f"{year_str.split()[0]} {section.name}", # e.g. "III A"
             "present": present_count,
             "absent": absent_count,
-            "is_marked": is_marked
+            "is_marked": is_marked,
+            "total_students": len(students)
         })
 
     # Calculate total rates

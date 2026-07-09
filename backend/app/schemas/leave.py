@@ -102,6 +102,9 @@ class StudentLeaveRequestResponse(BaseModel):
     hod_actioned_at: Optional[datetime] = None
 
     rejection_reason: Optional[str] = None
+    viewed_by_mentor: Optional[bool] = False
+    viewed_by_ca: Optional[bool] = False
+    viewed_by_hod: Optional[bool] = False
     created_at: datetime
     updated_at: Optional[datetime] = None
 

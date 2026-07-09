@@ -34,7 +34,7 @@ app.add_middleware(
     "https://secure-healing-production-6347.up.railway.app",
     settings.FRONTEND_URL,
     ],
-    allow_origin_regex="https://.*\.vercel\.app",
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -60,9 +60,14 @@ from app.api import announcements
 app.include_router(announcements.router, prefix="/api/announcements", tags=["Announcements"])
 from app.api import student_portal
 app.include_router(student_portal.router, prefix="/api/student-portal", tags=["Student Portal"])
+from app.api import dashboard
+app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 
 from app.api import gatepass
 app.include_router(gatepass.router, prefix="/api/gatepass", tags=["Gate Pass"])
+
+from app.api import notifications
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 
 from app.api import alumni
 app.include_router(alumni.router, prefix="/api/admin", tags=["Alumni"])

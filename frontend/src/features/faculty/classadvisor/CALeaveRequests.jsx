@@ -26,6 +26,7 @@ export const CALeaveRequests = () => {
     try {
       await axios.put(`/api/student-portal/leave/${id}/ca-action`, null, { params: { action, remarks } });
       load();
+      window.dispatchEvent(new Event('refetch-badges'));
     } catch (e) {
       alert(e.response?.data?.detail || 'Action failed');
     } finally {
