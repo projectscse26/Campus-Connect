@@ -39,6 +39,7 @@ import { LMSAnnouncements as CourseAnnouncements } from './features/faculty/lms/
 import { LMSSyllabus } from './features/faculty/lms/LMSSyllabus';
 import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
 import { LMSAttendanceHistory } from './features/faculty/lms/LMSAttendanceHistory';
+import { LMSTimetable } from './features/faculty/lms/LMSTimetable';
 import MyClass from './features/student/MyClass';
 import StudentCourses from './features/student/StudentCourses';
 import StudentCourseDetail from './features/student/StudentCourseDetail';
@@ -282,6 +283,11 @@ function AppRoutes() {
         <Route path="/faculty/courses/:assignmentId/lms/gradebook" element={
           <ProtectedRoute allowedRole="faculty">
             <LMSGradebook />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/timetable" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSTimetable />
           </ProtectedRoute>
         } />
 

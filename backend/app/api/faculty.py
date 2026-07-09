@@ -456,6 +456,46 @@ def get_my_courses(
     return assignments
 
 
+@router.get("/courses/{assignment_id}/timetable")
+def get_course_timetable(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Retrieve timetable slots for a specific course assignment.
+    """
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only faculty and HODs can view course timetable")
+        
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+        
+    assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+        
+    slots = db.query(TimetableSlot).filter(
+        TimetableSlot.course_assignment_id == assignment_id
+    ).order_by(TimetableSlot.day, TimetableSlot.start_time).all()
+    
+    return [
+        {
+            "id": s.id,
+            "day": s.day.value if hasattr(s.day, 'value') else s.day,
+            "start_time": s.start_time.strftime("%H:%M") if s.start_time else "",
+            "end_time": s.end_time.strftime("%H:%M") if s.end_time else "",
+            "room": s.room
+        }
+        for s in slots
+    ]
+
+
 @router.get("/{faculty_id}/workload")
 def get_faculty_workload(
     faculty_id: int,
