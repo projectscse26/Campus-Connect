@@ -582,12 +582,32 @@ def get_my_mentees(db: Session = Depends(get_db), current_user: User = Depends(g
     result = []
     for ma in assignments:
         s = ma.student
+        
+        # Calculate attendance percentage
+        total = db.query(Attendance).filter(Attendance.student_id == s.id).count()
+        present = db.query(Attendance).filter(
+            Attendance.student_id == s.id,
+            Attendance.status == AttendanceStatus.PRESENT
+        ).count()
+        od = db.query(Attendance).filter(
+            Attendance.student_id == s.id,
+            Attendance.status == AttendanceStatus.ON_DUTY
+        ).count()
+        late = db.query(Attendance).filter(
+            Attendance.student_id == s.id,
+            Attendance.status == AttendanceStatus.LATE
+        ).count()
+        
+        attended = present + od + late
+        att_pct = round((attended / total * 100), 1) if total > 0 else None
+        
         result.append({
             "id": s.id, "first_name": s.first_name, "last_name": s.last_name,
             "register_number": s.register_number, "college_email": s.college_email,
             "current_semester": s.current_semester, "current_year": s.current_year,
             "department": s.department.name if s.department else None,
             "section": s.section.name if s.section else None, "batch": s.batch,
+            "attendance_pct": att_pct,
         })
     return result
 
@@ -605,10 +625,21 @@ def get_mentee_detail(student_id: int, db: Session = Depends(get_db), current_us
     ).filter(Student.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+    
+    # Calculate attendance percentage
     total = db.query(Attendance).filter(Attendance.student_id == student_id).count()
-    present = db.query(Attendance).filter(Attendance.student_id == student_id, Attendance.status == AttendanceStatus.PRESENT).count()
-    od = db.query(Attendance).filter(Attendance.student_id == student_id, Attendance.status == AttendanceStatus.ON_DUTY).count()
-    late = db.query(Attendance).filter(Attendance.student_id == student_id, Attendance.status == AttendanceStatus.LATE).count()
+    present = db.query(Attendance).filter(
+        Attendance.student_id == student_id,
+        Attendance.status == AttendanceStatus.PRESENT
+    ).count()
+    od = db.query(Attendance).filter(
+        Attendance.student_id == student_id,
+        Attendance.status == AttendanceStatus.ON_DUTY
+    ).count()
+    late = db.query(Attendance).filter(
+        Attendance.student_id == student_id,
+        Attendance.status == AttendanceStatus.LATE
+    ).count()
     
     # We count PRESENT, ON_DUTY, and LATE as attended classes
     attended = present + od + late
