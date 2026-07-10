@@ -90,6 +90,11 @@ class AttendanceMarkItem(BaseModel):
 class AttendanceSaveRequest(BaseModel):
     date: date
     records: List[AttendanceMarkItem]
+    course_id: Optional[int] = None
+    course_assignment_id: Optional[int] = None
+    unit: Optional[str] = None
+    topic_id: Optional[int] = None
+    hour: Optional[int] = None
 
 
 class AttendanceSaveResponse(BaseModel):
@@ -135,6 +140,7 @@ class CASubjectItem(BaseModel):
     credits: int
     course_type: str
     faculty_name: str
+    course_assignment_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 

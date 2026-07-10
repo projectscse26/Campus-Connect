@@ -15,7 +15,7 @@ from app.core.security import get_current_active_user, get_password_hash
 
 router = APIRouter()
 
-@router.get("/", response_model=List[StudentResponse])
+@router.get("/")
 def get_students(
     skip: int = 0, 
     limit: int = 100, 
@@ -25,8 +25,34 @@ def get_students(
     """
     Retrieve all students.
     """
-    students = db.query(Student).offset(skip).limit(limit).all()
-    return students
+    from sqlalchemy.orm import joinedload
+    students = db.query(Student).options(joinedload(Student.section)).offset(skip).limit(limit).all()
+    return [
+        {
+            "id": s.id,
+            "user_id": s.user_id,
+            "first_name": s.first_name,
+            "last_name": s.last_name,
+            "register_number": s.register_number,
+            "college_email": s.college_email,
+            "phone": s.phone,
+            "department_id": s.department_id,
+            "batch": s.batch,
+            "current_semester": s.current_semester,
+            "current_year": s.current_year,
+            "gender": s.gender,
+            "date_of_birth": str(s.date_of_birth) if s.date_of_birth else None,
+            "is_active": s.is_active,
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+            "updated_at": s.updated_at.isoformat() if s.updated_at else None,
+            "section": {"name": s.section.name} if s.section else None,
+            "aadhar_number": s.aadhar_number,
+            "accommodation": s.accommodation,
+            "transportation": s.transportation,
+            "bus_number": s.bus_number,
+        }
+        for s in students
+    ]
 
 @router.post("/", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
 def create_student(
@@ -107,38 +133,14 @@ def promote_students(
             s.current_semester += 1
             promoted_count += 1
         elif s.current_semester == 8:
-            # Create Alumni record
-            alumni_record = Alumni(
-                user_id=s.user_id,
-                department_id=s.department_id,
-                first_name=s.first_name,
-                last_name=s.last_name,
-                register_number=s.register_number,
-                gender=s.gender,
-                date_of_birth=s.date_of_birth,
-                blood_group=s.blood_group,
-                nationality=s.nationality,
-                community=s.community,
-                photo_url=s.photo_url,
-                batch=s.batch,
-                graduation_year=2026, # Using a hardcoded year for now or derive from batch
-                college_email=s.college_email,
-                personal_email=s.personal_email,
-                phone=s.phone,
-                address_line1=s.address_line1,
-                address_line2=s.address_line2,
-                city=s.city,
-                state=s.state,
-                pincode=s.pincode
-            )
-            db.add(alumni_record)
+            # Soft delete student and mark as alumni
+            s.is_alumni = True
+            s.is_active = False
             
-            # Deactivate user account (optional, based on requirement)
+            # Deactivate user account so they can't login as active student
             if s.user:
                 s.user.is_active = False
 
-            # Delete student record
-            db.delete(s)
             graduated_count += 1
 
     db.commit()

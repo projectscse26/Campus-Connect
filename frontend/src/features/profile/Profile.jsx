@@ -193,6 +193,21 @@ const StudentProfile = ({ profile, onUpdate }) => {
         </div>
       </div>
 
+      {/* Additional Details */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <User className="w-4 h-4" /> Additional Details
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <EditableRow label="Aadhar Number" value={profile.aadhar_number} field="aadhar_number" onSave={handleSave} />
+          <EditableRow label="Accommodation (Hostel / Day Scholar)" value={profile.accommodation} field="accommodation" onSave={handleSave} />
+          <EditableRow label="Transportation (OWN / BUS)" value={profile.transportation} field="transportation" onSave={handleSave} />
+          {profile.transportation && profile.transportation.toUpperCase() === 'BUS' && (
+            <EditableRow label="Bus Number" value={profile.bus_number} field="bus_number" onSave={handleSave} />
+          )}
+        </div>
+      </div>
+
       {/* Address */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">

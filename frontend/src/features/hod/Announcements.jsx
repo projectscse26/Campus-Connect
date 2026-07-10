@@ -58,7 +58,7 @@ export const Announcements = () => {
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/announcements');
+      const res = await axios.get('/api/announcements/');
       setAnnouncements(res.data);
     } catch (err) {
       setError('Failed to load announcements');
@@ -124,7 +124,7 @@ export const Announcements = () => {
     setFormLoading(true);
     try {
       if (modalMode === 'create') {
-        await axios.post('/api/announcements', formData);
+        await axios.post('/api/announcements/', formData);
       } else {
         await axios.put(`/api/announcements/${editingId}`, formData);
       }

@@ -60,6 +60,14 @@ class FacultyLeaveBalanceBase(BaseModel):
     sick_leaves_used: int
     earned_leaves_total: int
     earned_leaves_used: int
+    restricted_leaves_total: int
+    restricted_leaves_used: int
+    vacation_leaves_total: int
+    vacation_leaves_used: int
+    compensation_leaves_total: int
+    compensation_leaves_used: int
+    academic_leaves_total: int
+    academic_leaves_used: int
 
 class FacultyLeaveBalanceResponse(FacultyLeaveBalanceBase):
     id: int
@@ -102,6 +110,9 @@ class StudentLeaveRequestResponse(BaseModel):
     hod_actioned_at: Optional[datetime] = None
 
     rejection_reason: Optional[str] = None
+    viewed_by_mentor: Optional[bool] = False
+    viewed_by_ca: Optional[bool] = False
+    viewed_by_hod: Optional[bool] = False
     created_at: datetime
     updated_at: Optional[datetime] = None
 

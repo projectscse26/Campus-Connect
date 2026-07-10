@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary-50: #eff6ff;
   --color-primary-100: #dbeafe;
@@ -14,12 +16,35 @@
   --font-sans: 'Inter', sans-serif;
 }
 
+.dark {
+  /* Deep Black / Gray Palette for dark mode */
+  --color-white: #09090b; /* Super sleek dark background for solid cards */
+  --color-gray-50: #121212; /* Solid main background */
+  
+  /* Translucent white shades for gorgeous, modern borders and highlights (Hex with alpha for Tailwind v4 compatibility) */
+  --color-gray-100: #ffffff0d; /* ~5% opacity */
+  --color-gray-200: #ffffff17; /* ~9% opacity */
+  --color-gray-300: #ffffff24; /* ~14% opacity */
+  --color-gray-400: #ffffff38; /* ~22% opacity */
+  
+  /* Text colors */
+  --color-gray-500: #737373;
+  --color-gray-600: #a3a3a3;
+  --color-gray-700: #d4d4d4;
+  --color-gray-800: #e5e5e5;
+  --color-gray-900: #fafafa;
+  --color-gray-950: #ffffff;
+  
+  --color-sidebar: #050505;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
-  background-color: #f8fafc;
+  background-color: var(--color-gray-50); /* Inherits properly in both modes */
+  color: var(--color-gray-900);
 }
 
 #root {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import DashboardLayout from './layouts/DashboardLayout';
 import Login from './features/auth/Login';
 import { 
@@ -12,6 +13,7 @@ import {
 import { Departments } from './features/admin/Departments';
 import { Faculty } from './features/admin/Faculty';
 import { Students } from './features/admin/Students';
+import { Alumni } from './features/admin/Alumni';
 import { Authorities } from './features/admin/Authorities';
 import { Courses } from './features/admin/Courses';
 import { HodDashboard } from './features/hod/HodDashboard';
@@ -37,6 +39,8 @@ import { LMSAnnouncements as CourseAnnouncements } from './features/faculty/lms/
 import { LMSSyllabus } from './features/faculty/lms/LMSSyllabus';
 import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
 import { LMSAttendanceHistory } from './features/faculty/lms/LMSAttendanceHistory';
+import { LMSTimetable } from './features/faculty/lms/LMSTimetable';
+import MyClass from './features/student/MyClass';
 import StudentCourses from './features/student/StudentCourses';
 import StudentCourseDetail from './features/student/StudentCourseDetail';
 import StudentMarks from './features/student/StudentMarks';
@@ -65,11 +69,18 @@ import { GatePass } from './features/student/GatePass';
 import { StudentLeave } from './features/student/StudentLeave';
 import { MenteeGatePasses } from './features/faculty/MenteeGatePasses';
 import { GatePassApprovals as HodGatePassApprovals } from './features/hod/GatePassApprovals';
-import { StudentLeaveApprovals } from './features/hod/StudentLeaveApprovals';
+import { LeaveApprovals } from './features/hod/LeaveApprovals';
 import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
+import FacultyGatePass from './features/faculty/FacultyGatePass';
+import HODFacultyGatePass from './features/hod/HODFacultyGatePass';
+import AuthorityFacultyGatePass from './features/authority/AuthorityFacultyGatePass';
+import { AuthorityLeaveApprovals } from './features/authority/AuthorityLeaveApprovals';
 import { Profile } from './features/profile/Profile';
 import LateEntryNotification from './features/student/LateEntryNotification';
-import { AuditLogs } from './features/admin/AuditLogs';
+import PrincipalDashboard from './features/authority/PrincipalDashboard';
+import DeanDashboard from './features/authority/DeanDashboard';
+import OMDashboard from './features/authority/OMDashboard';
+import AuthorityDashboardRouter from './features/authority/AuthorityDashboardRouter';
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
@@ -120,6 +131,11 @@ function AppRoutes() {
             <Students />
           </ProtectedRoute>
         } />
+        <Route path="/admin/alumni" element={
+          <ProtectedRoute allowedRole="admin">
+            <Alumni />
+          </ProtectedRoute>
+        } />
         <Route path="/admin/authorities" element={
           <ProtectedRoute allowedRole="admin">
             <Authorities />
@@ -138,11 +154,6 @@ function AppRoutes() {
         <Route path="/admin/latetracker" element={
           <ProtectedRoute allowedRole="admin">
             <LateManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/audit-logs" element={
-          <ProtectedRoute allowedRole="admin">
-            <AuditLogs />
           </ProtectedRoute>
         } />
         <Route path="/admin/announcements" element={
@@ -217,9 +228,14 @@ function AppRoutes() {
             <HodGatePassApprovals />
           </ProtectedRoute>
         } />
+        <Route path="/hod/faculty-gatepass" element={
+          <ProtectedRoute allowedRole="hod">
+            <HODFacultyGatePass />
+          </ProtectedRoute>
+        } />
         <Route path="/hod/leave" element={
           <ProtectedRoute allowedRole="hod">
-            <StudentLeaveApprovals />
+            <LeaveApprovals />
           </ProtectedRoute>
         } />
         <Route path="/hod/latetracker" element={
@@ -277,6 +293,11 @@ function AppRoutes() {
         <Route path="/faculty/courses/:assignmentId/lms/gradebook" element={
           <ProtectedRoute allowedRole="faculty">
             <LMSGradebook />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/timetable" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSTimetable />
           </ProtectedRoute>
         } />
 
@@ -352,6 +373,11 @@ function AppRoutes() {
             <MenteeGatePasses />
           </ProtectedRoute>
         } />
+        <Route path="/faculty/faculty-gatepass" element={
+          <ProtectedRoute allowedRole="faculty">
+            <FacultyGatePass />
+          </ProtectedRoute>
+        } />
         <Route path="/faculty/late-entry" element={
           <ProtectedRoute allowedRole="faculty">
             <LateEntryNotifications />
@@ -362,6 +388,11 @@ function AppRoutes() {
         <Route path="/student" element={
           <ProtectedRoute allowedRole="student">
             <StudentDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/class" element={
+          <ProtectedRoute allowedRole="student">
+            <MyClass />
           </ProtectedRoute>
         } />
         <Route path="/student/courses" element={
@@ -425,10 +456,43 @@ function AppRoutes() {
       
       {/* Continuing DashboardLayout for Authority (Needs separate Route wrapper if we closed it above, wait, I need to wrap Authority inside DashboardLayout as well) */}
       <Route element={<DashboardLayout />}>
-        {/* Authority Routes */}
+        {/* Authority Routes - Uses router to determine Principal vs OM */}
         <Route path="/authority" element={
           <ProtectedRoute allowedRole="authority">
-            <AuthorityDashboard />
+            <AuthorityDashboardRouter />
+          </ProtectedRoute>
+        } />
+        {/* Principal Dashboard Route */}
+        <Route path="/principal" element={
+          <ProtectedRoute allowedRole="authority">
+            <PrincipalDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* Dean Dashboard Route */}
+        <Route path="/dean" element={
+          <ProtectedRoute allowedRole="authority">
+            <DeanDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* Vice Principal Dashboard Route (Uses PrincipalDashboard layout) */}
+        <Route path="/vice-principal" element={
+          <ProtectedRoute allowedRole="authority">
+            <PrincipalDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* OM Dashboard Route */}
+        <Route path="/om" element={
+          <ProtectedRoute allowedRole="authority">
+            <OMDashboard />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/authority/leave" element={
+          <ProtectedRoute allowedRole="authority">
+            <AuthorityLeaveApprovals />
           </ProtectedRoute>
         } />
         <Route path="/authority/discipline" element={
@@ -451,6 +515,11 @@ function AppRoutes() {
             <OMGatePassApprovals />
           </ProtectedRoute>
         } />
+        <Route path="/authority/faculty-gatepass" element={
+          <ProtectedRoute allowedRole="authority">
+            <AuthorityFacultyGatePass />
+          </ProtectedRoute>
+        } />
         
         {/* Catch-all for sub-routes during Phase 2 (shows empty page) */}
         <Route path="/:role/profile" element={
@@ -471,12 +540,16 @@ function AppRoutes() {
   );
 }
 
+
+
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

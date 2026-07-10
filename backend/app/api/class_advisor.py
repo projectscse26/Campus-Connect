@@ -10,7 +10,13 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, case
 from typing import List, Optional
 from datetime import date
-
+from fastapi.responses import StreamingResponse
+import io
+import openpyxl
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet
 from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.models.user import User
@@ -20,6 +26,7 @@ from app.models.academic import Section, Course, CourseAssignment, Enrollment
 from app.models.attendance import Attendance, AttendanceStatus
 from app.models.lms import TimetableSlot, LMSResource
 from app.models.department import Department
+from app.models.course_plan import CoursePlan
 from app.schemas.class_advisor import (
     ClassInfoResponse, CADashboardResponse,
     CAStudentListItem, CAStudentProfileResponse, EnrolledSubject,
@@ -186,6 +193,126 @@ def get_students(
     ]
 
 
+@router.get("/students/report")
+def generate_student_report(
+    format: str = 'pdf',
+    columns: str = 'register_number,name,phone,gender',
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    faculty, section = get_advisor_section(current_user, db)
+
+    students = db.query(Student).filter(
+        Student.section_id == section.id,
+        Student.is_active == True
+    ).order_by(Student.register_number).all()
+
+    col_list = [c.strip() for c in columns.split(',') if c.strip()]
+    if not col_list:
+        col_list = ['register_number', 'name', 'phone', 'gender']
+
+    # Define how to fetch data for each column
+    headers = []
+    for col in col_list:
+        if col == 'register_number':
+            headers.append("Register No")
+        elif col == 'roll_number':
+            headers.append("Roll No")
+        elif col == 'name':
+            headers.append("Name")
+        else:
+            headers.append(col.replace('_', ' ').title())
+
+    data = [headers]
+    for s in students:
+        row = []
+        for col in col_list:
+            if col == 'name':
+                row.append(f"{s.first_name} {s.last_name}")
+            else:
+                val = getattr(s, col, "")
+                if val is None:
+                    row.append("")
+                else:
+                    row.append(str(val))
+        data.append(row)
+
+    if format.lower() == 'excel':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Student List"
+
+        for r_idx, row_data in enumerate(data, 1):
+            for c_idx, value in enumerate(row_data, 1):
+                ws.cell(row=r_idx, column=c_idx, value=value)
+
+        # Auto-adjust column width
+        for col in ws.columns:
+            max_length = 0
+            column_letter = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column_letter].width = adjusted_width
+
+        stream = io.BytesIO()
+        wb.save(stream)
+        stream.seek(0)
+        return StreamingResponse(
+            stream,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename=student_list_{section.name}.xlsx"}
+        )
+
+    else:
+        # Default to PDF
+        stream = io.BytesIO()
+        doc = SimpleDocTemplate(stream, pagesize=letter)
+        elements = []
+
+        import os
+        logo_path = r"C:\Users\SYS5\Documents\ERP\Campus-Connect\frontend\public\logo.png"
+        if os.path.exists(logo_path):
+            img = Image(logo_path, width=550, height=110)
+            elements.append(img)
+            elements.append(Spacer(1, 12))
+
+        styles = getSampleStyleSheet()
+        title = Paragraph(f"Student List", styles['Title'])
+        elements.append(title)
+        elements.append(Spacer(1, 12))
+
+        # Use col_list length to estimate widths (simplistic approach)
+        t = Table(data)
+        t.setStyle(TableStyle([
+            # ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f3e8ff')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e5e7eb')),
+        ]))
+        elements.append(t)
+        doc.build(elements)
+
+        stream.seek(0)
+        return StreamingResponse(
+            stream,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=student_list_{section.name}.pdf"}
+        )
+
+
 # ── Student Profile ───────────────────────────────────────
 
 @router.get("/students/{student_id}", response_model=CAStudentProfileResponse)
@@ -207,27 +334,28 @@ def get_student_profile(
 
     dept = db.query(Department).filter(Department.id == student.department_id).first()
 
-    # Attendance percentage using homeroom course
-    homeroom_course_id = None
-    assignment = db.query(CourseAssignment).filter(
-        CourseAssignment.section_id == section.id,
-        CourseAssignment.is_active == True
-    ).order_by(CourseAssignment.id).first()
-    if assignment:
-        homeroom_course_id = assignment.course_id
-
+    # Attendance percentage - count all records
     total_days = db.query(Attendance).filter(
-        Attendance.student_id == student.id,
-        Attendance.course_id == homeroom_course_id
+        Attendance.student_id == student.id
     ).count()
 
     present_days = db.query(Attendance).filter(
         Attendance.student_id == student.id,
-        Attendance.course_id == homeroom_course_id,
         Attendance.status == AttendanceStatus.PRESENT
     ).count()
-
-    attendance_pct = round((present_days / total_days * 100), 1) if total_days > 0 else 0.0
+    
+    od_days = db.query(Attendance).filter(
+        Attendance.student_id == student.id,
+        Attendance.status == AttendanceStatus.ON_DUTY
+    ).count()
+    
+    late_days = db.query(Attendance).filter(
+        Attendance.student_id == student.id,
+        Attendance.status == AttendanceStatus.LATE
+    ).count()
+    
+    attended_days = present_days + od_days + late_days
+    attendance_pct = round((attended_days / total_days * 100), 1) if total_days > 0 else 0.0
 
     # Enrolled subjects
     enrollments = db.query(Enrollment).options(
@@ -280,9 +408,23 @@ def get_student_profile(
 
 # ── Daily Attendance ──────────────────────────────────────
 
+@router.get("/attendance-settings")
+def get_attendance_settings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    _, section = get_advisor_section(current_user, db)
+    department = db.query(Department).filter(Department.id == section.department_id).first()
+    return {
+        "attendance_closed": department.attendance_closed if department else False
+    }
+
+
 @router.get("/attendance", response_model=List[AttendanceStudentRow])
 def get_attendance_for_date(
     date: date,
+    course_id: Optional[int] = None,
+    hour: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
@@ -295,22 +437,22 @@ def get_attendance_for_date(
 
     student_ids = [s.id for s in students]
 
-    # Fetch existing records for this date using homeroom course id
+    # Fetch existing records for this date using selected course id and optional hour
     existing = {}
     if student_ids:
-        homeroom_course_id = None
-        assignment = db.query(CourseAssignment).filter(
-            CourseAssignment.section_id == section.id,
-            CourseAssignment.is_active == True
-        ).order_by(CourseAssignment.id).first()
-        if assignment:
-            homeroom_course_id = assignment.course_id
+        target_course_id = course_id
+        if target_course_id is None:
+            target_course_id = get_homeroom_course_id(section.id, db)
 
-        records = db.query(Attendance).filter(
+        q = db.query(Attendance).filter(
             Attendance.student_id.in_(student_ids),
             Attendance.date == date,
-            Attendance.course_id == homeroom_course_id
-        ).all()
+            Attendance.course_id == target_course_id
+        )
+        if hour is not None:
+            q = q.filter(Attendance.hour == hour)
+
+        records = q.all()
         existing = {r.student_id: r.status.value for r in records}
 
     return [
@@ -325,6 +467,59 @@ def get_attendance_for_date(
     ]
 
 
+@router.get("/attendance-report")
+def get_attendance_report(
+    start_date: date,
+    end_date: date,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    _, section = get_advisor_section(current_user, db)
+
+    students = db.query(Student).filter(
+        Student.section_id == section.id,
+        Student.is_active == True
+    ).order_by(Student.register_number).all()
+
+    student_ids = [s.id for s in students]
+
+    homeroom_course_id = None
+    if student_ids:
+        assignment = db.query(CourseAssignment).filter(
+            CourseAssignment.section_id == section.id,
+            CourseAssignment.is_active == True
+        ).order_by(CourseAssignment.id).first()
+        if assignment:
+            homeroom_course_id = assignment.course_id
+
+    records = []
+    if student_ids and homeroom_course_id:
+        records = db.query(Attendance).filter(
+            Attendance.student_id.in_(student_ids),
+            Attendance.course_id == homeroom_course_id,
+            Attendance.date >= start_date,
+            Attendance.date <= end_date
+        ).all()
+        
+    attendance_map = {}
+    for r in records:
+        if r.student_id not in attendance_map:
+            attendance_map[r.student_id] = {}
+        attendance_map[r.student_id][r.date.isoformat()] = r.status.value if r.status else None
+
+    result = []
+    for s in students:
+        result.append({
+            "student_id": s.id,
+            "register_number": s.register_number,
+            "first_name": s.first_name,
+            "last_name": s.last_name,
+            "attendance": attendance_map.get(s.id, {})
+        })
+
+    return result
+
+
 @router.post("/attendance", response_model=AttendanceSaveResponse)
 def save_attendance(
     payload: AttendanceSaveRequest,
@@ -332,6 +527,14 @@ def save_attendance(
     current_user: User = Depends(get_current_active_user)
 ):
     faculty, section = get_advisor_section(current_user, db)
+
+    # Check if attendance is locked/closed for the department
+    department = db.query(Department).filter(Department.id == section.department_id).first()
+    if department and department.attendance_closed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Attendance is locked for your department by the HOD."
+        )
 
     # Only allow editing today's attendance
     if payload.date != date.today():
@@ -348,7 +551,9 @@ def save_attendance(
         ).all()
     }
 
-    homeroom_course_id = get_homeroom_course_id(section.id, db)
+    target_course_id = payload.course_id
+    if target_course_id is None:
+        target_course_id = get_homeroom_course_id(section.id, db)
 
     saved = 0
     for record in payload.records:
@@ -361,11 +566,15 @@ def save_attendance(
             continue
 
         # Upsert: update if exists, insert if not
-        existing = db.query(Attendance).filter(
+        q = db.query(Attendance).filter(
             Attendance.student_id == record.student_id,
             Attendance.date == payload.date,
-            Attendance.course_id == homeroom_course_id
-        ).first()
+            Attendance.course_id == target_course_id
+        )
+        if payload.hour is not None:
+            q = q.filter(Attendance.hour == payload.hour)
+            
+        existing = q.first()
 
         if existing:
             existing.status = att_status
@@ -373,13 +582,29 @@ def save_attendance(
         else:
             new_att = Attendance(
                 student_id=record.student_id,
-                course_id=homeroom_course_id,
+                course_id=target_course_id,
                 date=payload.date,
+                hour=payload.hour,
                 status=att_status,
                 marked_by_id=faculty.id
             )
             db.add(new_att)
         saved += 1
+
+    # Automatic update of Lesson Plan (CoursePlanTopic) if topic_id is provided
+    if payload.topic_id:
+        from app.models.course_plan import CoursePlanTopic
+        topic = db.query(CoursePlanTopic).filter(CoursePlanTopic.id == payload.topic_id).first()
+        if topic:
+            topic.actual_date = payload.date
+            topic.is_signed = True
+            topic.signed_at = func.now()
+            if payload.hour:
+                topic.hours = payload.hour
+            # If actual date differs from proposed date, we automatically supply a reason for deviation to avoid validation errors
+            if topic.proposed_date and topic.proposed_date != payload.date:
+                if not topic.reason_for_deviation:
+                    topic.reason_for_deviation = "Topic covered during Daily Attendance session"
 
     db.commit()
     return AttendanceSaveResponse(message="Attendance saved successfully", saved=saved)
@@ -410,24 +635,33 @@ def get_attendance_summary(
     result = []
     for s in students:
         total_days = db.query(Attendance).filter(
-            Attendance.student_id == s.id,
-            Attendance.course_id == homeroom_course_id
+            Attendance.student_id == s.id
         ).count()
 
         present_days = db.query(Attendance).filter(
             Attendance.student_id == s.id,
-            Attendance.course_id == homeroom_course_id,
             Attendance.status == AttendanceStatus.PRESENT
         ).count()
-
-        pct = round((present_days / total_days * 100), 1) if total_days > 0 else 0.0
+        
+        od_days = db.query(Attendance).filter(
+            Attendance.student_id == s.id,
+            Attendance.status == AttendanceStatus.ON_DUTY
+        ).count()
+        
+        late_days = db.query(Attendance).filter(
+            Attendance.student_id == s.id,
+            Attendance.status == AttendanceStatus.LATE
+        ).count()
+        
+        attended_days = present_days + od_days + late_days
+        pct = round((attended_days / total_days * 100), 1) if total_days > 0 else 0.0
 
         result.append(AttendanceSummaryItem(
             student_id=s.id,
             register_number=s.register_number,
             first_name=s.first_name,
             last_name=s.last_name,
-            present_days=present_days,
+            present_days=attended_days,
             total_days=total_days,
             percentage=pct
         ))
@@ -505,7 +739,8 @@ def get_subjects(
             name=a.course.name,
             credits=a.course.credits,
             course_type=a.course.course_type.value if a.course.course_type else "theory",
-            faculty_name=f"{a.faculty.first_name} {a.faculty.last_name}"
+            faculty_name=f"{a.faculty.first_name} {a.faculty.last_name}",
+            course_assignment_id=a.id
         )
         for a in assignments if a.course and a.faculty
     ]
@@ -533,10 +768,14 @@ def get_course_progress(
         if not a.course or not a.faculty:
             continue
 
-        # Use uploaded LMS resource count as units completed proxy
-        units_completed = db.query(LMSResource).filter(
-            LMSResource.course_id == a.course_id
-        ).count()
+        # Fetch progress from actual CoursePlan
+        plan = db.query(CoursePlan).filter(CoursePlan.course_assignment_id == a.id).first()
+        if plan and plan.topics:
+            total_units = len(plan.topics)
+            units_completed = sum(1 for t in plan.topics if t.actual_date is not None)
+        else:
+            total_units = 5
+            units_completed = 0
 
         result.append(CACourseProgressItem(
             course_id=a.course.id,
@@ -544,7 +783,7 @@ def get_course_progress(
             subject_name=a.course.name,
             faculty_name=f"{a.faculty.first_name} {a.faculty.last_name}",
             units_completed=units_completed,
-            total_units=5  # default until a units table exists
+            total_units=total_units
         ))
 
     return result

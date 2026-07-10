@@ -49,7 +49,7 @@ def hod_dashboard(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    department, _ = get_hod_department(current_user, db)
+    department, faculty_profile = get_hod_department(current_user, db)
 
     faculty_count = db.query(Faculty).filter(Faculty.department_id == department.id).count()
     student_count = db.query(Student).filter(Student.department_id == department.id).count()
@@ -60,6 +60,10 @@ def hod_dashboard(
         CourseAssignment.is_active == True
     ).count()
 
+    # Get HOD's full name and qualifications
+    hod_name = f"{faculty_profile.first_name} {faculty_profile.last_name}" if faculty_profile else None
+    hod_title = faculty_profile.qualification if faculty_profile and faculty_profile.qualification else None
+
     return HodDashboardResponse(
         department_name=department.name,
         department_code=department.code,
@@ -67,7 +71,9 @@ def hod_dashboard(
         student_count=student_count,
         course_count=course_count,
         section_count=section_count,
-        assignment_count=assignment_count
+        assignment_count=assignment_count,
+        hod_name=hod_name,
+        hod_title=hod_title
     )
 
 # ── Department Settings ───────────────────────────────
@@ -255,6 +261,13 @@ def delete_section(
     section = db.query(Section).filter(Section.id == section_id, Section.department_id == department.id).first()
     if not section:
         raise HTTPException(status_code=404, detail="Section not found")
+        
+    if db.query(Student).filter(Student.section_id == section_id).first():
+        raise HTTPException(status_code=400, detail="Cannot delete this section because students are assigned to it. Please reassign them first.")
+        
+    if db.query(CourseAssignment).filter(CourseAssignment.section_id == section_id).first():
+        raise HTTPException(status_code=400, detail="Cannot delete this section because it has active course assignments. Please delete all course assignments for this section first.")
+
     db.delete(section)
     db.commit()
     return None
@@ -405,6 +418,11 @@ def delete_assignment(
     )
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
+        
+    # Delete associated timetable slots first to avoid FK constraint violations
+    from app.models.lms import TimetableSlot
+    db.query(TimetableSlot).filter(TimetableSlot.course_assignment_id == assignment_id).delete()
+
     db.delete(assignment)
     db.commit()
     return None
@@ -791,7 +809,8 @@ def get_attendance_summary(
             "name": f"{year_str.split()[0]} {section.name}", # e.g. "III A"
             "present": present_count,
             "absent": absent_count,
-            "is_marked": is_marked
+            "is_marked": is_marked,
+            "total_students": len(students)
         })
 
     # Calculate total rates

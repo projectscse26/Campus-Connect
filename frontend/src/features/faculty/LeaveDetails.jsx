@@ -7,6 +7,7 @@ export const LeaveDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [request, setRequest] = useState(null);
+  const [balance, setBalance] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,13 +16,34 @@ export const LeaveDetails = () => {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get(`/api/leave/requests/${id}`);
-      setRequest(res.data);
+      const [reqRes, balRes] = await Promise.all([
+        axios.get(`/api/leave/requests/${id}`),
+        axios.get('/api/leave/balances')
+      ]);
+      setRequest(reqRes.data);
+      setBalance(balRes.data);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleWithdraw = async () => {
+    if (window.confirm("Are you sure you want to withdraw and delete this leave request?")) {
+      try {
+        await axios.put(`/api/leave/requests/${id}/withdraw`);
+        alert("Request withdrawn and deleted successfully.");
+        navigate('/faculty/leave');
+      } catch (err) {
+        console.error(err);
+        alert(err.response?.data?.detail || "Failed to withdraw request.");
+      }
+    }
+  };
+
+  const handleModify = () => {
+    navigate(`/faculty/leave/apply?edit=${id}`);
   };
 
   if (loading) {
@@ -67,14 +89,24 @@ export const LeaveDetails = () => {
               Submitted on {new Date(request.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto mt-2">
-            <button className="flex-1 sm:flex-none justify-center bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center">
-              <Edit3 className="w-4 h-4 mr-2" /> Modify
-            </button>
-            <button className="flex-1 sm:flex-none justify-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center">
-              <XCircle className="w-4 h-4 mr-2" /> Withdraw
-            </button>
-          </div>
+          {['pending_substitute', 'pending_hod', 'pending_dean', 'pending_om'].includes(request.status) && (
+            <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto mt-2">
+              {request.status === 'pending_substitute' && (
+                <button 
+                  onClick={handleModify}
+                  className="flex-1 sm:flex-none justify-center bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center"
+                >
+                  <Edit3 className="w-4 h-4 mr-2" /> Modify
+                </button>
+              )}
+              <button 
+                onClick={handleWithdraw}
+                className="flex-1 sm:flex-none justify-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors shadow-sm flex items-center"
+              >
+                <XCircle className="w-4 h-4 mr-2" /> Withdraw
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -123,6 +155,20 @@ export const LeaveDetails = () => {
               <Users className="w-5 h-5 text-gray-400" />
             </div>
             
+            {/* Alert for pending substitutes */}
+            {request.status === 'pending_substitute' && request.arrangements.some(arr => arr.status?.toLowerCase() === 'pending') && (
+              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-amber-900 mb-1">Waiting for Substitute Approvals</p>
+                  <p className="text-xs text-amber-800">
+                    Your leave request will be forwarded to HOD only after <strong>ALL substitute faculty accept</strong> their assignments. 
+                    {request.arrangements.filter(a => a.status?.toLowerCase() === 'pending').length} substitute(s) still need to respond.
+                  </p>
+                </div>
+              </div>
+            )}
+            
             {request.arrangements.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {request.arrangements.map(arr => (
@@ -130,22 +176,22 @@ export const LeaveDetails = () => {
                     <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
                       <Users className="w-5 h-5 text-gray-500" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Substitute Instructor</p>
                       <p className="text-sm font-bold text-gray-900">{arr.substitute_faculty_name}</p>
-                      <p className="text-xs text-gray-500 mb-2">{arr.subject} ({arr.class_section})</p>
+                      <p className="text-xs text-gray-500 mb-2">{arr.subject} ({arr.class_section}) - Period {arr.period}</p>
                       
-                      {arr.status === 'accepted' ? (
+                      {arr.status?.toLowerCase() === 'accepted' ? (
                         <div className="inline-flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200">
                           <CheckCircle className="w-3.5 h-3.5 mr-1" /> ACCEPTED
                         </div>
-                      ) : arr.status === 'rejected' ? (
+                      ) : arr.status?.toLowerCase() === 'rejected' ? (
                         <div className="inline-flex items-center text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200">
                           <XCircle className="w-3.5 h-3.5 mr-1" /> REJECTED
                         </div>
                       ) : (
                         <div className="inline-flex items-center text-xs font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded border border-yellow-200">
-                          <Clock className="w-3.5 h-3.5 mr-1" /> PENDING
+                          <Clock className="w-3.5 h-3.5 mr-1" /> PENDING APPROVAL
                         </div>
                       )}
                     </div>
@@ -207,9 +253,65 @@ export const LeaveDetails = () => {
               <div className="w-5 h-5 rounded-full border border-blue-300 text-blue-300 flex items-center justify-center text-xs font-bold mr-3 shrink-0">i</div>
               <div className="text-sm">
                 <p className="font-bold mb-1">Leave Balance Note</p>
-                <p className="text-blue-100 text-xs leading-relaxed">
-                  Approving this request will leave you with <span className="underline font-bold">12 days</span> of Casual Leave for the remaining semester.
-                </p>
+                {(() => {
+                  if (!balance || !request) return null;
+                  const duration = request.duration_days || 0;
+                  const ltype = request.leave_type;
+
+                  if (ltype === 'Casual Leave') {
+                    const remaining = (balance.casual_leaves_total || 1) - (balance.casual_leaves_used || 0) - duration;
+                    return (
+                      <p className="text-blue-100 text-xs leading-relaxed">
+                        Approving this request will leave you with <span className="underline font-bold">{remaining >= 0 ? remaining : 0} days</span> of Casual Leave for this month.
+                      </p>
+                    );
+                  }
+                  if (ltype === 'Restricted Leave') {
+                    const remaining = (balance.restricted_leaves_total || 1) - (balance.restricted_leaves_used || 0) - duration;
+                    return (
+                      <p className="text-blue-100 text-xs leading-relaxed">
+                        Approving this request will leave you with <span className="underline font-bold">{remaining >= 0 ? remaining : 0} days</span> of Restricted Leave for this semester.
+                      </p>
+                    );
+                  }
+                  if (ltype === 'Earned Leave') {
+                    const remaining = (balance.earned_leaves_total || 1) - (balance.earned_leaves_used || 0) - duration;
+                    return (
+                      <p className="text-blue-100 text-xs leading-relaxed">
+                        Approving this request will leave you with <span className="underline font-bold">{remaining >= 0 ? remaining : 0} days</span> of Earned Leave.
+                      </p>
+                    );
+                  }
+                  if (ltype === 'Vacation Leave') {
+                    const remaining = (balance.vacation_leaves_total || 12) - (balance.vacation_leaves_used || 0) - duration;
+                    return (
+                      <p className="text-blue-100 text-xs leading-relaxed">
+                        Approving this request will leave you with <span className="underline font-bold">{remaining >= 0 ? remaining : 0} days</span> of Vacation Leave.
+                      </p>
+                    );
+                  }
+                  if (ltype === 'Compensation Leave') {
+                    const remaining = (balance.compensation_leaves_total || 5) - (balance.compensation_leaves_used || 0) - duration;
+                    return (
+                      <p className="text-blue-100 text-xs leading-relaxed">
+                        Approving this request will leave you with <span className="underline font-bold">{remaining >= 0 ? remaining : 0} days</span> of Compensation Leave.
+                      </p>
+                    );
+                  }
+                  if (ltype === 'Academic Leave') {
+                    const remaining = (balance.academic_leaves_total || 10) - (balance.academic_leaves_used || 0) - duration;
+                    return (
+                      <p className="text-blue-100 text-xs leading-relaxed">
+                        Approving this request will leave you with <span className="underline font-bold">{remaining >= 0 ? remaining : 0} days</span> of Academic Leave.
+                      </p>
+                    );
+                  }
+                  return (
+                    <p className="text-blue-100 text-xs leading-relaxed">
+                      Approving this request will deduct <span className="underline font-bold">{duration} days</span> from your leave balance.
+                    </p>
+                  );
+                })()}
               </div>
             </div>
           </div>

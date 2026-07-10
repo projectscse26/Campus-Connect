@@ -35,6 +35,12 @@ class Student(Base):
     nationality = Column(String(50), default="Indian")
     community = Column(String(50), nullable=True)         # OBC, MBC, SC, ST, BC, etc.
     photo_url = Column(String(500), nullable=True)
+    aadhar_number = Column(String(12), nullable=True)
+
+    # --- Transportation & Accommodation ---
+    accommodation = Column(String(50), nullable=True)     # Hostel / Day Scholar
+    transportation = Column(String(50), nullable=True)    # OWN / BUS
+    bus_number = Column(String(50), nullable=True)
 
     # --- Academic Details ---
     batch = Column(String(20), nullable=False)             # e.g., "2023-2027"
@@ -83,6 +89,7 @@ class Student(Base):
     admission_type = Column(String(50), nullable=True)     # Counselling / Management / Lateral Entry
 
     is_active = Column(Boolean, default=True)
+    is_alumni = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -95,3 +102,4 @@ class Student(Base):
     attendance_records = relationship("Attendance", back_populates="student", cascade="all, delete-orphan")
     leave_requests = relationship("StudentLeaveRequest", back_populates="student", cascade="all, delete-orphan")
     grades = relationship("Grade", back_populates="student", cascade="all, delete-orphan")
+    gate_passes = relationship("GatePass", back_populates="student", cascade="all, delete-orphan")

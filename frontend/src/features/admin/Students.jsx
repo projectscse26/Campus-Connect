@@ -62,15 +62,15 @@ export const Students = () => {
     try {
       setLoading(true);
       const [stuRes, deptRes] = await Promise.all([
-        axios.get('/api/students?limit=10000'),
-        axios.get('/api/departments')
+        axios.get('/api/students/?limit=500'),
+        axios.get('/api/departments/')
       ]);
       setStudents(stuRes.data);
       setDepartments(deptRes.data);
       setError(null);
     } catch (err) {
-      console.error(err);
-      setError('Failed to load student data');
+      console.error('Student fetch error:', err?.response?.status, err?.response?.data, err?.config?.url, err?.message);
+      setError(`Failed to load student data: ${err?.response?.status || ''} ${err?.response?.data?.detail || err?.message || ''}`);
     } finally {
       setLoading(false);
     }
@@ -150,7 +150,7 @@ export const Students = () => {
         delete payload.password;
         await axios.put(`/api/students/${editingId}`, payload);
       } else {
-        await axios.post('/api/students', payload);
+        await axios.post('/api/students/', payload);
       }
       
       await fetchData();

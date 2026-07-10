@@ -506,6 +506,9 @@ def _format_leave(req: StudentLeaveRequest) -> dict:
         "hod_remarks":               req.hod_remarks,
         "hod_actioned_at":           req.hod_actioned_at.isoformat() if req.hod_actioned_at else None,
         "rejection_reason":          req.rejection_reason,
+        "viewed_by_mentor":          req.viewed_by_mentor,
+        "viewed_by_ca":              req.viewed_by_ca,
+        "viewed_by_hod":             req.viewed_by_hod,
         "created_at":                req.created_at.isoformat() if req.created_at else None,
         "updated_at":                req.updated_at.isoformat() if req.updated_at else None,
     }
@@ -929,3 +932,99 @@ def hod_action(
     return _format_leave(_load_leave(leave.id, db))
 
 
+# ─────────────────────────────────────────────────────────
+# 17. My Class / Section Info
+# ─────────────────────────────────────────────────────────
+
+@router.get("/my-class")
+def get_my_class_info(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Returns comprehensive information about the student's class (section),
+    including Class Advisor, Mentor, classmates, and the timetable.
+    """
+    student = get_student_profile(current_user, db)
+    if not student.section_id:
+        raise HTTPException(status_code=400, detail="You are not assigned to a section.")
+
+    section = db.query(Section).options(joinedload(Section.department)).filter(Section.id == student.section_id).first()
+    
+    # Class Advisor
+    advisor_info = None
+    if section.class_advisor_id:
+        advisor = db.query(Faculty).filter(Faculty.id == section.class_advisor_id).first()
+        if advisor:
+            advisor_info = {
+                "name": f"{advisor.first_name} {advisor.last_name}",
+                "email": advisor.user.email if advisor.user else None
+            }
+
+    # Mentor
+    mentor_info = None
+    mentor_assignment = db.query(MentorAssignment).filter(MentorAssignment.student_id == student.id).first()
+    if mentor_assignment and mentor_assignment.mentor_id:
+        mentor = db.query(Faculty).filter(Faculty.id == mentor_assignment.mentor_id).first()
+        if mentor:
+            mentor_info = {
+                "name": f"{mentor.first_name} {mentor.last_name}",
+                "email": mentor.user.email if mentor.user else None
+            }
+
+    # Timetable
+    # 1. Get all active course assignments for this section
+    assignments = db.query(CourseAssignment).options(
+        joinedload(CourseAssignment.course),
+        joinedload(CourseAssignment.faculty)
+    ).filter(
+        CourseAssignment.section_id == section.id,
+        CourseAssignment.is_active == True
+    ).all()
+
+    assignment_ids = [a.id for a in assignments]
+    assignment_map = {a.id: a for a in assignments}
+
+    # 2. Get timetable slots for these assignments
+    from app.models.lms import TimetableSlot
+    slots = db.query(TimetableSlot).filter(
+        TimetableSlot.course_assignment_id.in_(assignment_ids)
+    ).order_by(TimetableSlot.day, TimetableSlot.start_time).all()
+
+    timetable = []
+    for slot in slots:
+        assignment = assignment_map.get(slot.course_assignment_id)
+        if assignment and assignment.course:
+            faculty_name = f"{assignment.faculty.first_name} {assignment.faculty.last_name}" if assignment.faculty else "TBD"
+            DAY_MAP = {
+                "MON": "Monday",
+                "TUE": "Tuesday",
+                "WED": "Wednesday",
+                "THU": "Thursday",
+                "FRI": "Friday",
+                "SAT": "Saturday",
+                "SUN": "Sunday"
+            }
+            day_val = slot.day.value.upper() if hasattr(slot.day, 'value') else str(slot.day).upper()
+            timetable.append({
+                "id": slot.id,
+                "day": DAY_MAP.get(day_val, day_val),
+                "start_time": slot.start_time.isoformat() if slot.start_time else None,
+                "end_time": slot.end_time.isoformat() if slot.end_time else None,
+                "course_name": assignment.course.name,
+                "course_code": assignment.course.code,
+                "faculty_name": faculty_name,
+                "room_number": slot.room
+            })
+
+    return {
+        "section": {
+            "name": section.name,
+            "year": section.year,
+            "batch": section.batch,
+            "department": section.department.name if section.department else None,
+        },
+        "advisor": advisor_info,
+        "mentor": mentor_info,
+        "timetable": timetable
+    }

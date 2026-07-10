@@ -59,6 +59,8 @@ class LateEntryNotificationResponse(BaseModel):
     department_name: Optional[str] = None
     section_name: Optional[str] = None
     mentor_name: Optional[str] = None
+    is_mentee: Optional[bool] = False
+    is_class_student: Optional[bool] = False
     
     model_config = ConfigDict(from_attributes=True)
 

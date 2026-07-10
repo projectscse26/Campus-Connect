@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { CalendarDays, Save, CheckCircle2, AlertCircle, Users, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 
@@ -85,6 +86,17 @@ const CustomDatePicker = ({ selectedDate, onChange, maxDate }) => {
   );
 };
 
+const PERIODS = [
+  { id: 1, label: 'Period 1 (8.45 - 9.30am)' },
+  { id: 2, label: 'Period 2 (9.30 - 10.20am)' },
+  { id: 3, label: 'Period 3 (10.35 - 11.25am)' },
+  { id: 4, label: 'Period 4 (11.25 - 12.15pm)' },
+  { id: 5, label: 'Period 5 (1.00 - 1.50pm)' },
+  { id: 6, label: 'Period 6 (1.50 - 2.40pm)' },
+  { id: 7, label: 'Period 7 (2.50 - 3.40pm)' },
+  { id: 8, label: 'Period 8 (3.40 - 4.30pm)' }
+];
+
 export const CADailyAttendance = () => {
   const today = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(today);
@@ -93,18 +105,78 @@ export const CADailyAttendance = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [attendanceLocked, setAttendanceLocked] = useState(false);
 
-  const fetchAttendance = useCallback((dateStr) => {
+  const fetchSettings = useCallback(async () => {
+    try {
+      const res = await axios.get('/api/class-advisor/attendance-settings');
+      setAttendanceLocked(res.data.attendance_closed);
+    } catch (err) {
+      console.error('Failed to fetch settings', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  // Subject and Lesson Plan integration state
+  const [subjects, setSubjects] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [selectedPeriod, setSelectedPeriod] = useState(1);
+  const [selectedUnit, setSelectedUnit] = useState("1");
+  const [topics, setTopics] = useState([]);
+  const [selectedTopicId, setSelectedTopicId] = useState("");
+
+  // Fetch advisor's section subjects on mount
+  useEffect(() => {
+    axios.get('/api/class-advisor/subjects')
+      .then(r => {
+        setSubjects(r.data);
+        if (r.data.length > 0) {
+          setSelectedSubject(r.data[0]);
+        }
+      })
+      .catch(err => console.error("Failed to load section subjects", err));
+  }, []);
+
+  // Fetch syllabus/lesson plan topics when selected subject changes
+  useEffect(() => {
+    if (!selectedSubject || !selectedSubject.course_assignment_id) {
+      setTopics([]);
+      setSelectedTopicId("");
+      return;
+    }
+    axios.get(`/api/course-plan/${selectedSubject.course_assignment_id}`)
+      .then(r => {
+        setTopics(r.data.topics || []);
+        setSelectedTopicId("");
+      })
+      .catch(err => {
+        console.error("Failed to load course plan topics", err);
+        setTopics([]);
+        setSelectedTopicId("");
+      });
+  }, [selectedSubject]);
+
+  const fetchAttendance = useCallback((dateStr, courseId, hour) => {
     setLoading(true);
     setError(null);
     setSaved(false);
-    axios.get(`/api/class-advisor/attendance?date=${dateStr}`)
+    let url = `/api/class-advisor/attendance?date=${dateStr}`;
+    if (courseId) url += `&course_id=${courseId}`;
+    if (hour) url += `&hour=${hour}`;
+    
+    axios.get(url)
       .then(r => setStudents(r.data))
       .catch(() => setError('Failed to load students'))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { fetchAttendance(selectedDate); }, [selectedDate, fetchAttendance]);
+  useEffect(() => {
+    const courseId = selectedSubject ? selectedSubject.course_id : null;
+    fetchAttendance(selectedDate, courseId, selectedPeriod);
+  }, [selectedDate, selectedSubject, selectedPeriod, fetchAttendance]);
 
   const setStatus = (studentId, status) => {
     setStudents(prev => prev.map(s => {
@@ -121,13 +193,26 @@ export const CADailyAttendance = () => {
 
   const handleSave = async () => {
     if (selectedDate !== today) { alert('Attendance can only be saved for today.'); return; }
+    if (attendanceLocked) { alert('Attendance is locked for your department by the HOD.'); return; }
     setSaving(true);
     try {
       await axios.post('/api/class-advisor/attendance', {
         date: selectedDate,
-        records: students.filter(s => s.status).map(s => ({ student_id: s.student_id, status: s.status }))
+        records: students.filter(s => s.status).map(s => ({ student_id: s.student_id, status: s.status })),
+        course_id: selectedSubject ? selectedSubject.course_id : null,
+        course_assignment_id: selectedSubject ? selectedSubject.course_assignment_id : null,
+        unit: selectedUnit,
+        topic_id: selectedTopicId ? parseInt(selectedTopicId) : null,
+        hour: selectedPeriod
       });
       setSaved(true);
+      
+      // Refresh topics so that covered status (actual_date) gets updated visually in the dropdown
+      if (selectedSubject && selectedSubject.course_assignment_id) {
+        axios.get(`/api/course-plan/${selectedSubject.course_assignment_id}`)
+          .then(r => setTopics(r.data.topics || []))
+          .catch(err => console.error(err));
+      }
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to save attendance');
     } finally {
@@ -136,6 +221,7 @@ export const CADailyAttendance = () => {
   };
 
   const isToday = selectedDate === today;
+  const canEdit = isToday && !attendanceLocked;
   const presentCount = students.filter(s => s.status === 'present').length;
   const absentCount  = students.filter(s => s.status === 'absent').length;
   const unmarked     = students.filter(s => !s.status).length;
@@ -146,6 +232,8 @@ export const CADailyAttendance = () => {
     const parts = [
       '*Daily Attendance Report*',
       `Date: ${selectedDate.split('-').reverse().join('-')}`,
+      `Subject: ${selectedSubject ? selectedSubject.name : ''}`,
+      `Period: ${selectedPeriod}`,
       '',
       `Total Students: ${totalStudents}`,
       `Present: ${presentCount}`,
@@ -166,6 +254,19 @@ export const CADailyAttendance = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
+  // Filter topics based on unit (supports "1" vs "Unit 1", "UNIT I" etc.)
+  const filteredTopics = topics.filter(t => {
+    const unitStr = String(t.unit).trim().toLowerCase();
+    const selUnit = String(selectedUnit).trim().toLowerCase();
+    return unitStr === selUnit || 
+           unitStr === `unit ${selUnit}` || 
+           (selUnit === '1' && unitStr === 'unit i') ||
+           (selUnit === '2' && unitStr === 'unit ii') ||
+           (selUnit === '3' && unitStr === 'unit iii') ||
+           (selUnit === '4' && unitStr === 'unit iv') ||
+           (selUnit === '5' && unitStr === 'unit v');
+  });
+
   return (
     <div className="max-w-4xl mx-auto pb-24 space-y-6">
       
@@ -177,7 +278,12 @@ export const CADailyAttendance = () => {
         </div>
         
         <div className="flex items-center gap-3">
-          {!isToday && (
+          {attendanceLocked && (
+            <span className="px-3 py-1.5 bg-red-50 text-red-700 text-xs font-bold rounded-lg border border-red-200 shadow-sm animate-pulse">
+              Locked by HOD
+            </span>
+          )}
+          {!isToday && !attendanceLocked && (
             <span className="px-3 py-1.5 bg-amber-50 text-amber-700 text-xs font-semibold rounded-lg border border-amber-200">
               Read Only Mode
             </span>
@@ -187,6 +293,93 @@ export const CADailyAttendance = () => {
             onChange={setSelectedDate} 
             maxDate={today} 
           />
+        </div>
+      </div>
+
+      {/* Subject and Lesson Plan Integration Controls */}
+      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-primary-600" /> Subject & Lesson Plan Coverage
+          </h3>
+          {selectedSubject && (
+            <span className="text-[11px] font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
+              Faculty: {selectedSubject.faculty_name}
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Subject Dropdown */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject / Course</label>
+            <select
+              value={selectedSubject ? selectedSubject.course_id : ""}
+              onChange={(e) => {
+                const sub = subjects.find(s => s.course_id === parseInt(e.target.value));
+                setSelectedSubject(sub || null);
+              }}
+              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary-500 focus:outline-none"
+            >
+              {subjects.map(s => (
+                <option key={s.course_id} value={s.course_id}>
+                  {s.code} - {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Period/Hour Dropdown */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Hour / Period</label>
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(parseInt(e.target.value))}
+              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary-500 focus:outline-none"
+            >
+              {PERIODS.map(p => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Unit Dropdown */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Unit</label>
+            <select
+              value={selectedUnit}
+              onChange={(e) => {
+                setSelectedUnit(e.target.value);
+                setSelectedTopicId("");
+              }}
+              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary-500 focus:outline-none"
+            >
+              <option value="1">Unit 1</option>
+              <option value="2">Unit 2</option>
+              <option value="3">Unit 3</option>
+              <option value="4">Unit 4</option>
+              <option value="5">Unit 5</option>
+            </select>
+          </div>
+
+          {/* Topic Dropdown */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Topic to Cover</label>
+            <select
+              value={selectedTopicId}
+              onChange={(e) => setSelectedTopicId(e.target.value)}
+              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary-500 focus:outline-none"
+            >
+              <option value="">-- None / Select Topic --</option>
+              {filteredTopics.map(t => {
+                const isCovered = t.actual_date !== null;
+                return (
+                  <option key={t.id} value={t.id}>
+                    {isCovered ? "✓ (Covered) " : ""}S.No {t.sequence_no}: {t.topic}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -237,7 +430,7 @@ export const CADailyAttendance = () => {
         {/* Table Header */}
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700">Student List</h2>
-          {isToday && totalStudents > 0 && (
+          {canEdit && totalStudents > 0 && (
             <div className="flex gap-2">
               <button onClick={() => markAll('present')} className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors">
                 Mark All Present
@@ -270,14 +463,14 @@ export const CADailyAttendance = () => {
                     <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">{s.register_number}</p>
                   </div>
                   
-                  {isToday ? (
+                  {canEdit ? (
                     <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
                       <button
                         onClick={() => setStatus(s.student_id, 'present')}
                         className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
                           isPresent 
-                            ? 'bg-white text-green-700 shadow-sm border border-gray-200' 
-                            : 'text-gray-500 hover:text-gray-700'
+                            ? 'bg-green-600 text-white dark:text-gray-900 shadow-sm border border-transparent' 
+                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                         }`}
                       >
                         Present
@@ -286,8 +479,8 @@ export const CADailyAttendance = () => {
                         onClick={() => setStatus(s.student_id, 'absent')}
                         className={`px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all ${
                           isAbsent 
-                            ? 'bg-white text-red-700 shadow-sm border border-gray-200' 
-                            : 'text-gray-500 hover:text-gray-700'
+                            ? 'bg-red-600 text-white dark:text-gray-900 shadow-sm border border-transparent' 
+                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                         }`}
                       >
                         Absent
@@ -295,8 +488,8 @@ export const CADailyAttendance = () => {
                     </div>
                   ) : (
                     <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                      isPresent ? 'bg-green-50 text-green-700 border-green-200' :
-                      isAbsent  ? 'bg-red-50 text-red-700 border-red-200' :
+                      isPresent ? 'bg-green-50 dark:bg-gray-100 text-green-700 dark:text-green-400 border-green-200 dark:border-gray-200' :
+                      isAbsent  ? 'bg-red-50 dark:bg-gray-100 text-red-700 dark:text-red-400 border-red-200 dark:border-gray-200' :
                       'bg-gray-50 text-gray-500 border-gray-200'
                     }`}>
                       {s.status ? (isPresent ? 'Present' : 'Absent') : 'Not Marked'}
@@ -310,7 +503,7 @@ export const CADailyAttendance = () => {
       </div>
 
       {/* Action Footer */}
-      {isToday && totalStudents > 0 && (
+      {canEdit && totalStudents > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-3 sm:p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
           <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
             <div className="text-sm text-gray-600 w-full sm:w-auto text-center sm:text-left">
@@ -319,10 +512,21 @@ export const CADailyAttendance = () => {
             <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 sm:gap-4 w-full sm:w-auto">
               {saved && (
                 <>
-                  <span className="flex items-center text-sm font-medium text-green-600 bg-green-50 px-2 sm:px-3 py-1.5 rounded-md">
-                    <CheckCircle2 className="w-4 h-4 mr-1 sm:mr-1.5" />
-                    <span className="hidden sm:inline">Successfully saved</span>
-                    <span className="sm:hidden">Saved</span>
+                  <span className="flex flex-col sm:flex-row items-center text-sm font-medium text-green-600 bg-green-50 px-2 sm:px-3 py-1.5 rounded-md gap-1">
+                    <div className="flex items-center">
+                      <CheckCircle2 className="w-4 h-4 mr-1 sm:mr-1.5" />
+                      <span className="hidden sm:inline">Successfully saved</span>
+                      <span className="sm:hidden">Saved</span>
+                    </div>
+                    {selectedSubject && (
+                      <Link
+                        to={`/faculty/courses/${selectedSubject.course_assignment_id}/lms/syllabus`}
+                        state={{ mode: 'record' }}
+                        className="text-xs font-bold text-primary-600 hover:text-primary-700 underline sm:ml-2"
+                      >
+                        Verify Record →
+                      </Link>
+                    )}
                   </span>
                   <button
                     onClick={handleWhatsAppShare}

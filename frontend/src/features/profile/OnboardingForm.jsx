@@ -111,6 +111,10 @@ export default function OnboardingForm({ profile, onComplete }) {
       mother_phone: profile.mother_phone || '',
       mother_occupation: profile.mother_occupation || '',
       annual_income: profile.annual_income || '',
+      aadhar_number: profile.aadhar_number || '',
+      accommodation: profile.accommodation || '',
+      transportation: profile.transportation || '',
+      bus_number: profile.bus_number || '',
       tenth_school: profile.tenth_school || '',
       tenth_board: profile.tenth_board || '',
       tenth_marks: profile.tenth_marks || '',
@@ -181,6 +185,12 @@ export default function OnboardingForm({ profile, onComplete }) {
             <>
               <Input form={form} onChange={handleChange} label="Admission Date" name="admission_date" type="date" required />
               <Select form={form} onChange={handleChange} label="Admission Type" name="admission_type" required options={['CENTAC', 'MANAGEMENT']} />
+              <Input form={form} onChange={handleChange} label="Aadhar Number" name="aadhar_number" required />
+              <Select form={form} onChange={handleChange} label="Accommodation" name="accommodation" required options={['Hostel', 'Day Scholar']} />
+              <Select form={form} onChange={handleChange} label="Transportation" name="transportation" required options={['OWN', 'BUS']} />
+              {form.transportation === 'BUS' && (
+                <Input form={form} onChange={handleChange} label="Bus Number" name="bus_number" required />
+              )}
             </>
           )}
         </Section>

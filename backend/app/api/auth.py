@@ -41,18 +41,47 @@ def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2Passw
         "id": user.id,
         "email": user.email,
         "role": user.role.value,
-        "name": user.email.split('@')[0] # Fallback until profiles are populated
+        "name": user.email.split('@')[0], # Fallback until profiles are populated
+        "is_class_advisor": False,
+        "advisor_section_id": None,
+        "is_mentor": False
     }
+    
+    if user.role.value in ("faculty", "hod"):
+        from app.models.faculty import Faculty
+        from app.models.academic import Section, MentorAssignment
+        faculty = db.query(Faculty).filter(Faculty.user_id == user.id).first()
+        if faculty:
+            section = db.query(Section).filter(
+                Section.class_advisor_id == faculty.id,
+                Section.is_active == True
+            ).first()
+            if section:
+                user_data["is_class_advisor"] = True
+                user_data["advisor_section_id"] = section.id
+            is_mentor = db.query(MentorAssignment).filter(
+                MentorAssignment.mentor_id == faculty.id
+            ).first() is not None
+            user_data["is_mentor"] = is_mentor
+
+    # Add title for authority users
+    if user.role.value == "authority":
+        from app.models.authority import Authority
+        authority = db.query(Authority).filter(Authority.user_id == user.id).first()
+        if authority:
+            user_data["title"] = authority.title
     
     return {"access_token": access_token, "token_type": "bearer", "user": user_data}
 
 from app.core.security import get_current_active_user
 from app.models.faculty import Faculty
-from app.models.academic import Section
+from app.models.academic import Section, MentorAssignment
 
 @router.get("/me")
 def read_users_me(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
-    extra = {"is_class_advisor": False, "advisor_section_id": None}
+    from app.models.authority import Authority
+    
+    extra = {"is_class_advisor": False, "advisor_section_id": None, "is_mentor": False}
 
     if current_user.role in ("faculty", "hod"):
         faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
@@ -64,11 +93,23 @@ def read_users_me(current_user: User = Depends(get_current_active_user), db: Ses
             if section:
                 extra["is_class_advisor"] = True
                 extra["advisor_section_id"] = section.id
+            
+            is_mentor = db.query(MentorAssignment).filter(
+                MentorAssignment.mentor_id == faculty.id
+            ).first() is not None
+            extra["is_mentor"] = is_mentor
+    
+    # Add title for authority users
+    if current_user.role == "authority":
+        authority = db.query(Authority).filter(Authority.user_id == current_user.id).first()
+        if authority:
+            extra["title"] = authority.title
 
     return {
         "id": current_user.id,
         "email": current_user.email,
         "role": current_user.role.value,
+        "name": current_user.email.split('@')[0],
         **extra
     }
 
@@ -158,9 +199,19 @@ def get_my_profile(current_user: User = Depends(get_current_active_user), db: Se
             # Overall attendance
             total_all = db.query(Attendance).filter(Attendance.student_id == s.id).count()
             present_all = db.query(Attendance).filter(
-                Attendance.student_id == s.id, Attendance.status == AttendanceStatus.PRESENT
+                Attendance.student_id == s.id,
+                Attendance.status == AttendanceStatus.PRESENT
             ).count()
-            overall_att = round((present_all / total_all * 100), 1) if total_all > 0 else None
+            od_all = db.query(Attendance).filter(
+                Attendance.student_id == s.id,
+                Attendance.status == AttendanceStatus.ON_DUTY
+            ).count()
+            late_all = db.query(Attendance).filter(
+                Attendance.student_id == s.id,
+                Attendance.status == AttendanceStatus.LATE
+            ).count()
+            attended_all = present_all + od_all + late_all
+            overall_att = round((attended_all / total_all * 100), 1) if total_all > 0 else None
 
             return {**base,
                 "first_name": s.first_name, "last_name": s.last_name,
@@ -236,7 +287,8 @@ def update_my_profile(
             "father_name", "father_phone", "father_occupation",
             "mother_name", "mother_phone", "mother_occupation", "annual_income",
             "tenth_school", "tenth_board", "tenth_marks", "tenth_percentage",
-            "twelfth_school", "twelfth_board", "twelfth_marks", "twelfth_percentage"
+            "twelfth_school", "twelfth_board", "twelfth_marks", "twelfth_percentage",
+            "aadhar_number", "accommodation", "transportation", "bus_number"
         ]
         for field in editable:
             if field in payload:

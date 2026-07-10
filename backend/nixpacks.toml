@@ -1,0 +1,5 @@
+[phases.setup]
+aptPkgs = ["postgresql-client"]
+
+[start]
+cmd = "psql $DATABASE_URL -f dump.sql ; python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
