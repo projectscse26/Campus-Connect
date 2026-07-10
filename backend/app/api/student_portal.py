@@ -958,7 +958,11 @@ def get_my_class_info(
         if advisor:
             advisor_info = {
                 "name": f"{advisor.first_name} {advisor.last_name}",
-                "email": advisor.user.email if advisor.user else None
+                "email": advisor.user.email if advisor.user else None,
+                "phone": advisor.phone or None,
+                "department": advisor.department.name if advisor.department else None,
+                "designation": advisor.designation or None,
+                "employee_id": advisor.employee_id or None,
             }
 
     # Mentor
@@ -969,7 +973,11 @@ def get_my_class_info(
         if mentor:
             mentor_info = {
                 "name": f"{mentor.first_name} {mentor.last_name}",
-                "email": mentor.user.email if mentor.user else None
+                "email": mentor.user.email if mentor.user else None,
+                "phone": mentor.phone or None,
+                "department": mentor.department.name if mentor.department else None,
+                "designation": mentor.designation or None,
+                "employee_id": mentor.employee_id or None,
             }
 
     # Timetable
