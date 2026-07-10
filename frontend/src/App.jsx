@@ -44,6 +44,7 @@ import MyClass from './features/student/MyClass';
 import StudentCourses from './features/student/StudentCourses';
 import StudentCourseDetail from './features/student/StudentCourseDetail';
 import StudentMarks from './features/student/StudentMarks';
+import TodaySchedule from './features/student/TodaySchedule';
 import { LMSGradebook } from './features/faculty/lms/LMSGradebook';
 import { Discipline as StudentDiscipline } from './features/student/Discipline';
 import { LateTrackerDashboard } from './features/latetracker/Dashboard';
@@ -397,6 +398,11 @@ function AppRoutes() {
         <Route path="/student/courses" element={
           <ProtectedRoute allowedRole="student">
             <StudentCourses />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/schedule" element={
+          <ProtectedRoute allowedRole="student">
+            <TodaySchedule />
           </ProtectedRoute>
         } />
         <Route path="/student/courses/:courseId" element={

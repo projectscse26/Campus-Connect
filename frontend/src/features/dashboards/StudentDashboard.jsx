@@ -110,6 +110,26 @@ export const StudentDashboard = () => {
   const currentDay = daysOfWeek[new Date().getDay()];
   const todaysClasses = timetable.filter(t => t.day === currentDay).sort((a, b) => a.start_time.localeCompare(b.start_time));
 
+  const getMinutes = (timeStr) => {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  const now = new Date();
+  const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const ongoingClass = todaysClasses.find(slot => {
+    const startMins = getMinutes(slot.start_time);
+    const endMins = getMinutes(slot.end_time);
+    return currentTotalMinutes >= startMins && currentTotalMinutes < endMins;
+  });
+
+  const upcomingClasses = todaysClasses.filter(slot => {
+    const startMins = getMinutes(slot.start_time);
+    return currentTotalMinutes < startMins;
+  });
+
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
     const [hours, minutes] = timeStr.split(':');
@@ -214,9 +234,15 @@ export const StudentDashboard = () => {
           
           {/* Today's Schedule */}
           <div className="bg-white rounded-[20px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
-              <Calendar className="w-5 h-5 text-primary-500" />
-              <h3 className="text-[16px] font-bold text-gray-900">Today's Schedule</h3>
+            <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-primary-500" />
+                <h3 className="text-[16px] font-bold text-gray-900">Today's Schedule</h3>
+              </div>
+              <Link to="/student/schedule" className="text-xs text-primary-600 font-semibold hover:underline flex items-center gap-1">
+                More about today's schedule
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
             
             <div className="p-6">
@@ -225,22 +251,64 @@ export const StudentDashboard = () => {
                   {[1,2].map(i => <div key={i} className="h-16 bg-gray-100 rounded-xl" />)}
                 </div>
               ) : todaysClasses.length > 0 ? (
-                <div className="space-y-4">
-                  {todaysClasses.map((slot, idx) => (
-                    <div key={idx} className="bg-white border border-gray-100 shadow-sm p-4 rounded-xl">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-gray-900 text-sm">{slot.course_name}</span>
-                        <span className="text-xs font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
-                          {formatTime(slot.start_time)}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Ongoing Class */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-gray-400 tracking-wider uppercase">Ongoing Class</h4>
+                    {ongoingClass ? (
+                      <div className="bg-blue-50/40 border border-blue-100 shadow-sm p-4 rounded-xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 px-2 py-0.5 bg-blue-500 text-[10px] font-black text-white rounded-bl-lg uppercase tracking-wider animate-pulse">
+                          Active
+                        </div>
+                        <div className="flex items-center justify-between mb-1 pr-12">
+                          <span className="font-bold text-gray-900 text-sm">{ongoingClass.course_name}</span>
+                        </div>
+                        <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full inline-block mb-2">
+                          {formatTime(ongoingClass.start_time)} - {formatTime(ongoingClass.end_time)}
                         </span>
+                        <p className="text-xs text-gray-500 font-medium">{ongoingClass.course_code}</p>
+                        <div className="mt-3 flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-blue-50/50">
+                          <span className="flex items-center gap-1"><Users className="w-3 h-3"/> {ongoingClass.faculty_name}</span>
+                          {ongoingClass.room_number && <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {ongoingClass.room_number}</span>}
+                        </div>
                       </div>
-                      <p className="text-xs text-gray-500 font-medium">{slot.course_code}</p>
-                      <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-                        <span className="flex items-center gap-1"><Users className="w-3 h-3"/> {slot.faculty_name}</span>
-                        {slot.room_number && <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {slot.room_number}</span>}
+                    ) : (
+                      <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl text-center py-6 text-gray-500 text-xs font-medium">
+                        No ongoing class at this time
                       </div>
-                    </div>
-                  ))}
+                    )}
+                  </div>
+
+                  {/* Upcoming Class */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-gray-400 tracking-wider uppercase">Upcoming Class</h4>
+                    {upcomingClasses.length > 0 ? (
+                      <div className="bg-white border border-gray-100 shadow-sm p-4 rounded-xl">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-gray-900 text-sm">{upcomingClasses[0].course_name}</span>
+                          <span className="text-xs font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
+                            {formatTime(upcomingClasses[0].start_time)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 font-medium mb-2">{upcomingClasses[0].course_code}</p>
+                        <div className="mt-3 flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-50">
+                          <span className="flex items-center gap-1"><Users className="w-3 h-3"/> {upcomingClasses[0].faculty_name}</span>
+                          {upcomingClasses[0].room_number && <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {upcomingClasses[0].room_number}</span>}
+                        </div>
+                        {upcomingClasses.length > 1 && (
+                          <div className="mt-3 text-right">
+                            <Link to="/student/schedule" className="text-[11px] font-bold text-primary-500 hover:underline">
+                              +{upcomingClasses.length - 1} more upcoming class{upcomingClasses.length - 1 > 1 ? 'es' : ''} today
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl text-center py-6 text-gray-500 text-xs font-medium">
+                        No upcoming classes remaining today
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-10">
