@@ -13,6 +13,7 @@ export const LMSAttendance = () => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedSlotId, setSelectedSlotId] = useState(null);
 
   // Unit / Topic dropdown state
   const [selectedUnit, setSelectedUnit] = useState('');
@@ -25,6 +26,10 @@ export const LMSAttendance = () => {
       .then(r => {
         setData(r.data);
         setStudents(r.data.students || []);
+        const currentSlot = r.data.today_slots?.find(s => s.is_current);
+        const activeSlot = r.data.today_slots?.find(s => s.is_active);
+        if (currentSlot) setSelectedSlotId(currentSlot.id);
+        else if (activeSlot) setSelectedSlotId(activeSlot.id);
       })
       .catch(() => setError('Failed to load attendance data'))
       .finally(() => setLoading(false));
@@ -58,10 +63,7 @@ export const LMSAttendance = () => {
     setSaved(false);
     setStudents(prev => prev.map(s => {
       if (s.id !== studentId) return s;
-      let nextStatus = 'present';
-      if (s.status === 'present') nextStatus = 'absent';
-      else if (s.status === 'absent') nextStatus = 'holiday';
-      return { ...s, status: nextStatus };
+      return { ...s, status: s.status === 'present' ? 'absent' : 'present' };
     }));
   };
 
@@ -71,9 +73,9 @@ export const LMSAttendance = () => {
   };
 
   const handleSave = async () => {
-    const activeSlot = data?.today_slots?.find(s => s.is_active);
+    const activeSlot = data?.today_slots?.find(s => s.id === selectedSlotId);
     if (!activeSlot) {
-      alert('No active period/hour is currently scheduled or started for today.');
+      alert('Please select a period to mark attendance.');
       return;
     }
 
@@ -151,20 +153,30 @@ export const LMSAttendance = () => {
                   No class scheduled today ({data.today_day?.toUpperCase()})
                 </span>
               ) : (
-                data.today_slots.map(slot => (
-                  <span
-                    key={slot.id}
-                    className={`px-4 py-1.5 text-sm font-bold rounded-xl border ${
-                      slot.is_current ? 'bg-green-100 text-green-700 border-green-300 shadow-sm' :
-                      slot.is_active  ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-                      'bg-gray-100 text-gray-500 border-gray-200'
-                    }`}
-                  >
-                    {slot.start_time}–{slot.end_time}
-                    {slot.room ? ` · ${slot.room}` : ''}
-                    {slot.is_current ? ' ● Now' : slot.is_active ? ' ✓ Started' : ' ⏳ Upcoming'}
-                  </span>
-                ))
+                data.today_slots.map(slot => {
+                  const periodMap = {
+                    '08:45': '1', '09:30': '2', '10:35': '3', '11:25': '4',
+                    '13:00': '5', '13:50': '6', '14:50': '7', '15:40': '8'
+                  };
+                  const pNum = periodMap[slot.start_time];
+                  return (
+                    <button
+                      key={slot.id}
+                      onClick={() => slot.is_active && setSelectedSlotId(slot.id)}
+                      disabled={!slot.is_active}
+                      className={`px-4 py-1.5 text-sm font-bold rounded-xl border transition-all ${
+                        slot.id === selectedSlotId ? 'bg-purple-600 text-white border-purple-700 shadow-md ring-2 ring-purple-300 ring-offset-1' :
+                        slot.is_current ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200 cursor-pointer' :
+                        slot.is_active  ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 cursor-pointer' :
+                        'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed opacity-75'
+                      }`}
+                    >
+                      {pNum ? `Period ${pNum} · ` : ''}{slot.start_time}–{slot.end_time}
+                      {slot.room ? ` · ${slot.room}` : ''}
+                      {slot.is_current ? ' ● On going' : slot.is_active ? ' ✓ Ended' : ' ⏳ Upcoming'}
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
