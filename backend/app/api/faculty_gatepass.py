@@ -76,6 +76,30 @@ def get_my_gatepasses(
     ).order_by(FacultyGatePass.created_at.desc()).all()
 
 
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_faculty_gatepass(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.FACULTY:
+        raise HTTPException(status_code=403, detail="Only faculty can delete their gate passes")
+        
+    faculty = get_faculty_profile(db, current_user.id)
+    
+    gp = db.query(FacultyGatePass).filter(
+        FacultyGatePass.id == id,
+        FacultyGatePass.faculty_id == faculty.id
+    ).first()
+    
+    if not gp:
+        raise HTTPException(status_code=404, detail="Gate pass not found")
+        
+    gp.is_deleted_by_faculty = True
+    db.commit()
+    return None
+
+
 @router.get("/hod-queue", response_model=List[FacultyGatePassResponse])
 def get_hod_queue(
     db: Session = Depends(get_db),
@@ -92,7 +116,7 @@ def get_hod_queue(
         raise HTTPException(status_code=403, detail="Only HOD can view this queue")
         
     # Get pending requests for this department's faculty
-    return db.query(FacultyGatePass).join(Faculty).options(
+    return db.query(FacultyGatePass).join(Faculty, FacultyGatePass.faculty_id == Faculty.id).options(
         joinedload(FacultyGatePass.faculty).joinedload(Faculty.department)
     ).filter(
         Faculty.department_id == department.id,
@@ -116,7 +140,7 @@ def hod_approve_gatepass(
     if not department:
         raise HTTPException(status_code=403, detail="Only HOD can approve")
         
-    gp = db.query(FacultyGatePass).join(Faculty).filter(
+    gp = db.query(FacultyGatePass).join(Faculty, FacultyGatePass.faculty_id == Faculty.id).filter(
         FacultyGatePass.id == id,
         Faculty.department_id == department.id,
         FacultyGatePass.status == FacultyGatePassStatus.PENDING_HOD
@@ -261,3 +285,28 @@ def get_tracking(
         joinedload(FacultyGatePass.dean),
         joinedload(FacultyGatePass.om)
     ).order_by(FacultyGatePass.created_at.desc()).all()
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_faculty_gatepass(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.FACULTY:
+        raise HTTPException(status_code=403, detail="Only faculty can delete gate passes")
+        
+    faculty = get_faculty_profile(db, current_user.id)
+    
+    gp = db.query(FacultyGatePass).filter(
+        FacultyGatePass.id == id,
+        FacultyGatePass.faculty_id == faculty.id
+    ).first()
+    
+    if not gp:
+        raise HTTPException(status_code=404, detail="Gate pass not found")
+        
+    gp.is_deleted_by_faculty = True
+    db.commit()
+    return None
+

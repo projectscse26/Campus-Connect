@@ -14,6 +14,7 @@ class FacultyBasicInfo(BaseModel):
     first_name: str
     last_name: str
     employee_id: str
+    college_email: Optional[str] = None
     department: Optional[DepartmentBasicInfo] = None
     model_config = ConfigDict(from_attributes=True)
 
