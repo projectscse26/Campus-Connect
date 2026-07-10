@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { BookOpen, Users, Edit3, Clock, TrendingUp, Award, ChevronRight, GraduationCap } from 'lucide-react';
+import { BookOpen, Users, Edit3, Clock, TrendingUp, Award, ChevronRight, GraduationCap, Calendar, MapPin } from 'lucide-react';
 import StudentCourseService from '../student/StudentCourseService';
 
 const KPICard = ({ title, value, icon: Icon, colorClass, bgColorClass }) => (
