@@ -126,19 +126,19 @@ export const StudentDashboard = () => {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Profile Card - Slimmer */}
-          <div className="relative bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-[20px] shadow-xl overflow-hidden">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgZmlsbD0iI2ZmZiIgb3BhY2l0eT0iLjEiIGN4PSIzMCIgY3k9IjMwIiByPSIxNSIvPjwvZz48L3N2Zz4=')] opacity-30"></div>
+          <div className="relative bg-white dark:bg-gradient-to-br dark:from-blue-500 dark:via-blue-600 dark:to-indigo-600 rounded-[20px] shadow-xl border border-gray-200 dark:border-transparent overflow-hidden">
+            <div className="absolute inset-0 dark:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgZmlsbD0iI2ZmZiIgb3BhY2l0eT0iLjEiIGN4PSIzMCIgY3k9IjMwIiByPSIxNSIvPjwvZz48L3N2Zz4=')] opacity-30"></div>
             
             <div className="relative p-5 flex flex-col sm:flex-row items-start sm:items-center gap-5">
               <div className="relative">
-                <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm border-3 border-white/30 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-2xl bg-blue-600 dark:bg-white/20 dark:backdrop-blur-sm border-3 dark:border-white/30 flex items-center justify-center">
                   <span className="text-3xl font-black text-white">{studentName.charAt(0).toUpperCase()}</span>
                 </div>
               </div>
 
-              <div className="flex-1 text-white">
+              <div className="flex-1 text-gray-900 dark:text-white">
                 <h2 className="text-xl font-bold mb-1">{studentName}</h2>
-                <p className="text-white/80 text-sm flex items-center gap-2">
+                <p className="text-gray-600 dark:text-white/80 text-sm flex items-center gap-2">
                   <GraduationCap className="w-4 h-4" />
                   {profile?.department?.code || 'CSE'}
                 </p>
@@ -146,16 +146,16 @@ export const StudentDashboard = () => {
 
               <div className="flex gap-6">
                 <div className="text-center">
-                  <div className="text-xs text-white/60 mb-1">Year</div>
-                  <div className="text-lg font-bold text-white">{profile?.current_year || '—'}</div>
+                  <div className="text-xs text-gray-500 dark:text-white/60 mb-1">Year</div>
+                  <div className="text-lg font-bold text-blue-600 dark:text-white">{profile?.current_year || '—'}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xs text-white/60 mb-1">Semester</div>
-                  <div className="text-lg font-bold text-white">{profile?.current_semester || '—'}</div>
+                  <div className="text-xs text-gray-500 dark:text-white/60 mb-1">Semester</div>
+                  <div className="text-lg font-bold text-blue-600 dark:text-white">{profile?.current_semester || '—'}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xs text-white/60 mb-1">Section</div>
-                  <div className="text-lg font-bold text-white">{profile?.section || '—'}</div>
+                  <div className="text-xs text-gray-500 dark:text-white/60 mb-1">Section</div>
+                  <div className="text-lg font-bold text-blue-600 dark:text-white">{profile?.section || '—'}</div>
                 </div>
               </div>
             </div>

@@ -199,9 +199,19 @@ def get_my_profile(current_user: User = Depends(get_current_active_user), db: Se
             # Overall attendance
             total_all = db.query(Attendance).filter(Attendance.student_id == s.id).count()
             present_all = db.query(Attendance).filter(
-                Attendance.student_id == s.id, Attendance.status == AttendanceStatus.PRESENT
+                Attendance.student_id == s.id,
+                Attendance.status == AttendanceStatus.PRESENT
             ).count()
-            overall_att = round((present_all / total_all * 100), 1) if total_all > 0 else None
+            od_all = db.query(Attendance).filter(
+                Attendance.student_id == s.id,
+                Attendance.status == AttendanceStatus.ON_DUTY
+            ).count()
+            late_all = db.query(Attendance).filter(
+                Attendance.student_id == s.id,
+                Attendance.status == AttendanceStatus.LATE
+            ).count()
+            attended_all = present_all + od_all + late_all
+            overall_att = round((attended_all / total_all * 100), 1) if total_all > 0 else None
 
             return {**base,
                 "first_name": s.first_name, "last_name": s.last_name,

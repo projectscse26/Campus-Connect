@@ -114,7 +114,7 @@ const AlertItem = ({ alert }) => {
   );
 };
 
-const PrincipalDashboard = () => {
+const DeanDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -127,7 +127,7 @@ const PrincipalDashboard = () => {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/api/dashboard/authority/stats`, {
+      const response = await axios.get(`${API_BASE_URL}/api/dashboard/dean/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -195,7 +195,7 @@ const PrincipalDashboard = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-bold text-gray-900 tracking-tight mb-1 capitalize">
-            {user?.title ? `${user.title} Dashboard 🎓` : 'Authority Dashboard 🎓'}
+            Dean Dashboard 🎓
           </h1>
           <p className="text-[14px] text-gray-500">
             Real-time overview of campus operations • View-only access
@@ -421,4 +421,4 @@ const PrincipalDashboard = () => {
   );
 };
 
-export default PrincipalDashboard;
+export default DeanDashboard;

@@ -334,27 +334,28 @@ def get_student_profile(
 
     dept = db.query(Department).filter(Department.id == student.department_id).first()
 
-    # Attendance percentage using homeroom course
-    homeroom_course_id = None
-    assignment = db.query(CourseAssignment).filter(
-        CourseAssignment.section_id == section.id,
-        CourseAssignment.is_active == True
-    ).order_by(CourseAssignment.id).first()
-    if assignment:
-        homeroom_course_id = assignment.course_id
-
+    # Attendance percentage - count all records
     total_days = db.query(Attendance).filter(
-        Attendance.student_id == student.id,
-        Attendance.course_id == homeroom_course_id
+        Attendance.student_id == student.id
     ).count()
 
     present_days = db.query(Attendance).filter(
         Attendance.student_id == student.id,
-        Attendance.course_id == homeroom_course_id,
         Attendance.status == AttendanceStatus.PRESENT
     ).count()
-
-    attendance_pct = round((present_days / total_days * 100), 1) if total_days > 0 else 0.0
+    
+    od_days = db.query(Attendance).filter(
+        Attendance.student_id == student.id,
+        Attendance.status == AttendanceStatus.ON_DUTY
+    ).count()
+    
+    late_days = db.query(Attendance).filter(
+        Attendance.student_id == student.id,
+        Attendance.status == AttendanceStatus.LATE
+    ).count()
+    
+    attended_days = present_days + od_days + late_days
+    attendance_pct = round((attended_days / total_days * 100), 1) if total_days > 0 else 0.0
 
     # Enrolled subjects
     enrollments = db.query(Enrollment).options(
@@ -634,24 +635,33 @@ def get_attendance_summary(
     result = []
     for s in students:
         total_days = db.query(Attendance).filter(
-            Attendance.student_id == s.id,
-            Attendance.course_id == homeroom_course_id
+            Attendance.student_id == s.id
         ).count()
 
         present_days = db.query(Attendance).filter(
             Attendance.student_id == s.id,
-            Attendance.course_id == homeroom_course_id,
             Attendance.status == AttendanceStatus.PRESENT
         ).count()
-
-        pct = round((present_days / total_days * 100), 1) if total_days > 0 else 0.0
+        
+        od_days = db.query(Attendance).filter(
+            Attendance.student_id == s.id,
+            Attendance.status == AttendanceStatus.ON_DUTY
+        ).count()
+        
+        late_days = db.query(Attendance).filter(
+            Attendance.student_id == s.id,
+            Attendance.status == AttendanceStatus.LATE
+        ).count()
+        
+        attended_days = present_days + od_days + late_days
+        pct = round((attended_days / total_days * 100), 1) if total_days > 0 else 0.0
 
         result.append(AttendanceSummaryItem(
             student_id=s.id,
             register_number=s.register_number,
             first_name=s.first_name,
             last_name=s.last_name,
-            present_days=present_days,
+            present_days=attended_days,
             total_days=total_days,
             percentage=pct
         ))
