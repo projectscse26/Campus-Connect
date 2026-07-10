@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 import csv
 import io
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import date as date_type
+from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.models.faculty import Faculty
@@ -12,7 +14,7 @@ from app.models.department import Department
 from app.models.academic import CourseAssignment, Section, MentorAssignment
 from app.models.attendance import Attendance, AttendanceStatus
 from app.models.student import Student
-from app.models.grade import Grade, GradeType, GRADE_MAX_MARKS, GRADE_PASS_MARKS
+from app.models.grade import Grade, GradeType, GRADE_MAX_MARKS, GRADE_PASS_MARKS, AssignmentGrade, Seminar
 from app.models.mentorship import AdvisingLog
 from app.models.lms import LMSResource, ResourceType, Announcement, TimetableSlot
 from app.schemas.faculty import (
@@ -1530,7 +1532,7 @@ def get_gradebook(
     students = db.query(Student).filter(
         Student.section_id == assignment.section_id,
         Student.is_active == True
-    ).order_by(Student.register_number).all()
+    ).order_by(func.lower(Student.first_name), func.lower(Student.last_name)).all()
 
     student_ids = [s.id for s in students]
 
@@ -1994,3 +1996,474 @@ def generate_student_report(
             "recommendation": recommendation
         }
     }
+
+
+# ─────────────────────────────────────────────────────────
+# Assignment Grades / Mark Entry
+# ─────────────────────────────────────────────────────────
+
+@router.get("/courses/{assignment_id}/assignments/{resource_id}/grades")
+def get_assignment_grades(
+    assignment_id: int,
+    resource_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+
+    # Verify assignment belongs to this faculty
+    course_assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not course_assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+
+    # Verify the LMSResource (assignment) exists and belongs to the course
+    assignment_resource = db.query(LMSResource).filter(
+        LMSResource.id == resource_id,
+        LMSResource.course_id == course_assignment.course_id,
+        LMSResource.resource_type == ResourceType.ASSIGNMENT
+    ).first()
+    if not assignment_resource:
+        raise HTTPException(status_code=404, detail="Assignment resource not found")
+
+    # Roster of active students in the section
+    students = db.query(Student).filter(
+        Student.section_id == course_assignment.section_id,
+        Student.is_active == True
+    ).order_by(func.lower(Student.first_name), func.lower(Student.last_name)).all()
+
+    student_ids = [s.id for s in students]
+
+    # Existing grades for this assignment
+    existing_grades = db.query(AssignmentGrade).filter(
+        AssignmentGrade.assignment_id == resource_id,
+        AssignmentGrade.student_id.in_(student_ids)
+    ).all()
+    grade_map = {g.student_id: g for g in existing_grades}
+
+    roster = []
+    for s in students:
+        g = grade_map.get(s.id)
+        roster.append({
+            "student_id": s.id,
+            "register_number": s.register_number,
+            "first_name": s.first_name,
+            "last_name": s.last_name,
+            "grade_id": g.id if g else None,
+            "marks_obtained": float(g.marks_obtained) if g and g.marks_obtained is not None else None,
+            "max_marks": float(g.max_marks) if g else 100.0,
+            "is_absent": g.is_absent if g else False,
+            "remarks": g.remarks if g else "",
+            "is_published": g.is_published if g else False,
+        })
+
+    is_published = all(g.is_published for g in existing_grades) if existing_grades else False
+
+    return {
+        "assignment_title": assignment_resource.title,
+        "course_name": course_assignment.course.name,
+        "course_code": course_assignment.course.code,
+        "section": f"{course_assignment.section.year} Year {course_assignment.section.name}" if course_assignment.section else "",
+        "academic_year": course_assignment.academic_year,
+        "semester": course_assignment.semester,
+        "is_published": is_published,
+        "roster": roster,
+    }
+
+
+@router.post("/courses/{assignment_id}/assignments/{resource_id}/grades")
+def save_assignment_grades(
+    assignment_id: int,
+    resource_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+
+    course_assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not course_assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+
+    assignment_resource = db.query(LMSResource).filter(
+        LMSResource.id == resource_id,
+        LMSResource.course_id == course_assignment.course_id,
+        LMSResource.resource_type == ResourceType.ASSIGNMENT
+    ).first()
+    if not assignment_resource:
+        raise HTTPException(status_code=404, detail="Assignment resource not found")
+
+    max_marks = float(payload.get("max_marks", 100))
+    entries = payload.get("entries", [])
+
+    saved = 0
+    for entry in entries:
+        student_id = entry.get("student_id")
+        is_absent = bool(entry.get("is_absent", False))
+        raw_marks = entry.get("marks_obtained")
+        remarks = entry.get("remarks", "")
+
+        marks = None
+        if not is_absent and raw_marks is not None:
+            try:
+                marks = float(raw_marks)
+                if marks < 0 or marks > max_marks:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Marks {marks} out of range (max {max_marks})"
+                    )
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail="Invalid marks value")
+
+        existing = db.query(AssignmentGrade).filter(
+            AssignmentGrade.assignment_id == resource_id,
+            AssignmentGrade.student_id == student_id,
+        ).first()
+
+        if existing:
+            existing.marks_obtained = marks
+            existing.is_absent = is_absent
+            existing.max_marks = max_marks
+            existing.remarks = remarks
+        else:
+            db.add(AssignmentGrade(
+                assignment_id=resource_id,
+                student_id=student_id,
+                marks_obtained=marks,
+                max_marks=max_marks,
+                is_absent=is_absent,
+                remarks=remarks,
+                is_published=False
+            ))
+        saved += 1
+
+    db.commit()
+    return {"message": f"Saved {saved} assignment grade entries", "saved": saved}
+
+
+@router.post("/courses/{assignment_id}/assignments/{resource_id}/grades/publish")
+def publish_assignment_grades(
+    assignment_id: int,
+    resource_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+
+    course_assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not course_assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+
+    assignment_resource = db.query(LMSResource).filter(
+        LMSResource.id == resource_id,
+        LMSResource.course_id == course_assignment.course_id,
+        LMSResource.resource_type == ResourceType.ASSIGNMENT
+    ).first()
+    if not assignment_resource:
+        raise HTTPException(status_code=404, detail="Assignment resource not found")
+
+    # Set all existing assignment grades for this assignment to is_published = True
+    grades = db.query(AssignmentGrade).filter(
+        AssignmentGrade.assignment_id == resource_id
+    ).all()
+
+    if not grades:
+        raise HTTPException(status_code=404, detail="No grades found to publish for this assignment")
+
+    for g in grades:
+        g.is_published = True
+
+    db.commit()
+    return {"message": f"Published {len(grades)} grades for assignment {assignment_resource.title}"}
+
+
+@router.put("/courses/{assignment_id}/resources/{resource_id}", response_model=LMSResourceResponse)
+def update_lms_resource(
+    assignment_id: int,
+    resource_id: int,
+    resource_in: LMSResourceCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+        
+    # Verify assignment belongs to this faculty
+    assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+        
+    resource = db.query(LMSResource).filter(
+        LMSResource.id == resource_id,
+        LMSResource.course_id == assignment.course_id
+    ).first()
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+        
+    # Format title to include module unit if provided
+    combined_title = f"[{resource_in.module_unit}] {resource_in.title}" if resource_in.module_unit else resource_in.title
+    
+    # Map category to enum
+    try:
+        resource_type = ResourceType(resource_in.category)
+    except ValueError:
+        resource_type = ResourceType.NOTES # fallback
+        
+    resource.title = combined_title
+    resource.description = resource_in.description
+    resource.resource_type = resource_type
+    resource.external_link = resource_in.external_link
+    
+    db.commit()
+    db.refresh(resource)
+    return resource
+
+
+@router.delete("/courses/{assignment_id}/resources/{resource_id}")
+def delete_lms_resource(
+    assignment_id: int,
+    resource_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+        
+    # Verify assignment belongs to this faculty
+    assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+        
+    resource = db.query(LMSResource).filter(
+        LMSResource.id == resource_id,
+        LMSResource.course_id == assignment.course_id
+    ).first()
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+        
+    db.delete(resource)
+    db.commit()
+    return {"message": "Resource deleted successfully"}
+
+
+# Seminar Gradebook schemas
+class SeminarRosterEntry(BaseModel):
+    student_id: int
+    seminar_date: Optional[str] = None
+    seminar_topic: Optional[str] = None
+    marks_obtained: Optional[float] = None
+    max_marks: float = 100.0
+
+class SeminarRosterUpdateRequest(BaseModel):
+    entries: List[SeminarRosterEntry]
+
+
+@router.get("/courses/{assignment_id}/seminars")
+def get_seminar_roster(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+        
+    # Verify course assignment
+    assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+        
+    # Get students in the section
+    students = db.query(Student).filter(
+        Student.section_id == assignment.section_id,
+        Student.is_active == True
+    ).order_by(func.lower(Student.first_name), func.lower(Student.last_name)).all()
+    
+    # Get existing seminar entries
+    seminar_entries = db.query(Seminar).filter(Seminar.course_assignment_id == assignment_id).all()
+    seminar_map = {s.student_id: s for s in seminar_entries}
+    
+    roster = []
+    for s in students:
+        sem = seminar_map.get(s.id)
+        roster.append({
+            "student_id": s.id,
+            "register_number": s.register_number,
+            "first_name": s.first_name,
+            "last_name": s.last_name,
+            "seminar_date": sem.seminar_date.strftime("%Y-%m-%d") if (sem and sem.seminar_date) else None,
+            "seminar_topic": sem.seminar_topic if sem else None,
+            "marks_obtained": float(sem.marks_obtained) if (sem and sem.marks_obtained is not None) else None,
+            "max_marks": float(sem.max_marks) if sem else 100.0,
+            "is_topic_published": sem.is_topic_published if sem else False,
+            "is_marks_published": sem.is_marks_published if sem else False,
+        })
+        
+    return {"roster": roster}
+
+
+@router.post("/courses/{assignment_id}/seminars")
+def save_seminar_draft(
+    assignment_id: int,
+    payload: SeminarRosterUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+        
+    assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+        
+    from datetime import datetime
+    
+    for entry in payload.entries:
+        sem = db.query(Seminar).filter(
+            Seminar.course_assignment_id == assignment_id,
+            Seminar.student_id == entry.student_id
+        ).first()
+        
+        sem_date = None
+        if entry.seminar_date:
+            try:
+                sem_date = datetime.strptime(entry.seminar_date, "%Y-%m-%d")
+            except ValueError:
+                pass
+                
+        if not sem:
+            sem = Seminar(
+                course_assignment_id=assignment_id,
+                student_id=entry.student_id,
+                seminar_date=sem_date,
+                seminar_topic=entry.seminar_topic,
+                marks_obtained=entry.marks_obtained,
+                max_marks=entry.max_marks,
+            )
+            db.add(sem)
+        else:
+            sem.seminar_date = sem_date
+            sem.seminar_topic = entry.seminar_topic
+            sem.marks_obtained = entry.marks_obtained
+            sem.max_marks = entry.max_marks
+            
+    db.commit()
+    return {"message": "Seminar details saved successfully"}
+
+
+@router.post("/courses/{assignment_id}/seminars/publish-topics")
+def publish_seminar_topics(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+        
+    assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+        
+    db.query(Seminar).filter(Seminar.course_assignment_id == assignment_id).update({
+        Seminar.is_topic_published: True
+    }, synchronize_session=False)
+    
+    db.commit()
+    return {"message": "Seminar topics and dates published successfully"}
+
+
+@router.post("/courses/{assignment_id}/seminars/publish-marks")
+def publish_seminar_marks(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role not in ["faculty", "hod"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+        
+    faculty = db.query(Faculty).filter(Faculty.user_id == current_user.id).first()
+    if not faculty:
+        raise HTTPException(status_code=404, detail="Faculty profile not found")
+        
+    assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.id == assignment_id,
+        CourseAssignment.faculty_id == faculty.id,
+        CourseAssignment.is_active == True
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Course assignment not found")
+        
+    db.query(Seminar).filter(Seminar.course_assignment_id == assignment_id).update({
+        Seminar.is_marks_published: True
+    }, synchronize_session=False)
+    
+    db.commit()
+    return {"message": "Seminar marks published successfully"}
+
+
+

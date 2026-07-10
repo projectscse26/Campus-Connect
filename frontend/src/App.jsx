@@ -35,6 +35,7 @@ import { Courses as FacultyCourses } from './features/faculty/Courses';
 import { LMSDashboard } from './features/faculty/lms/LMSDashboard';
 import { LMSResources } from './features/faculty/lms/LMSResources';
 import { LMSAssignments } from './features/faculty/lms/LMSAssignments';
+import { LMSSeminars } from './features/faculty/lms/LMSSeminars';
 import { LMSAnnouncements as CourseAnnouncements } from './features/faculty/lms/LMSAnnouncements';
 import { LMSSyllabus } from './features/faculty/lms/LMSSyllabus';
 import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
@@ -268,6 +269,11 @@ function AppRoutes() {
         <Route path="/faculty/courses/:assignmentId/lms/assignments" element={
           <ProtectedRoute allowedRole="faculty">
             <LMSAssignments />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/seminars" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSSeminars />
           </ProtectedRoute>
         } />
         <Route path="/faculty/courses/:assignmentId/lms/announcements" element={

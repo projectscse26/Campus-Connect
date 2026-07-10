@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import StudentCourseService from './StudentCourseService';
 import {
   ArrowLeft, BookOpen, FileText, ClipboardList, Megaphone,
   BookMarked, BarChart3, Download, ExternalLink, Loader2,
   AlertCircle, Hash, User, Calendar, CheckCircle2, XCircle,
   MinusCircle, Clock, FileDown, Link2, Inbox, GraduationCap,
-  Award, ChevronRight, Layers,
+  Award, ChevronRight, Layers, Users,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────
@@ -92,6 +93,16 @@ const FEATURES = [
     accentColor: 'text-emerald-600',
     bgColor: 'bg-emerald-50/60',
     accentBar: 'from-emerald-400 to-teal-400',
+  },
+  {
+    id: 'seminar',
+    title: 'Seminar',
+    description: 'Seminar topics, scheduled dates, and evaluation scores.',
+    icon: Users,
+    accentColor: 'text-pink-600',
+    bgColor: 'bg-pink-50/60',
+    accentBar: 'from-pink-400 to-rose-400',
+    lightBg: 'bg-pink-50',
   },
   {
     id: 'marks',
@@ -331,6 +342,29 @@ const AssignmentsTab = ({ courseId }) => {
                       {item.external_link && <FileButton url={item.external_link} label="Open Link" />}
                     </div>
                   )}
+                  {item.grade && (
+                    <div className="mt-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl flex items-center justify-between">
+                      <div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-850 bg-emerald-100 px-2 py-0.5 rounded">
+                          Graded
+                        </span>
+                        {item.grade.remarks && (
+                          <p className="text-[12px] text-emerald-700 italic mt-1.5">
+                            Remarks: {item.grade.remarks}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        {item.grade.is_absent ? (
+                          <span className="text-sm font-bold text-gray-400">Absent</span>
+                        ) : (
+                          <p className="text-emerald-800 font-extrabold text-lg">
+                            {item.grade.marks_obtained} <span className="text-xs font-medium text-emerald-600">/ {item.grade.max_marks}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -424,6 +458,88 @@ const SyllabusTab = ({ courseId }) => {
   );
 
   return <div className="space-y-3">{data.map(item => <ResourceCard key={item.id} item={item} />)}</div>;
+};
+
+// ─────────────────────────────────────────────────────────
+// TAB: SEMINAR
+// ─────────────────────────────────────────────────────────
+const SeminarTab = ({ courseId }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    axios.get(`/api/student-portal/courses/${courseId}/seminar`)
+      .then(res => setData(res.data.seminar))
+      .catch(e => setError(e.response?.data?.detail || 'Failed to load seminar details'))
+      .finally(() => setLoading(false));
+  }, [courseId]);
+
+  if (loading) return <SectionLoading />;
+  if (error) return <SectionError message={error} />;
+  
+  if (!data) return (
+    <EmptyState icon={Users} title="No Seminar Assigned"
+      description="You don't have any seminar topics assigned for this course yet." />
+  );
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-6 max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center gap-3 pb-4 border-b border-gray-50">
+        <div className="w-12 h-12 rounded-2xl bg-pink-50 flex items-center justify-center">
+          <Users className="w-6 h-6 text-pink-505 text-pink-500" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">Seminar Details</h3>
+          <p className="text-xs text-gray-400">Your scheduled date, topic and marks.</p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {data.seminar_topic && (
+          <div>
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Seminar Topic</span>
+            <p className="text-sm font-bold text-gray-800 bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
+              {data.seminar_topic}
+            </p>
+          </div>
+        )}
+
+        {data.seminar_date && (
+          <div>
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Scheduled Date</span>
+            <p className="text-sm font-bold text-gray-800 bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
+              {new Date(data.seminar_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+        )}
+
+        {data.is_marks_published ? (
+          <div>
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Evaluation Grade</span>
+            <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
+                  Graded
+                </span>
+                <p className="text-xs text-emerald-600 font-medium mt-1">Pass threshold is 40%</p>
+              </div>
+              <div className="text-right">
+                <p className="text-emerald-800 font-extrabold text-2xl">
+                  {data.marks_obtained ?? '—'} <span className="text-xs font-medium text-emerald-600">/ {data.max_marks}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-amber-50/40 border border-amber-100 rounded-xl p-4 flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-amber-500 flex-shrink-0" />
+            <p className="text-xs text-amber-700 font-medium">Evaluation marks have not been published yet.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 // ─────────────────────────────────────────────────────────
@@ -639,19 +755,19 @@ const MarksTab = ({ courseId }) => {
   return (
     <div className="space-y-4">
       {grades.map(g => {
-        const passmark = PASS_MARKS[g.grade_type];
+        const passmark = ['assignment', 'seminar'].includes(g.grade_type) ? g.max_marks * 0.4 : PASS_MARKS[g.grade_type];
         const passed = !g.is_absent && g.marks_obtained != null && (passmark == null || g.marks_obtained >= passmark);
         const failed = !passed;
         const retest = retestMap[g.grade_type];
 
         return (
-          <div key={g.grade_type} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div key={g.assignment_title ? 'assignment_' + g.assignment_title : g.grade_type} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className={`h-1 ${passed ? 'bg-emerald-400' : 'bg-red-400'}`} />
             <div className="p-5">
               {/* Assessment name + status */}
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-[15px] font-bold text-gray-900">
-                  {GRADE_LABELS[g.grade_type] || g.grade_type}
+                  {g.assignment_title || GRADE_LABELS[g.grade_type] || g.grade_type}
                 </h4>
                 {g.is_absent
                   ? <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-500">Absent</span>
@@ -741,6 +857,7 @@ const StudentCourseDetail = () => {
       case 'announcements': return <AnnouncementsTab courseId={courseId} />;
       case 'syllabus':      return <SyllabusTab courseId={courseId} />;
       case 'attendance':    return <AttendanceTab courseId={courseId} />;
+      case 'seminar':       return <SeminarTab courseId={courseId} />;
       default:              return null;
     }
   };

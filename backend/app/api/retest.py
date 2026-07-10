@@ -495,7 +495,34 @@ def get_my_grades_for_course(
         .all()
     )
 
-    return [
+    # Fetch specific assignment grades
+    from app.models.grade import AssignmentGrade, Seminar
+    from app.models.lms import LMSResource
+    from app.models.academic import CourseAssignment
+
+    assignment_grades = (
+        db.query(AssignmentGrade)
+        .join(LMSResource, LMSResource.id == AssignmentGrade.assignment_id)
+        .filter(
+            AssignmentGrade.student_id == student.id,
+            LMSResource.course_id == course_id,
+            AssignmentGrade.is_published == True,
+        )
+        .all()
+    )
+
+    seminar_grades = (
+        db.query(Seminar)
+        .join(CourseAssignment, CourseAssignment.id == Seminar.course_assignment_id)
+        .filter(
+            Seminar.student_id == student.id,
+            CourseAssignment.course_id == course_id,
+            Seminar.is_marks_published == True,
+        )
+        .all()
+    )
+
+    formatted = [
         {
             "grade_type": g.grade_type.value if g.grade_type else None,
             "marks_obtained": float(g.marks_obtained) if g.marks_obtained is not None else None,
@@ -505,3 +532,27 @@ def get_my_grades_for_course(
         }
         for g in grades
     ]
+
+    # Format specific assignment grades
+    for ag in assignment_grades:
+        formatted.append({
+            "grade_type": "assignment",
+            "assignment_title": ag.assignment.title,
+            "marks_obtained": float(ag.marks_obtained) if ag.marks_obtained is not None else None,
+            "max_marks": float(ag.max_marks),
+            "is_absent": ag.is_absent,
+            "remarks": ag.remarks,
+        })
+
+    # Format seminar grades
+    for sg in seminar_grades:
+        formatted.append({
+            "grade_type": "seminar",
+            "assignment_title": f"Seminar: {sg.seminar_topic}" if sg.seminar_topic else "Seminar",
+            "marks_obtained": float(sg.marks_obtained) if sg.marks_obtained is not None else None,
+            "max_marks": float(sg.max_marks),
+            "is_absent": False,
+            "remarks": f"Seminar Date: {sg.seminar_date.strftime('%Y-%m-%d')}" if sg.seminar_date else None,
+        })
+
+    return formatted

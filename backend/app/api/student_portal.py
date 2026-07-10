@@ -29,6 +29,7 @@ from app.models.attendance import Attendance
 from app.models.faculty import Faculty
 from app.models.department import Department
 from app.models.leave import StudentLeaveRequest, StudentLeaveStatus
+from app.models.grade import Seminar
 from app.schemas.leave import StudentLeaveRequestCreate, StudentLeaveRequestResponse
 
 router = APIRouter()
@@ -322,19 +323,49 @@ def get_course_assignments(
         .all()
     )
 
-    return [
-        {
+    # Fetch published assignment grades for this student
+    from app.models.grade import AssignmentGrade
+    grades = (
+        db.query(AssignmentGrade)
+        .filter(
+            AssignmentGrade.student_id == student.id,
+            AssignmentGrade.is_published == True
+        )
+        .all()
+    )
+    grade_map = {g.assignment_id: g for g in grades}
+
+    result = []
+    for a in assignments:
+        grade = grade_map.get(a.id)
+
+        # Parse due date from description if possible
+        import re
+        due_match = re.search(r"\[Due:\s*(.+?)\]", a.description or "")
+        due_date_str = due_match.group(1) if due_match else None
+
+        # Clean description by removing the due date header
+        clean_desc = a.description
+        if clean_desc and due_date_str:
+            clean_desc = re.sub(r"\[Due:\s*(.+?)\]\n?", "", clean_desc)
+
+        result.append({
             "id": a.id,
             "title": a.title,
-            "description": a.description,
+            "description": clean_desc,
             "file_url": a.file_url,
             "external_link": a.external_link,
             "uploaded_by": f"{a.uploaded_by.first_name} {a.uploaded_by.last_name}" if a.uploaded_by else None,
             "created_at": a.created_at.isoformat() if a.created_at else None,
-            "due_date": None,
-        }
-        for a in assignments
-    ]
+            "due_date": due_date_str,
+            "grade": {
+                "marks_obtained": float(grade.marks_obtained) if grade.marks_obtained is not None else None,
+                "max_marks": float(grade.max_marks),
+                "is_absent": grade.is_absent,
+                "remarks": grade.remarks,
+            } if grade else None
+        })
+    return result
 
 
 # ─────────────────────────────────────────────────────────
@@ -1036,3 +1067,47 @@ def get_my_class_info(
         "mentor": mentor_info,
         "timetable": timetable
     }
+
+
+@router.get("/courses/{course_id}/seminar")
+def get_student_seminar_detail(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    student = get_student_profile(current_user, db)
+    verify_course_enrollment(student, course_id, db)
+    
+    # Find the active course assignment for this student's section and course
+    assignment = db.query(CourseAssignment).filter(
+        CourseAssignment.course_id == course_id,
+        CourseAssignment.section_id == student.section_id,
+        CourseAssignment.is_active == True
+    ).first()
+    
+    if not assignment:
+        return {"seminar": None}
+        
+    sem = db.query(Seminar).filter(
+        Seminar.course_assignment_id == assignment.id,
+        Seminar.student_id == student.id
+    ).first()
+    
+    if not sem:
+        return {"seminar": None}
+        
+    result = {}
+    # Topic and date are visible if is_topic_published is True
+    if sem.is_topic_published:
+        result["seminar_topic"] = sem.seminar_topic
+        result["seminar_date"] = sem.seminar_date.strftime("%Y-%m-%d") if sem.seminar_date else None
+        result["is_topic_published"] = True
+    
+    # Marks are visible if is_marks_published is True
+    if sem.is_marks_published:
+        result["marks_obtained"] = float(sem.marks_obtained) if sem.marks_obtained is not None else None
+        result["max_marks"] = float(sem.max_marks)
+        result["is_marks_published"] = True
+        
+    return {"seminar": result if result else None}
+
