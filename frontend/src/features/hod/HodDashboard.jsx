@@ -243,6 +243,7 @@ export const HodDashboard = () => {
       ]);
 
       if (dashRes.status === 'fulfilled') {
+        console.log('HOD Dashboard Data:', dashRes.value.data);
         setDashboard(dashRes.value.data);
       } else {
         setError('Failed to load dashboard statistics.');
@@ -503,10 +504,10 @@ export const HodDashboard = () => {
             {/* Typography Hierarchy */}
             <div className="space-y-2">
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80">
-                {greetingText}, {user?.name || user?.first_name || user?.email?.split('@')[0] || 'HOD'}
+                {greetingText}, {dashboard?.hod_name || 'HOD'}
               </h1>
               <p className="text-white/80 text-[#ffffff]/80 text-xs font-bold tracking-wide">
-                D.C.T., B.Tech., M.E., Ph.D.
+                {dashboard?.hod_title || 'D.C.T., B.Tech., M.E., Ph.D.'}
               </p>
               <div className="pt-2">
                 <p className="text-white/90 text-[#ffffff]/90 text-xs font-bold uppercase tracking-widest text-indigo-200">

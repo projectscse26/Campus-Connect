@@ -54,6 +54,8 @@ app.include_router(class_advisor.router, prefix="/api/class-advisor", tags=["Cla
 
 from app.api import courses
 app.include_router(courses.router, prefix="/api/courses", tags=["Courses"])
+from app.api import course_plan
+app.include_router(course_plan.router, prefix="/api/course-plan", tags=["Course Plan"])
 from app.api import hod
 app.include_router(hod.router, prefix="/api/hod", tags=["HOD"])
 from app.api import announcements

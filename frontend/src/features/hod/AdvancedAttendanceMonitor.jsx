@@ -2,16 +2,21 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Activity, Users, UserX, UserCheck, TrendingUp, TrendingDown,
-  Download, Printer, AlertTriangle, CheckCircle, ShieldAlert, SlidersHorizontal
+  Download, Printer, AlertTriangle, CheckCircle, ShieldAlert, SlidersHorizontal, FileText, X
 } from 'lucide-react';
 import { 
   PieChart, Pie, Cell, AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 export const AdvancedAttendanceMonitor = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportFormat, setReportFormat] = useState('excel');
 
   // Filters state
   const [semester, setSemester] = useState('');
@@ -51,25 +56,316 @@ export const AdvancedAttendanceMonitor = () => {
     }
   };
 
-  const handleExportCSV = () => {
-    if (!data?.student_table) return;
-    const headers = ['Register Number', 'Name', 'Section', 'Total Present', 'Total Absent', 'Percentage', 'Status'];
-    const rows = data.student_table.map(s => [
-      s.register_number, s.name, s.section, s.total_present, s.total_absent, s.percentage, s.status
+  const handleExportExcel = () => {
+    if (!filteredStudentTable || filteredStudentTable.length === 0) {
+      alert('No data available to generate report with current filters');
+      return;
+    }
+    
+    const headers = ['Register Number', 'Name', 'Section', 'Year', 'Total Present', 'Total Absent', 'Percentage', 'Status'];
+    const rows = filteredStudentTable.map(s => [
+      s.register_number, 
+      s.name, 
+      s.section, 
+      s.year,
+      s.total_present, 
+      s.total_absent, 
+      s.percentage, 
+      s.status
     ]);
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Attendance_Report_${date}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    const worksheetData = [headers, ...rows];
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance Report');
+
+    // Auto-size columns
+    const maxWidth = worksheetData.reduce((w, r) => Math.max(w, ...r.map(c => String(c).length)), 10);
+    worksheet['!cols'] = headers.map(() => ({ wch: 20 }));
+
+    // Create filename based on filters
+    const filterSuffix = `Year_${tableYearFilter}_Section_${tableSectionFilter}_Attendance_${tableAttendanceFilter}`;
+    XLSX.writeFile(workbook, `Attendance_Report_${filterSuffix}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    setShowReportModal(false);
   };
 
-  const handlePrintPDF = () => {
-    window.print();
+  const handleDownloadPDF = async () => {
+    try {
+      console.log('=== PDF Generation Started ===');
+      
+      if (!filteredStudentTable || filteredStudentTable.length === 0) {
+        console.error('No student table data available');
+        alert('No data available to generate report with current filters');
+        return;
+      }
+
+      console.log('Student records found:', filteredStudentTable.length);
+      
+      // Sort students alphabetically by name
+      const sortedStudents = [...filteredStudentTable].sort((a, b) => {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      
+      console.log('Students sorted alphabetically');
+      
+      // Create PDF instance - Portrait orientation like the reference
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // Get page width at the top level
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      console.log('jsPDF instance created');
+      console.log('autoTable method exists:', typeof doc.autoTable === 'function');
+      
+      if (typeof doc.autoTable !== 'function') {
+        throw new Error('jspdf-autotable plugin not loaded properly');
+      }
+      
+      // Load and add header image
+      try {
+        console.log('Loading header image...');
+        
+        // Function to convert image to base64
+        const getBase64Image = (img) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          return canvas.toDataURL('image/png');
+        };
+        
+        // Load the header image from public folder
+        const headerImg = new Image();
+        headerImg.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Image loading timeout'));
+          }, 5000);
+          
+          headerImg.onload = () => {
+            clearTimeout(timeout);
+            console.log('Header image loaded successfully');
+            console.log('Image dimensions:', headerImg.width, 'x', headerImg.height);
+            
+            try {
+              // Convert image to base64
+              const imgData = getBase64Image(headerImg);
+              
+              // Calculate dimensions to fit header
+              const maxWidth = pageWidth - 30; // 15mm margins on each side
+              const maxHeight = 35; // Maximum height for header
+              
+              // Calculate aspect ratio
+              const imgAspectRatio = headerImg.width / headerImg.height;
+              let imgWidth = maxWidth;
+              let imgHeight = imgWidth / imgAspectRatio;
+              
+              // If height exceeds max, scale by height instead
+              if (imgHeight > maxHeight) {
+                imgHeight = maxHeight;
+                imgWidth = imgHeight * imgAspectRatio;
+              }
+              
+              // Center the image horizontally
+              const xPos = (pageWidth - imgWidth) / 2;
+              const yPos = 10;
+              
+              // Add image to PDF
+              doc.addImage(imgData, 'PNG', xPos, yPos, imgWidth, imgHeight);
+              console.log('Header image added to PDF at position:', xPos, yPos, 'size:', imgWidth, imgHeight);
+              resolve();
+            } catch (imgError) {
+              console.error('Error adding image to PDF:', imgError);
+              reject(imgError);
+            }
+          };
+          
+          headerImg.onerror = (error) => {
+            clearTimeout(timeout);
+            console.error('Failed to load header image from current path');
+            reject(new Error('Failed to load header image'));
+          };
+          
+          // Use absolute path with window.location.origin
+          const imagePath = `${window.location.origin}/logo.png`;
+          console.log('Attempting to load image from:', imagePath);
+          headerImg.src = imagePath;
+        });
+        
+        // Horizontal separator line below header
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.line(15, 48, pageWidth - 15, 48);
+        
+        // Report title
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        const today = new Date().toLocaleDateString('en-GB');
+        doc.text(`Attendance Report - ${today}`, pageWidth / 2, 58, { align: 'center' });
+        
+        console.log('PDF header added successfully');
+      } catch (headerError) {
+        console.error('Error adding header:', headerError);
+        console.error('Error details:', headerError.message);
+        
+        // Fallback to text header if image fails
+        console.log('Using fallback text header...');
+        const centerX = pageWidth / 2;
+        
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(76, 175, 80);
+        doc.text('sri', centerX - 38, 20);
+        
+        doc.setTextColor(41, 98, 255);
+        doc.text('venkateshwaraa', centerX - 23, 20);
+        
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text('College of Engineering & Technology', centerX, 28, { align: 'center' });
+        
+        doc.setFillColor(41, 98, 255);
+        doc.rect(centerX - 50, 32, 100, 6, 'F');
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text('ASPIRE TO EXCEL', centerX, 36.5, { align: 'center' });
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text('Ariyur, Puducherry - 605102.', centerX, 42, { align: 'center' });
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.line(15, 48, pageWidth - 15, 48);
+        
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        const today = new Date().toLocaleDateString('en-GB');
+        doc.text(`Attendance Report - ${today}`, centerX, 58, { align: 'center' });
+      }
+      
+      // Prepare table data with sorted students
+      try {
+        const tableData = sortedStudents.map((student, index) => {
+          try {
+            return [
+              student.register_number || student.regno || '',
+              student.name || student.student_name || '',
+              student.section || student.section_name || ''
+            ];
+          } catch (rowError) {
+            console.error(`Error processing row ${index}:`, rowError, student);
+            return ['', '', 'Error'];
+          }
+        });
+
+        console.log('Table data prepared successfully:', tableData.length, 'rows');
+        
+        // Generate table with simplified 3-column layout like reference
+        doc.autoTable({
+          startY: 65,
+          head: [['Register Number', 'Name', 'Section']],
+          body: tableData,
+          theme: 'grid',
+          styles: { 
+            fontSize: 9,
+            cellPadding: 3,
+            overflow: 'linebreak',
+            halign: 'left',
+            lineColor: [200, 200, 200],
+            lineWidth: 0.1
+          },
+          headStyles: { 
+            fillColor: [102, 51, 204], // Purple color matching reference
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            halign: 'center',
+            fontSize: 10
+          },
+          alternateRowStyles: {
+            fillColor: [250, 250, 250]
+          },
+          columnStyles: {
+            0: { cellWidth: 40, halign: 'left' },
+            1: { cellWidth: 100, halign: 'left' },
+            2: { cellWidth: 40, halign: 'center' }
+          },
+          margin: { left: 15, right: 15 },
+          didDrawPage: (data) => {
+            // Add page numbers at the bottom
+            const pageCount = doc.internal.getNumberOfPages();
+            doc.setFontSize(8);
+            doc.setTextColor(128);
+            doc.text(
+              `Page ${data.pageNumber} of ${pageCount}`,
+              pageWidth / 2,
+              pageHeight - 10,
+              { align: 'center' }
+            );
+          }
+        });
+        
+        console.log('Table added to PDF successfully');
+      } catch (tableError) {
+        console.error('Error creating table:', tableError);
+        throw new Error('Failed to create PDF table: ' + tableError.message);
+      }
+
+      // Save the PDF
+      try {
+        const filterSuffix = `Year_${tableYearFilter}_Section_${tableSectionFilter}_Attendance_${tableAttendanceFilter}`;
+        const filename = `Attendance_Report_${filterSuffix}_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(filename);
+        console.log('=== PDF Downloaded Successfully:', filename, '===');
+        
+        // Close modal
+        setShowReportModal(false);
+      } catch (saveError) {
+        console.error('Error saving PDF:', saveError);
+        throw new Error('Failed to download PDF file');
+      }
+      
+    } catch (error) {
+      console.error('=== PDF Generation Failed ===');
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
+      // User-friendly error message
+      let userMessage = 'An error occurred while generating the PDF report.';
+      if (error.message.includes('autoTable')) {
+        userMessage = 'PDF generation library not loaded properly. Please refresh the page and try again.';
+      } else if (error.message.includes('header')) {
+        userMessage = 'Failed to create PDF header. Please try again.';
+      } else if (error.message.includes('table')) {
+        userMessage = 'Failed to create PDF table. The data format may be invalid.';
+      }
+      
+      alert(`${userMessage}\n\nTechnical details: ${error.message}\n\nPlease try Excel format as an alternative.`);
+    }
+  };
+
+  const handleGenerateReport = () => {
+    if (reportFormat === 'excel') {
+      handleExportExcel();
+    } else {
+      handleDownloadPDF();
+    }
   };
 
   if (loading) {
@@ -106,15 +402,84 @@ export const AdvancedAttendanceMonitor = () => {
             <p className="text-sm text-gray-500 font-medium">Department-wide interactive monitoring</p>
           </div>
         </div>
-        <div className="flex space-x-3 print:hidden">
-          <button onClick={handleExportCSV} className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors font-medium text-sm">
-            <Download className="w-4 h-4 mr-2" /> Export CSV
-          </button>
-          <button onClick={handlePrintPDF} className="flex items-center px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl transition-colors font-medium text-sm">
-            <Printer className="w-4 h-4 mr-2" /> Print PDF
-          </button>
-        </div>
       </div>
+
+      {/* Generate Report Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900">Generate Report</h3>
+                <button 
+                  onClick={() => setShowReportModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Current Filters Info */}
+              <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                <h4 className="text-sm font-bold text-purple-900 mb-2">Report will include:</h4>
+                <div className="space-y-1 text-sm text-purple-800">
+                  <p><span className="font-semibold">Year:</span> {tableYearFilter}</p>
+                  <p><span className="font-semibold">Section:</span> {tableSectionFilter}</p>
+                  <p><span className="font-semibold">Attendance Filter:</span> {tableAttendanceFilter}</p>
+                  <p><span className="font-semibold">Total Records:</span> {filteredStudentTable.length} students</p>
+                </div>
+              </div>
+
+              {/* Format Selection */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-3">Select Format</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setReportFormat('excel')}
+                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold transition-all ${
+                      reportFormat === 'excel'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    <FileText className="w-5 h-5" />
+                    <span>Excel</span>
+                  </button>
+                  <button
+                    onClick={() => setReportFormat('pdf')}
+                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-semibold transition-all ${
+                      reportFormat === 'pdf'
+                        ? 'border-red-500 bg-red-50 text-red-700'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    <Printer className="w-5 h-5" />
+                    <span>PDF</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleGenerateReport}
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg shadow-purple-500/30 flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Generate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex gap-4 print:hidden">
@@ -411,7 +776,7 @@ export const AdvancedAttendanceMonitor = () => {
       <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm print:break-before-page">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
           <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Detailed Student Records</h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             <select value={tableYearFilter} onChange={e => setTableYearFilter(e.target.value)} className="text-xs font-bold text-gray-600 bg-gray-50 border-none rounded-lg p-2 outline-none cursor-pointer">
               <option value="All">All Years</option>
               <option value="1">1st Year</option>
@@ -430,6 +795,12 @@ export const AdvancedAttendanceMonitor = () => {
               <option value="<75">Below 75%</option>
               <option value="<50">Below 50%</option>
             </select>
+            <button 
+              onClick={() => setShowReportModal(true)} 
+              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg transition-all font-bold text-xs shadow-md shadow-purple-500/25"
+            >
+              <Download className="w-3.5 h-3.5" /> Generate Report
+            </button>
           </div>
         </div>
         <div className="overflow-x-auto">
