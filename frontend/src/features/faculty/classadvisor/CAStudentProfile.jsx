@@ -32,6 +32,8 @@ export const CAStudentProfile = () => {
     { label: 'Section',       value: student.section_name },
     { label: 'Mobile',        value: student.phone },
     { label: 'Gender',        value: student.gender || '—' },
+    { label: 'Father Phone',  value: student.father_phone ? <a href={`tel:${student.father_phone}`} className="text-blue-600 hover:underline">{student.father_phone}</a> : '—' },
+    { label: 'Mother Phone',  value: student.mother_phone ? <a href={`tel:${student.mother_phone}`} className="text-blue-600 hover:underline">{student.mother_phone}</a> : '—' },
   ];
 
   return (
@@ -67,7 +69,9 @@ export const CAStudentProfile = () => {
           {infoRows.map(row => (
             <div key={row.label} className="bg-gray-50 rounded-xl px-3 py-2.5">
               <p className="text-xs text-gray-400 font-semibold mb-0.5">{row.label}</p>
-              <p className="text-sm font-bold text-gray-900 break-all">{row.value}</p>
+              <p className="text-sm font-bold text-gray-900 break-all">
+                {typeof row.value === 'string' ? row.value : row.value}
+              </p>
             </div>
           ))}
         </div>

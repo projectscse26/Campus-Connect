@@ -249,7 +249,7 @@ export const LeaveApply = () => {
                     name="leave_type" 
                     value={formData.leave_type}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all appearance-none"
+                    className="w-full px-3 md:px-4 py-1.5 md:py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs md:text-sm font-medium focus:outline-none focus:border-blue-300 transition-all appearance-none text-slate-700"
                     required
                   >
                     <option value="Casual Leave">Casual Leave</option>
@@ -366,28 +366,29 @@ export const LeaveApply = () => {
               )}
               
               <div className="p-6 pt-4">
-                <div className="hidden md:grid grid-cols-12 gap-4 mb-2 px-2">
-                  <div className="col-span-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Alt. Faculty</div>
-                  <div className="col-span-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Subject</div>
-                  <div className="col-span-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Class/Sec</div>
-                  <div className="col-span-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Period</div>
+                <div className="hidden md:grid grid-cols-12 gap-2 mb-2 px-2">
+                  <div className="col-span-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Alt. Faculty</div>
+                  <div className="col-span-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Subject</div>
+                  <div className="col-span-2 text-xs font-bold text-gray-500 uppercase tracking-wider">Class/Sec</div>
+                  <div className="col-span-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Period</div>
                   <div className="col-span-1"></div>
                 </div>
                 
                 <div className="space-y-3">
                   {arrangements.map((arr, idx) => (
-                    <div key={idx} className="flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-4 items-center bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-lg md:rounded-none border md:border-0 border-gray-200">
+                    <div key={idx} className="flex flex-col md:grid md:grid-cols-12 gap-1.5 md:gap-1.5 items-center bg-gray-50 md:bg-transparent p-2 md:p-1.5 rounded-lg md:rounded-none border md:border-0 border-gray-200">
                       {arr.day && (
-                        <div className="col-span-12 md:hidden text-[10px] font-bold text-gray-500 uppercase">
+                        <div className="col-span-12 md:hidden text-xs font-bold text-gray-600 uppercase">
                           {arr.day} {arr.day !== 'All Days' && `• ${arr.period}`}
                         </div>
                       )}
                       <div className="col-span-4 w-full">
-                        <label className="block md:hidden text-[10px] font-bold text-gray-400 uppercase mb-1">Substitute Faculty</label>
+                        <label className="block md:hidden text-xs font-bold text-gray-500 uppercase mb-0.5">Substitute Faculty</label>
                         <select 
                           value={arr.substitute_faculty_id}
                           onChange={(e) => handleArrangementChange(idx, 'substitute_faculty_id', e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-primary-500"
+                          className="w-full px-2 md:px-2 py-1.5 md:py-1.5 bg-blue-50 border border-blue-200 rounded text-sm md:text-sm focus:outline-none focus:border-blue-300 font-medium text-slate-700 transition-all"
+                          style={{ maxHeight: '200px' }}
                           required
                         >
                           <option value="">Select Faculty...</option>
@@ -396,42 +397,42 @@ export const LeaveApply = () => {
                           ))}
                         </select>
                       </div>
-                      <div className="col-span-3 w-full">
-                        <label className="block md:hidden text-[10px] font-bold text-gray-400 uppercase mb-1">Subject</label>
+                      <div className="col-span-2 w-full">
+                        <label className="block md:hidden text-xs font-bold text-gray-500 uppercase mb-0.5">Subject</label>
                         <input 
                           type="text" 
-                          placeholder="e.g. CS-402"
+                          placeholder="CS-402"
                           value={arr.subject} 
                           onChange={(e) => handleArrangementChange(idx, 'subject', e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-primary-500"
+                          className="w-full px-1.5 py-1.5 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-primary-500 font-medium"
                           readOnly={arr.subject === 'Class Advisor'}
                           required
                         />
                       </div>
                       <div className="col-span-2 w-full">
-                        <label className="block md:hidden text-[10px] font-bold text-gray-400 uppercase mb-1">Class/Sec</label>
+                        <label className="block md:hidden text-xs font-bold text-gray-500 uppercase mb-0.5">Class/Sec</label>
                         <input 
                           type="text" 
-                          placeholder="B.Tech 4A"
+                          placeholder="CSE-4A"
                           value={arr.class_section} 
                           onChange={(e) => handleArrangementChange(idx, 'class_section', e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-primary-500"
+                          className="w-full px-1.5 py-1.5 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-primary-500 font-medium"
                           required
                         />
                       </div>
-                      <div className="col-span-2 w-full">
-                        <label className="block md:hidden text-[10px] font-bold text-gray-400 uppercase mb-1">Period</label>
+                      <div className="col-span-3 w-full">
+                        <label className="block md:hidden text-xs font-bold text-gray-500 uppercase mb-0.5">Period</label>
                         <input 
                           type="text" 
-                          placeholder="II (10:30)"
+                          placeholder="08:45 - 09:30"
                           value={arr.period} 
                           onChange={(e) => handleArrangementChange(idx, 'period', e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-primary-500"
+                          className="w-full px-1.5 py-1.5 bg-white border border-gray-200 rounded text-sm focus:outline-none focus:border-primary-500 font-medium"
                           required
                         />
                       </div>
                       <div className="col-span-1 w-full md:w-auto flex justify-end">
-                        <button type="button" onClick={() => removeArrangementRow(idx)} className="text-red-400 hover:text-red-600 p-2">
+                        <button type="button" onClick={() => removeArrangementRow(idx)} className="text-red-400 hover:text-red-600 p-1.5">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
