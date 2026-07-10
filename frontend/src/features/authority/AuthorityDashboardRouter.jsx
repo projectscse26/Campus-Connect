@@ -33,6 +33,9 @@ const AuthorityDashboardRouter = () => {
         } else if (normalizedTitle === 'vice principal') {
           console.log('Redirecting to /vice-principal');
           navigate('/vice-principal', { replace: true });
+        } else if (normalizedTitle === 'hr') {
+          console.log('Redirecting to /hr');
+          navigate('/hr', { replace: true });
         } else {
           console.warn('Unknown authority title:', user.title);
           // Stay on /authority for unknown titles

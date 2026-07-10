@@ -81,6 +81,8 @@ import LateEntryNotification from './features/student/LateEntryNotification';
 import PrincipalDashboard from './features/authority/PrincipalDashboard';
 import DeanDashboard from './features/authority/DeanDashboard';
 import OMDashboard from './features/authority/OMDashboard';
+import HRDashboard from './features/authority/HRDashboard';
+import HRLeavePortal from './features/authority/HRLeavePortal';
 import AuthorityDashboardRouter from './features/authority/AuthorityDashboardRouter';
 import MyAttendance from './features/faculty/MyAttendance';
 // A simple protective wrapper that forces login and checks roles
@@ -499,6 +501,18 @@ function AppRoutes() {
         <Route path="/om" element={
           <ProtectedRoute allowedRole="authority">
             <OMDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* HR Dashboard Route */}
+        <Route path="/hr" element={
+          <ProtectedRoute allowedRole="authority">
+            <HRDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/hr/leaves" element={
+          <ProtectedRoute allowedRole="authority">
+            <HRLeavePortal />
           </ProtectedRoute>
         } />
         

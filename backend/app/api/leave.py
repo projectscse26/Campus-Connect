@@ -388,6 +388,9 @@ def get_all_leave_requests(
         auth = db.query(Authority).filter(Authority.user_id == current_user.id).first()
         if "dean" in auth.title.lower():
             query = query.filter(FacultyLeaveRequest.status.in_([LeaveStatus.PENDING_DEAN, LeaveStatus.PENDING_OM, LeaveStatus.APPROVED, LeaveStatus.REJECTED]))
+        elif "hr" in auth.title.lower():
+            # HR sees all leaves
+            pass
         else: # OM / Principal
             query = query.filter(FacultyLeaveRequest.status.in_([LeaveStatus.PENDING_OM, LeaveStatus.APPROVED, LeaveStatus.REJECTED]))
 
