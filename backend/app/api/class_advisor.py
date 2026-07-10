@@ -26,6 +26,7 @@ from app.models.academic import Section, Course, CourseAssignment, Enrollment
 from app.models.attendance import Attendance, AttendanceStatus
 from app.models.lms import TimetableSlot, LMSResource
 from app.models.department import Department
+from app.models.course_plan import CoursePlan
 from app.schemas.class_advisor import (
     ClassInfoResponse, CADashboardResponse,
     CAStudentListItem, CAStudentProfileResponse, EnrolledSubject,
@@ -421,6 +422,8 @@ def get_attendance_settings(
 @router.get("/attendance", response_model=List[AttendanceStudentRow])
 def get_attendance_for_date(
     date: date,
+    course_id: Optional[int] = None,
+    hour: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
@@ -433,22 +436,22 @@ def get_attendance_for_date(
 
     student_ids = [s.id for s in students]
 
-    # Fetch existing records for this date using homeroom course id
+    # Fetch existing records for this date using selected course id and optional hour
     existing = {}
     if student_ids:
-        homeroom_course_id = None
-        assignment = db.query(CourseAssignment).filter(
-            CourseAssignment.section_id == section.id,
-            CourseAssignment.is_active == True
-        ).order_by(CourseAssignment.id).first()
-        if assignment:
-            homeroom_course_id = assignment.course_id
+        target_course_id = course_id
+        if target_course_id is None:
+            target_course_id = get_homeroom_course_id(section.id, db)
 
-        records = db.query(Attendance).filter(
+        q = db.query(Attendance).filter(
             Attendance.student_id.in_(student_ids),
             Attendance.date == date,
-            Attendance.course_id == homeroom_course_id
-        ).all()
+            Attendance.course_id == target_course_id
+        )
+        if hour is not None:
+            q = q.filter(Attendance.hour == hour)
+
+        records = q.all()
         existing = {r.student_id: r.status.value for r in records}
 
     return [
@@ -547,7 +550,9 @@ def save_attendance(
         ).all()
     }
 
-    homeroom_course_id = get_homeroom_course_id(section.id, db)
+    target_course_id = payload.course_id
+    if target_course_id is None:
+        target_course_id = get_homeroom_course_id(section.id, db)
 
     saved = 0
     for record in payload.records:
@@ -560,11 +565,15 @@ def save_attendance(
             continue
 
         # Upsert: update if exists, insert if not
-        existing = db.query(Attendance).filter(
+        q = db.query(Attendance).filter(
             Attendance.student_id == record.student_id,
             Attendance.date == payload.date,
-            Attendance.course_id == homeroom_course_id
-        ).first()
+            Attendance.course_id == target_course_id
+        )
+        if payload.hour is not None:
+            q = q.filter(Attendance.hour == payload.hour)
+            
+        existing = q.first()
 
         if existing:
             existing.status = att_status
@@ -572,13 +581,29 @@ def save_attendance(
         else:
             new_att = Attendance(
                 student_id=record.student_id,
-                course_id=homeroom_course_id,
+                course_id=target_course_id,
                 date=payload.date,
+                hour=payload.hour,
                 status=att_status,
                 marked_by_id=faculty.id
             )
             db.add(new_att)
         saved += 1
+
+    # Automatic update of Lesson Plan (CoursePlanTopic) if topic_id is provided
+    if payload.topic_id:
+        from app.models.course_plan import CoursePlanTopic
+        topic = db.query(CoursePlanTopic).filter(CoursePlanTopic.id == payload.topic_id).first()
+        if topic:
+            topic.actual_date = payload.date
+            topic.is_signed = True
+            topic.signed_at = func.now()
+            if payload.hour:
+                topic.hours = payload.hour
+            # If actual date differs from proposed date, we automatically supply a reason for deviation to avoid validation errors
+            if topic.proposed_date and topic.proposed_date != payload.date:
+                if not topic.reason_for_deviation:
+                    topic.reason_for_deviation = "Topic covered during Daily Attendance session"
 
     db.commit()
     return AttendanceSaveResponse(message="Attendance saved successfully", saved=saved)
@@ -704,7 +729,8 @@ def get_subjects(
             name=a.course.name,
             credits=a.course.credits,
             course_type=a.course.course_type.value if a.course.course_type else "theory",
-            faculty_name=f"{a.faculty.first_name} {a.faculty.last_name}"
+            faculty_name=f"{a.faculty.first_name} {a.faculty.last_name}",
+            course_assignment_id=a.id
         )
         for a in assignments if a.course and a.faculty
     ]
@@ -732,10 +758,14 @@ def get_course_progress(
         if not a.course or not a.faculty:
             continue
 
-        # Use uploaded LMS resource count as units completed proxy
-        units_completed = db.query(LMSResource).filter(
-            LMSResource.course_id == a.course_id
-        ).count()
+        # Fetch progress from actual CoursePlan
+        plan = db.query(CoursePlan).filter(CoursePlan.course_assignment_id == a.id).first()
+        if plan and plan.topics:
+            total_units = len(plan.topics)
+            units_completed = sum(1 for t in plan.topics if t.actual_date is not None)
+        else:
+            total_units = 5
+            units_completed = 0
 
         result.append(CACourseProgressItem(
             course_id=a.course.id,
@@ -743,7 +773,7 @@ def get_course_progress(
             subject_name=a.course.name,
             faculty_name=f"{a.faculty.first_name} {a.faculty.last_name}",
             units_completed=units_completed,
-            total_units=5  # default until a units table exists
+            total_units=total_units
         ))
 
     return result

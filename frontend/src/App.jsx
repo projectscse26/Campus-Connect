@@ -39,6 +39,7 @@ import { LMSAnnouncements as CourseAnnouncements } from './features/faculty/lms/
 import { LMSSyllabus } from './features/faculty/lms/LMSSyllabus';
 import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
 import { LMSAttendanceHistory } from './features/faculty/lms/LMSAttendanceHistory';
+import { LMSTimetable } from './features/faculty/lms/LMSTimetable';
 import MyClass from './features/student/MyClass';
 import StudentCourses from './features/student/StudentCourses';
 import StudentCourseDetail from './features/student/StudentCourseDetail';
@@ -67,11 +68,13 @@ import { GatePass } from './features/student/GatePass';
 import { StudentLeave } from './features/student/StudentLeave';
 import { MenteeGatePasses } from './features/faculty/MenteeGatePasses';
 import { GatePassApprovals as HodGatePassApprovals } from './features/hod/GatePassApprovals';
-import { StudentLeaveApprovals } from './features/hod/StudentLeaveApprovals';
+import { LeaveApprovals } from './features/hod/LeaveApprovals';
 import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
+import { AuthorityLeaveApprovals } from './features/authority/AuthorityLeaveApprovals';
 import { Profile } from './features/profile/Profile';
 import LateEntryNotification from './features/student/LateEntryNotification';
 import PrincipalDashboard from './features/authority/PrincipalDashboard';
+import DeanDashboard from './features/authority/DeanDashboard';
 import OMDashboard from './features/authority/OMDashboard';
 import AuthorityDashboardRouter from './features/authority/AuthorityDashboardRouter';
 // A simple protective wrapper that forces login and checks roles
@@ -223,7 +226,7 @@ function AppRoutes() {
         } />
         <Route path="/hod/leave" element={
           <ProtectedRoute allowedRole="hod">
-            <StudentLeaveApprovals />
+            <LeaveApprovals />
           </ProtectedRoute>
         } />
         <Route path="/hod/latetracker" element={
@@ -281,6 +284,11 @@ function AppRoutes() {
         <Route path="/faculty/courses/:assignmentId/lms/gradebook" element={
           <ProtectedRoute allowedRole="faculty">
             <LMSGradebook />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/timetable" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSTimetable />
           </ProtectedRoute>
         } />
 
@@ -435,9 +443,22 @@ function AppRoutes() {
             <AuthorityDashboardRouter />
           </ProtectedRoute>
         } />
-        
         {/* Principal Dashboard Route */}
         <Route path="/principal" element={
+          <ProtectedRoute allowedRole="authority">
+            <PrincipalDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* Dean Dashboard Route */}
+        <Route path="/dean" element={
+          <ProtectedRoute allowedRole="authority">
+            <DeanDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* Vice Principal Dashboard Route (Uses PrincipalDashboard layout) */}
+        <Route path="/vice-principal" element={
           <ProtectedRoute allowedRole="authority">
             <PrincipalDashboard />
           </ProtectedRoute>
@@ -450,6 +471,11 @@ function AppRoutes() {
           </ProtectedRoute>
         } />
         
+        <Route path="/authority/leave" element={
+          <ProtectedRoute allowedRole="authority">
+            <AuthorityLeaveApprovals />
+          </ProtectedRoute>
+        } />
         <Route path="/authority/discipline" element={
           <ProtectedRoute allowedRole="authority">
             <AuthorityDiscipline />

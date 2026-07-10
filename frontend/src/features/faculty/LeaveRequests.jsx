@@ -30,6 +30,14 @@ export const LeaveRequests = () => {
         return <span className="bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full text-xs font-bold">APPROVED</span>;
       case 'rejected':
         return <span className="bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full text-xs font-bold">REJECTED</span>;
+      case 'pending_substitute':
+        return <span className="bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full text-xs font-bold">AWAITING SUBSTITUTES</span>;
+      case 'pending_hod':
+        return <span className="bg-yellow-100 text-yellow-700 px-2.5 py-0.5 rounded-full text-xs font-bold">PENDING HOD</span>;
+      case 'pending_dean':
+        return <span className="bg-yellow-100 text-yellow-700 px-2.5 py-0.5 rounded-full text-xs font-bold">PENDING DEAN</span>;
+      case 'pending_om':
+        return <span className="bg-yellow-100 text-yellow-700 px-2.5 py-0.5 rounded-full text-xs font-bold">PENDING PRINCIPAL</span>;
       default:
         return <span className="bg-yellow-100 text-yellow-700 px-2.5 py-0.5 rounded-full text-xs font-bold">PENDING</span>;
     }

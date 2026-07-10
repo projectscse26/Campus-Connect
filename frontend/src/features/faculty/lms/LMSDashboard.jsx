@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { FileText, BookOpen, Layers, Settings, Users, ArrowLeft, ClipboardList } from 'lucide-react';
+import { FileText, BookOpen, Layers, Settings, Users, ArrowLeft, ClipboardList, Calendar } from 'lucide-react';
 
 export const LMSDashboard = () => {
   const { assignmentId } = useParams();
@@ -63,8 +63,8 @@ export const LMSDashboard = () => {
       path: `/faculty/courses/${assignmentId}/lms/announcements`
     },
     {
-      title: 'Syllabus',
-      description: 'Define course outcomes, modules, and grading criteria.',
+      title: 'Lesson Plan',
+      description: 'Plan topics, record actual coverage dates, and sign off with Bloom\'s Taxonomy tracking.',
       icon: <Settings className="w-8 h-8 text-orange-600" />,
       bg: 'bg-orange-50',
       border: 'border-orange-100',
@@ -97,6 +97,15 @@ export const LMSDashboard = () => {
       border: 'border-teal-100',
       hover: 'hover:border-teal-300 hover:shadow-teal-100',
       path: `/faculty/courses/${assignmentId}/lms/gradebook`
+    },
+    {
+      title: 'Timetable',
+      description: 'View the scheduled days, periods, and room assignments for this course.',
+      icon: <Calendar className="w-8 h-8 text-pink-600" />,
+      bg: 'bg-pink-50',
+      border: 'border-pink-100',
+      hover: 'hover:border-pink-300 hover:shadow-pink-100',
+      path: `/faculty/courses/${assignmentId}/lms/timetable`
     }
   ];
 

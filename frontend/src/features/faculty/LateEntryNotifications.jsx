@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Bell, Calendar, Clock, User, Search, Filter, CheckCircle2, AlertCircle } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 const API_BASE = "/api";
 
@@ -8,10 +9,10 @@ export default function LateEntryNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("all"); // all, today, unacknowledged
+  const [category, setCategory] = useState("all_roles"); // all_roles, mentee, class
   const [searchTerm, setSearchTerm] = useState("");
 
-  const userStr = localStorage.getItem("user");
-  const user = userStr ? JSON.parse(userStr) : null;
+  const { user } = useAuth();
   const isFaculty = user?.role === "faculty";
 
   useEffect(() => {
@@ -47,39 +48,9 @@ export default function LateEntryNotifications() {
     }
   };
 
-  const handleMarkViewed = async (notificationId) => {
-    try {
-      const token = localStorage.getItem("token");
-      await axios.patch(
-        `${API_BASE}/late/notifications/${notificationId}/mark-viewed`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchNotifications();
-      window.dispatchEvent(new Event('refetch-badges'));
-    } catch (error) {
-      console.error("Error marking notification as viewed:", error);
-      alert(error.response?.data?.detail || "Failed to mark as viewed");
-    }
-  };
 
-  const handleAcknowledge = async (notificationId) => {
-    try {
-      const token = localStorage.getItem("token");
-      // Simple acknowledgment - just marks as viewed with default comment
-      await axios.patch(
-        `${API_BASE}/late/notifications/${notificationId}/add-comment?comment=${encodeURIComponent('Acknowledged')}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert('✓ Request acknowledged');
-      fetchNotifications();
-      window.dispatchEvent(new Event('refetch-badges'));
-    } catch (error) {
-      console.error("Error acknowledging notification:", error);
-      alert(error.response?.data?.detail || "Failed to acknowledge");
-    }
-  };
+
+
 
   const formatTime = (timeStr) => {
     if (!timeStr) return "";
@@ -109,6 +80,11 @@ export default function LateEntryNotifications() {
   };
 
   const filteredNotifications = notifications.filter((notif) => {
+    // Role filter
+    if (category === "mentee" && !notif.is_mentee) return false;
+    if (category === "class" && !notif.is_class_student) return false;
+
+    // Search filter
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return (
@@ -124,9 +100,9 @@ export default function LateEntryNotifications() {
   const unacknowledgedCount = notifications.filter((n) => !n.acknowledged_by_security).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 md:p-6">
+    <div className="bg-gray-50 pb-20">
       {/* Mobile Header */}
-      <div className="bg-blue-600 text-white p-4 md:hidden sticky top-0 z-10 shadow-md">
+      <div className="bg-blue-600 text-white p-4 md:hidden mb-4 shadow-md rounded-lg">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <Bell className="h-6 w-6" />
           Late Entry Notifications
@@ -147,7 +123,7 @@ export default function LateEntryNotifications() {
 
       <div className="max-w-6xl mx-auto space-y-4">
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-2 md:gap-4 mx-4 md:mx-0">
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
           <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-3 md:p-4 text-center">
             <p className="text-xs md:text-sm text-gray-600 font-medium mb-1">Total</p>
             <p className="text-2xl md:text-3xl font-bold text-blue-700">{notifications.length}</p>
@@ -163,9 +139,45 @@ export default function LateEntryNotifications() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white shadow-sm border border-gray-200 mx-4 md:mx-0 rounded-lg p-4">
-          {/* Filter Buttons */}
-          <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4">
+          {/* Category Buttons */}
+          {isFaculty && (
+            <div className="flex flex-wrap gap-2 mb-3 border-b border-gray-100 pb-3">
+              <button
+                onClick={() => setCategory("all_roles")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
+                  category === "all_roles"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                All Students
+              </button>
+              <button
+                onClick={() => setCategory("mentee")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
+                  category === "mentee"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                My Mentees
+              </button>
+              <button
+                onClick={() => setCategory("class")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
+                  category === "class"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                My Class
+              </button>
+            </div>
+          )}
+
+          {/* Time/Status Filter Buttons */}
+          <div className="flex flex-wrap gap-2 mb-3 pb-2">
             <button
               onClick={() => setFilter("all")}
               className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition ${
@@ -212,7 +224,7 @@ export default function LateEntryNotifications() {
         </div>
 
         {/* Notifications List */}
-        <div className="bg-white shadow-sm border border-gray-200 mx-4 md:mx-0 rounded-lg p-4 md:p-6">
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 md:p-6">
           <h2 className="text-base md:text-lg font-semibold mb-3 md:mb-4 flex items-center gap-2">
             <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
             Notifications ({filteredNotifications.length})
@@ -253,19 +265,7 @@ export default function LateEntryNotifications() {
                         </span>
                       )}
                       
-                      {isFaculty && !notif.viewed_by_mentor ? (
-                        <button
-                          onClick={() => handleMarkViewed(notif.id)}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 mt-1"
-                        >
-                          Mark as Viewed
-                        </button>
-                      ) : notif.viewed_by_mentor ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mt-1">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Viewed by Mentor
-                        </span>
-                      ) : null}
+
                     </div>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2 text-gray-600">
@@ -286,25 +286,7 @@ export default function LateEntryNotifications() {
                         <p className="mt-1">{notif.reason}</p>
                       </div>
                       
-                      {/* Mentor Acknowledgment */}
-                      {notif.mentor_comment ? (
-                        <div className="mt-2 bg-green-50 p-2 rounded border border-gray-200 border-green-200 flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                          <div className="flex-1">
-                            <span className="text-xs text-green-700 font-semibold">Acknowledged</span>
-                            <p className="text-xs text-gray-500">{formatDateTime(notif.mentor_comment_at)}</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleAcknowledge(notif.id)}
-                          className="mt-2 w-full px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                        >
-                          <CheckCircle2 className="h-4 w-4" />
-                          Acknowledge
-                        </button>
-                      )}
-                      
+
                       <div className="text-xs text-gray-500 pt-2 border-t mt-2">
                         Submitted: {formatDateTime(notif.created_at)}
                       </div>
@@ -324,7 +306,7 @@ export default function LateEntryNotifications() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Security Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mentor Status</th>
+
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -369,29 +351,7 @@ export default function LateEntryNotifications() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">
-                          {isFaculty && notif.mentor_comment ? (
-                            <div className="space-y-1">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 w-max">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Acknowledged
-                              </span>
-                              <div className="text-xs text-gray-400">
-                                {formatDateTime(notif.mentor_comment_at)}
-                              </div>
-                            </div>
-                          ) : isFaculty ? (
-                            <button
-                              onClick={() => handleAcknowledge(notif.id)}
-                              className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
-                            >
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Acknowledge
-                            </button>
-                          ) : (
-                            <span className="text-xs text-gray-400">-</span>
-                          )}
-                        </td>
+
                       </tr>
                     ))}
                   </tbody>

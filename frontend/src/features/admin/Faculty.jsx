@@ -287,7 +287,30 @@ export const Faculty = () => {
                       <div className="text-xs text-gray-500">{fac.phone}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-lg border border-emerald-100">
+                      {/* Enhanced Designation Badge */}
+                      <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold border-2 shadow-sm transition-all hover:shadow-md ${
+                        fac.designation === 'Professor' 
+                          ? 'bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 border-purple-200' 
+                          : fac.designation === 'Associate Professor'
+                          ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-blue-200'
+                          : fac.designation === 'Assistant Professor'
+                          ? 'bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200'
+                          : fac.designation === 'HOD'
+                          ? 'bg-gradient-to-r from-amber-50 to-amber-100 text-amber-700 border-amber-200'
+                          : fac.designation === 'Dean'
+                          ? 'bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-red-200'
+                          : fac.designation === 'Lecturer'
+                          ? 'bg-gradient-to-r from-teal-50 to-teal-100 text-teal-700 border-teal-200'
+                          : 'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 border-gray-200'
+                      }`}>
+                        {/* Icon based on designation */}
+                        <svg className="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                          {fac.designation === 'Professor' || fac.designation === 'HOD' || fac.designation === 'Dean' ? (
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          ) : (
+                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                          )}
+                        </svg>
                         {fac.designation}
                       </span>
                     </td>
