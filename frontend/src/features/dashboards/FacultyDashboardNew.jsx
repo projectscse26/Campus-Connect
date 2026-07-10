@@ -295,7 +295,7 @@ const AIInsightsModal = ({ students, courseName, onClose, onDownloadReport }) =>
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes slide-up {
           from {
             opacity: 0;
@@ -431,7 +431,7 @@ const StudentDetailedCard = ({ student, index, onDownloadReport }) => {
         </button>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fade-in-up {
           from {
             opacity: 0;
@@ -798,17 +798,17 @@ export const FacultyDashboard = () => {
   useEffect(() => {
     const fetchNotificationCounts = async () => {
       try {
-        // Fetch leave requests count (for mentors)
-        const leaveRes = await axios.get('/api/leave/requests');
+        // Fetch leave requests count (Student Leaves)
+        const leaveRes = await axios.get('/api/student-portal/leave/mentor-queue');
         const pendingLeaves = leaveRes.data.filter(req => 
-          req.status === 'pending_mentor'
+          req.status === 'pending_mentor' || req.status === 'pending_class_advisor'
         );
         setPendingLeaveRequests(pendingLeaves.length);
 
         // Fetch gate pass requests count (for mentors)
         const gatePassRes = await axios.get('/api/gatepass/mentor');
         const pendingGatePasses = gatePassRes.data.filter(gp => 
-          gp.status === 'pending_mentor'
+          gp.status === 'pending_mentor' || gp.status === 'pending_class_advisor'
         );
         setPendingGatePassRequests(pendingGatePasses.length);
 
@@ -1188,7 +1188,7 @@ export const FacultyDashboard = () => {
         />
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes fade-in {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -1559,7 +1559,7 @@ const AttendanceBarChart = ({ data }) => {
         </g>
       </svg>
       
-      <style jsx>{`
+      <style>{`
         @keyframes bar-grow {
           from {
             transform: scaleY(0);
@@ -1786,7 +1786,7 @@ const PerformanceBar = ({ label, sublabel, count, color, bgColor, icon }) => {
         </div>
       </div>
       
-      <style jsx>{`
+      <style>{`
         @keyframes shimmer {
           0% {
             transform: translateX(-100%);

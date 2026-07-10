@@ -194,8 +194,8 @@ const PrincipalDashboard = () => {
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-[28px] font-bold text-gray-900 tracking-tight mb-1">
-            Principal Dashboard 🎓
+          <h1 className="text-[28px] font-bold text-gray-900 tracking-tight mb-1 capitalize">
+            {user?.title ? `${user.title} Dashboard 🎓` : 'Authority Dashboard 🎓'}
           </h1>
           <p className="text-[14px] text-gray-500">
             Real-time overview of campus operations • View-only access

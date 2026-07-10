@@ -37,6 +37,8 @@ class CAStudentListItem(BaseModel):
     last_name: str
     phone: str
     gender: Optional[str] = None
+    father_phone: Optional[str] = None
+    mother_phone: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -64,6 +66,8 @@ class CAStudentProfileResponse(BaseModel):
     section_name: str
     phone: str
     gender: Optional[str] = None
+    father_phone: Optional[str] = None
+    mother_phone: Optional[str] = None
     overall_attendance_percentage: float
     enrolled_subjects: List[EnrolledSubject]
 

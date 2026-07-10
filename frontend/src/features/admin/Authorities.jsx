@@ -10,6 +10,7 @@ const TITLE_OPTIONS = [
   'Controller of Examinations',
   'Registrar',
   'Librarian',
+  'HR',
 ];
 
 export const Authorities = () => {

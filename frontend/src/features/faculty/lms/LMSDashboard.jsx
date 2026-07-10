@@ -99,6 +99,15 @@ export const LMSDashboard = () => {
       path: `/faculty/courses/${assignmentId}/lms/gradebook`
     },
     {
+      title: 'Seminars',
+      description: 'Seminar for the student. Track seminar dates, topics, and marks.',
+      icon: <Users className="w-8 h-8 text-pink-650" />,
+      bg: 'bg-pink-50',
+      border: 'border-pink-100',
+      hover: 'hover:border-pink-300 hover:shadow-pink-100',
+      path: `/faculty/courses/${assignmentId}/lms/seminars`
+    },
+    {
       title: 'Timetable',
       description: 'View the scheduled days, periods, and room assignments for this course.',
       icon: <Calendar className="w-8 h-8 text-pink-600" />,

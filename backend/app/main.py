@@ -10,11 +10,20 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+import os
+from fastapi.staticfiles import StaticFiles
+
+# Ensure static directories exist before mounting
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("uploads/messages", exist_ok=True)
+
 app = FastAPI(
     title="Campus Connect ERP API",
     description="Backend API for Campus Connect Education Resource Planning System",
     version="1.0.0",
 )
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
@@ -34,7 +43,7 @@ app.add_middleware(
     "https://secure-healing-production-6347.up.railway.app",
     settings.FRONTEND_URL,
     ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -68,6 +77,9 @@ app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"]
 from app.api import gatepass
 app.include_router(gatepass.router, prefix="/api/gatepass", tags=["Gate Pass"])
 
+from app.api import faculty_gatepass
+app.include_router(faculty_gatepass.router, prefix="/api/faculty-gatepass", tags=["Faculty Gate Pass"])
+
 from app.api import notifications
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 
@@ -77,6 +89,16 @@ app.include_router(alumni.router, prefix="/api/admin", tags=["Alumni"])
 from app.api import retest
 app.include_router(retest.router, prefix="/api/retest", tags=["Retest Marks"])
 
+from app.api import messaging
+app.include_router(messaging.router, prefix="/api/messaging", tags=["Messaging"])
+
+
+import asyncio
+from app.core.tasks import faculty_attendance_job
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(faculty_attendance_job())
 
 @app.get("/")
 def read_root():

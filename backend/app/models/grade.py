@@ -62,3 +62,44 @@ class Grade(Base):
     student    = relationship("Student", back_populates="grades")
     course     = relationship("Course", back_populates="grades")
     graded_by  = relationship("Faculty")
+
+
+class AssignmentGrade(Base):
+    __tablename__ = "assignment_grades"
+
+    id             = Column(Integer, primary_key=True, index=True)
+    assignment_id  = Column(Integer, ForeignKey("lms_resources.id", ondelete="CASCADE"), nullable=False)
+    student_id     = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    marks_obtained = Column(Numeric(6, 2), nullable=True)
+    max_marks      = Column(Numeric(6, 2), nullable=False, default=100)
+    is_absent      = Column(Boolean, default=False, nullable=False)
+    is_published   = Column(Boolean, default=False, nullable=False)
+    remarks        = Column(Text, nullable=True)
+    created_at     = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at     = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    assignment     = relationship("LMSResource")
+    student        = relationship("Student")
+
+
+class Seminar(Base):
+    __tablename__ = "seminars"
+
+    id                    = Column(Integer, primary_key=True, index=True)
+    course_assignment_id  = Column(Integer, ForeignKey("course_assignments.id", ondelete="CASCADE"), nullable=False)
+    student_id            = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    seminar_date          = Column(DateTime(timezone=True), nullable=True)
+    seminar_topic         = Column(Text, nullable=True)
+    marks_obtained        = Column(Numeric(6, 2), nullable=True)
+    max_marks             = Column(Numeric(6, 2), nullable=False, default=100)
+    is_topic_published    = Column(Boolean, default=False, nullable=False)
+    is_marks_published    = Column(Boolean, default=False, nullable=False)
+    created_at            = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at            = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    course_assignment     = relationship("CourseAssignment")
+    student               = relationship("Student")
+
+

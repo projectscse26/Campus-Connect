@@ -134,7 +134,7 @@ def get_authority_dashboard_stats(
         try:
             total_grades = db.query(Grade).count()
             passing_grades = db.query(Grade).filter(
-                Grade.letter_grade.in_(['O', 'A+', 'A', 'B+', 'B', 'C'])
+                Grade.marks_obtained >= 50
             ).count()
             overall_pass_percent = round((passing_grades / total_grades * 100), 2) if total_grades > 0 else 0
         except Exception:
@@ -154,7 +154,7 @@ def get_authority_dashboard_stats(
                     dept_grades = db.query(Grade).filter(Grade.student_id.in_(student_ids)).count()
                     dept_passing = db.query(Grade).filter(
                         Grade.student_id.in_(student_ids),
-                        Grade.letter_grade.in_(['O', 'A+', 'A', 'B+', 'B', 'C'])
+                        Grade.marks_obtained >= 50
                     ).count()
                     dept_pass_percent = round((dept_passing / dept_grades * 100), 2) if dept_grades > 0 else 0
                 else:
@@ -471,7 +471,7 @@ def get_dean_dashboard_stats(
     # Overall pass percentage (students with passing grades)
     total_grades = db.query(Grade).count()
     passing_grades = db.query(Grade).filter(
-        Grade.letter_grade.in_(['O', 'A+', 'A', 'B+', 'B', 'C'])
+        Grade.marks_obtained >= 50
     ).count()
     overall_pass_percent = round((passing_grades / total_grades * 100), 2) if total_grades > 0 else 0
     
@@ -488,7 +488,7 @@ def get_dean_dashboard_stats(
             dept_grades = db.query(Grade).filter(Grade.student_id.in_(student_ids)).count()
             dept_passing = db.query(Grade).filter(
                 Grade.student_id.in_(student_ids),
-                Grade.letter_grade.in_(['O', 'A+', 'A', 'B+', 'B', 'C'])
+                Grade.marks_obtained >= 50
             ).count()
             dept_pass_percent = round((dept_passing / dept_grades * 100), 2) if dept_grades > 0 else 0
         else:
@@ -642,7 +642,7 @@ def get_principal_dashboard_stats(
     # Overall pass percentage (students with passing grades)
     total_grades = db.query(Grade).count()
     passing_grades = db.query(Grade).filter(
-        Grade.letter_grade.in_(['O', 'A+', 'A', 'B+', 'B', 'C'])
+        Grade.marks_obtained >= 50
     ).count()
     overall_pass_percent = round((passing_grades / total_grades * 100), 2) if total_grades > 0 else 0
     
@@ -659,7 +659,7 @@ def get_principal_dashboard_stats(
             dept_grades = db.query(Grade).filter(Grade.student_id.in_(student_ids)).count()
             dept_passing = db.query(Grade).filter(
                 Grade.student_id.in_(student_ids),
-                Grade.letter_grade.in_(['O', 'A+', 'A', 'B+', 'B', 'C'])
+                Grade.marks_obtained >= 50
             ).count()
             dept_pass_percent = round((dept_passing / dept_grades * 100), 2) if dept_grades > 0 else 0
         else:

@@ -35,6 +35,7 @@ import { Courses as FacultyCourses } from './features/faculty/Courses';
 import { LMSDashboard } from './features/faculty/lms/LMSDashboard';
 import { LMSResources } from './features/faculty/lms/LMSResources';
 import { LMSAssignments } from './features/faculty/lms/LMSAssignments';
+import { LMSSeminars } from './features/faculty/lms/LMSSeminars';
 import { LMSAnnouncements as CourseAnnouncements } from './features/faculty/lms/LMSAnnouncements';
 import { LMSSyllabus } from './features/faculty/lms/LMSSyllabus';
 import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
@@ -44,6 +45,7 @@ import MyClass from './features/student/MyClass';
 import StudentCourses from './features/student/StudentCourses';
 import StudentCourseDetail from './features/student/StudentCourseDetail';
 import StudentMarks from './features/student/StudentMarks';
+import TodaySchedule from './features/student/TodaySchedule';
 import { LMSGradebook } from './features/faculty/lms/LMSGradebook';
 import { Discipline as StudentDiscipline } from './features/student/Discipline';
 import { LateTrackerDashboard } from './features/latetracker/Dashboard';
@@ -70,12 +72,21 @@ import { MenteeGatePasses } from './features/faculty/MenteeGatePasses';
 import { GatePassApprovals as HodGatePassApprovals } from './features/hod/GatePassApprovals';
 import { LeaveApprovals } from './features/hod/LeaveApprovals';
 import { OMGatePassApprovals } from './features/authority/OMGatePassApprovals';
+import FacultyGatePass from './features/faculty/FacultyGatePass';
+import HODFacultyGatePass from './features/hod/HODFacultyGatePass';
+import AuthorityFacultyGatePass from './features/authority/AuthorityFacultyGatePass';
 import { AuthorityLeaveApprovals } from './features/authority/AuthorityLeaveApprovals';
 import { Profile } from './features/profile/Profile';
 import LateEntryNotification from './features/student/LateEntryNotification';
 import PrincipalDashboard from './features/authority/PrincipalDashboard';
+import DeanDashboard from './features/authority/DeanDashboard';
 import OMDashboard from './features/authority/OMDashboard';
+import HRDashboard from './features/authority/HRDashboard';
+import HRLeavePortal from './features/authority/HRLeavePortal';
 import AuthorityDashboardRouter from './features/authority/AuthorityDashboardRouter';
+import StudentMessaging from './features/student/StudentMessaging';
+import DeanMessaging from './features/dean/DeanMessaging';
+import MyAttendance from './features/faculty/MyAttendance';
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
@@ -223,6 +234,11 @@ function AppRoutes() {
             <HodGatePassApprovals />
           </ProtectedRoute>
         } />
+        <Route path="/hod/faculty-gatepass" element={
+          <ProtectedRoute allowedRole="hod">
+            <HODFacultyGatePass />
+          </ProtectedRoute>
+        } />
         <Route path="/hod/leave" element={
           <ProtectedRoute allowedRole="hod">
             <LeaveApprovals />
@@ -238,6 +254,11 @@ function AppRoutes() {
         <Route path="/faculty" element={
           <ProtectedRoute allowedRole="faculty">
             <FacultyDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/my-attendance" element={
+          <ProtectedRoute allowedRole="faculty">
+            <MyAttendance />
           </ProtectedRoute>
         } />
         <Route path="/faculty/courses" element={
@@ -258,6 +279,11 @@ function AppRoutes() {
         <Route path="/faculty/courses/:assignmentId/lms/assignments" element={
           <ProtectedRoute allowedRole="faculty">
             <LMSAssignments />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/seminars" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSSeminars />
           </ProtectedRoute>
         } />
         <Route path="/faculty/courses/:assignmentId/lms/announcements" element={
@@ -363,6 +389,11 @@ function AppRoutes() {
             <MenteeGatePasses />
           </ProtectedRoute>
         } />
+        <Route path="/faculty/faculty-gatepass" element={
+          <ProtectedRoute allowedRole="faculty">
+            <FacultyGatePass />
+          </ProtectedRoute>
+        } />
         <Route path="/faculty/late-entry" element={
           <ProtectedRoute allowedRole="faculty">
             <LateEntryNotifications />
@@ -383,6 +414,11 @@ function AppRoutes() {
         <Route path="/student/courses" element={
           <ProtectedRoute allowedRole="student">
             <StudentCourses />
+          </ProtectedRoute>
+        } />
+        <Route path="/student/schedule" element={
+          <ProtectedRoute allowedRole="student">
+            <TodaySchedule />
           </ProtectedRoute>
         } />
         <Route path="/student/courses/:courseId" element={
@@ -420,6 +456,11 @@ function AppRoutes() {
             <StudentLeave />
           </ProtectedRoute>
         } />
+        <Route path="/student/messaging" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentMessaging />
+          </ProtectedRoute>
+        } />
       </Route>
 
       {/* Late Tracker Routes (No Sidebar) */}
@@ -449,10 +490,41 @@ function AppRoutes() {
           </ProtectedRoute>
         } />
         
+        {/* Dean Dashboard Route */}
+        <Route path="/dean" element={
+          <ProtectedRoute allowedRole="authority">
+            <DeanDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/dean/messaging" element={
+          <ProtectedRoute allowedRole="authority">
+            <DeanMessaging />
+          </ProtectedRoute>
+        } />
+        
+        {/* Vice Principal Dashboard Route (Uses PrincipalDashboard layout) */}
+        <Route path="/vice-principal" element={
+          <ProtectedRoute allowedRole="authority">
+            <PrincipalDashboard />
+          </ProtectedRoute>
+        } />
+        
         {/* OM Dashboard Route */}
         <Route path="/om" element={
           <ProtectedRoute allowedRole="authority">
             <OMDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* HR Dashboard Route */}
+        <Route path="/hr" element={
+          <ProtectedRoute allowedRole="authority">
+            <HRDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/hr/leaves" element={
+          <ProtectedRoute allowedRole="authority">
+            <HRLeavePortal />
           </ProtectedRoute>
         } />
         
@@ -479,6 +551,11 @@ function AppRoutes() {
         <Route path="/authority/gatepass" element={
           <ProtectedRoute allowedRole="authority">
             <OMGatePassApprovals />
+          </ProtectedRoute>
+        } />
+        <Route path="/authority/faculty-gatepass" element={
+          <ProtectedRoute allowedRole="authority">
+            <AuthorityFacultyGatePass />
           </ProtectedRoute>
         } />
         

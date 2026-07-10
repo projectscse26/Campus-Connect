@@ -42,3 +42,29 @@ class Attendance(Base):
     student = relationship("Student", back_populates="attendance_records")
     course = relationship("Course", back_populates="attendance_records")
     marked_by = relationship("Faculty")
+
+# ──────────────────────────────────────────────────
+# FACULTY ATTENDANCE (Daily per faculty)
+# ──────────────────────────────────────────────────
+class FacultyAttendanceStatus(str, enum.Enum):
+    present = "present"
+    on_leave = "on_leave"
+
+class FacultyAttendance(Base):
+    __tablename__ = "faculty_attendance"
+
+    id = Column(Integer, primary_key=True, index=True)
+    faculty_id = Column(Integer, ForeignKey("faculty.id"), nullable=False)
+    date = Column(Date, nullable=False)
+    status = Column(SQLEnum(FacultyAttendanceStatus), nullable=False, default=FacultyAttendanceStatus.present)
+    
+    # Optional: If they are absent due to an approved leave, link it here
+    leave_request_id = Column(Integer, ForeignKey("faculty_leave_requests.id"), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    faculty = relationship("Faculty")
+    leave_request = relationship("FacultyLeaveRequest")
+

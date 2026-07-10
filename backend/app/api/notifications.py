@@ -28,6 +28,8 @@ def get_badge_counts(
         "/faculty/class-advisor/leave": 0,
         "/hod/leave": 0,
         "/hod/gatepass": 0,
+        "/dean/messaging": 0,
+        "/student/messaging": 0,
         "/authority/gatepass": 0
     }
     
@@ -100,7 +102,7 @@ def get_badge_counts(
             hod_leave_count = db.query(StudentLeaveRequest).filter(
                 StudentLeaveRequest.student_id.in_(dept_students),
                 StudentLeaveRequest.status == StudentLeaveStatus.PENDING_HOD,
-                StudentLeaveRequest.viewed_by_hod == False
+                 StudentLeaveRequest.viewed_by_hod == False
             ).count()
             counts["/hod/leave"] = hod_leave_count
 
@@ -112,6 +114,28 @@ def get_badge_counts(
             GatePass.is_deleted_by_student == False
         ).count()
         counts["/authority/gatepass"] = om_gp_count
+
+        # Dean count of pending unread messages
+        from app.models.authority import Authority as AuthorityModel
+        dean_profile = db.query(AuthorityModel).filter(
+            AuthorityModel.user_id == current_user.id,
+            func.lower(AuthorityModel.title) == "dean"
+        ).first()
+        if dean_profile:
+            from app.models.messaging import Conversation
+            counts["/dean/messaging"] = db.query(Conversation).filter(
+                Conversation.dean_id == dean_profile.id,
+                Conversation.dean_unread_count > 0
+            ).count()
+
+    if current_user.role == UserRole.STUDENT:
+        student = db.query(Student).filter(Student.user_id == current_user.id).first()
+        if student:
+            from app.models.messaging import Conversation
+            counts["/student/messaging"] = db.query(Conversation).filter(
+                Conversation.student_id == student.id,
+                Conversation.student_unread_count > 0
+            ).count()
 
     return counts
 

@@ -3,9 +3,10 @@ import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-d
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Sun, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield, Award
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Sun, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield, Award, MessageSquare
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import MessagingFloatingWidget from '../components/MessagingFloatingWidget';
 
 const ROLE_NAV_LINKS = {
   admin: [
@@ -36,14 +37,17 @@ const ROLE_NAV_LINKS = {
     { name: 'Discipline', path: '/hod/discipline', icon: ShieldAlert },
     { name: 'Late Tracker', path: '/hod/latetracker', icon: Clock },
     { name: 'Gate Pass Approvals', path: '/hod/gatepass', icon: Clock },
+    { name: 'Faculty Gate Pass Approvals', path: '/hod/faculty-gatepass', icon: Clock },
   ],
   faculty: [
     { name: 'Dashboard', path: '/faculty', icon: LayoutDashboard },
+    { name: 'My Attendance', path: '/faculty/my-attendance', icon: ClipboardList },
     { name: 'My Courses', path: '/faculty/courses', icon: BookOpen },
     { name: 'Leave Requests', path: '/faculty/leave', icon: Calendar },
     { name: 'Mentorship', path: '/faculty/mentorship', icon: GraduationCap },
     { name: 'Report Incident', path: '/faculty/discipline', icon: ShieldAlert },
     { name: 'Gate Pass Approvals', path: '/faculty/gatepass', icon: Clock },
+    { name: 'Faculty Gate Pass', path: '/faculty/faculty-gatepass', icon: Clock },
     { name: 'Late Entry Notifications', path: '/faculty/late-entry', icon: Bell },
     { name: 'Announcements', path: '/faculty/announcements', icon: Bell },
   ],
@@ -51,11 +55,13 @@ const ROLE_NAV_LINKS = {
     { name: 'Dashboard', path: '/student', icon: LayoutDashboard },
     { name: 'My Class', path: '/student/class', icon: Users },
     { name: 'My Courses', path: '/student/courses', icon: BookOpen },
+    { name: "Today's Schedule", path: '/student/schedule', icon: Calendar },
     { name: 'My Marks', path: '/student/marks', icon: Award },
     { name: 'Leave Tracker', path: '/student/leave', icon: Calendar },
     { name: 'Gate Pass', path: '/student/gatepass', icon: Clock },
     { name: 'Late Entry Notification', path: '/student/late-entry', icon: Bell },
     { name: 'Announcements', path: '/student/announcements', icon: Bell },
+    { name: 'Message Dean', path: '/student/messaging', icon: MessageSquare },
   ],
   authority: [
     { name: 'Dashboard', path: '/authority', icon: LayoutDashboard },
@@ -64,6 +70,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Late Tracker', path: '/authority/latetracker', icon: Clock },
     { name: 'Leave Approvals', path: '/authority/leave', icon: Calendar },
     { name: 'Gate Pass Approvals', path: '/authority/gatepass', icon: Clock },
+    { name: 'Faculty Gate Pass Approvals', path: '/authority/faculty-gatepass', icon: Clock },
     { name: 'Announcements', path: '/authority/announcements', icon: Bell },
   ]
 };
@@ -205,10 +212,38 @@ export default function DashboardLayout() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  const baseNavLinks = ROLE_NAV_LINKS[user.role] || [];
-  const navLinks = user.role === 'faculty'
-    ? baseNavLinks.filter(link => link.name !== 'Mentorship' || user.is_mentor)
-    : baseNavLinks;
+  let navLinks = ROLE_NAV_LINKS[user.role] || [];
+  
+  if (user.role === 'faculty') {
+    navLinks = navLinks.filter(link => link.name !== 'Mentorship' || user.is_mentor);
+  }
+  
+  if (user.role === 'authority') {
+    const title = user.title ? user.title.toLowerCase().trim() : '';
+    if (title !== 'office manager') {
+      navLinks = navLinks.filter(link => link.name !== 'Gate Pass Approvals');
+    }
+    if (title !== 'dean' && title !== 'office manager' && title !== 'hr') {
+      navLinks = navLinks.filter(link => link.name !== 'Faculty Gate Pass Approvals');
+    }
+    if (title === 'hr') {
+      navLinks = navLinks.filter(link => 
+        ['Dashboard'].includes(link.name)
+      );
+      navLinks.push({
+        name: 'Faculty Leaves',
+        path: '/hr/leaves',
+        icon: Calendar
+      });
+    }
+    if (title === 'dean') {
+      // Add Messages to Dean Authority
+      navLinks = [
+        ...navLinks,
+        { name: 'Student Messages', path: '/dean/messaging', icon: MessageSquare }
+      ];
+    }
+  }
   const currentLink = navLinks.find(link => link.path === location.pathname);
 
   // For Class Advisor sub-pages, find a label
@@ -255,7 +290,7 @@ export default function DashboardLayout() {
 
       {/* Sidebar */}
       <aside 
-        className={`fixed inset-y-0 left-0 w-[260px] bg-white border-r border-gray-200 flex flex-col z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto lg:flex-shrink-0 ${
+        className={`fixed inset-y-0 left-0 w-[280px] bg-white border-r border-gray-200 flex flex-col z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto lg:flex-shrink-0 ${
           isMobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         }`}
       >
@@ -434,19 +469,19 @@ export default function DashboardLayout() {
               </button>
               
               {isNotificationsOpen && (
-                <div className="fixed inset-x-2 sm:absolute sm:inset-x-auto sm:right-0 mt-3 sm:w-96 max-w-md bg-white rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.08)] border border-gray-100 z-50 overflow-hidden transform sm:origin-top-right transition-all">
-                  <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center gap-2">
+                <div className="fixed bottom-auto left-1 right-1 top-20 sm:absolute sm:left-auto sm:right-0 sm:top-14 sm:w-80 bg-white rounded-[20px] shadow-[0_4px_20px_rgb(0,0,0,0.08)] border border-gray-100 z-50 overflow-hidden transform sm:origin-top-right transition-all">
+                  <div className="px-3 sm:px-5 py-2.5 sm:py-3 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center gap-1">
                     <h3 className="text-xs sm:text-sm font-bold text-gray-900 truncate">Notifications</h3>
-                    <span className="text-[9px] sm:text-[10px] bg-primary-50 text-primary-600 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-bold uppercase tracking-wider whitespace-nowrap">
-                      Announcements
+                    <span className="text-[8px] sm:text-[9px] bg-primary-50 text-primary-600 px-1.5 sm:px-2 py-0.5 rounded-full font-bold uppercase tracking-wide whitespace-nowrap flex-shrink-0">
+                      Alerts
                     </span>
                   </div>
                   
-                  <div className="max-h-[50vh] sm:max-h-[300px] overflow-y-auto divide-y divide-gray-50">
+                  <div className="max-h-[45vh] sm:max-h-[350px] overflow-y-auto">
                     {notifications.length === 0 ? (
-                      <div className="p-6 sm:p-8 text-center text-gray-400">
-                        <Bell className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-300" />
-                        <p className="text-xs font-semibold">No announcements posted</p>
+                      <div className="p-4 sm:p-6 text-center text-gray-400">
+                        <Bell className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-2 text-gray-300" />
+                        <p className="text-[10px] sm:text-xs font-semibold">No announcements</p>
                       </div>
                     ) : (
                       notifications.map((notif) => {
@@ -465,22 +500,22 @@ export default function DashboardLayout() {
                               setIsNotificationsOpen(false);
                               navigate(`/${user.role}/announcements?id=${notif.id}`);
                             }}
-                            className="p-3 sm:p-4 hover:bg-gray-50 cursor-pointer transition-colors text-left"
+                            className="px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-gray-50 cursor-pointer transition-colors text-left border-b border-gray-50 last:border-b-0"
                           >
-                            <div className="flex justify-between items-start mb-1 gap-2">
-                              <span className="font-bold text-gray-900 text-xs line-clamp-1 flex-1 leading-snug">
+                            <div className="flex justify-between items-start gap-1 mb-0.5">
+                              <span className="font-semibold text-gray-900 text-[10px] sm:text-xs line-clamp-2 flex-1">
                                 {notif.title}
                               </span>
-                              <span className={`text-[9px] font-bold uppercase px-1.5 sm:px-2 py-0.5 rounded border ${badgeClass} shrink-0`}>
+                              <span className={`text-[7px] sm:text-[8px] font-bold uppercase px-1 sm:px-1.5 py-0.5 rounded border ${badgeClass} shrink-0 whitespace-nowrap`}>
                                 {notif.category}
                               </span>
                             </div>
-                            <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed mb-2">
+                            <p className="text-[9px] sm:text-xs text-gray-500 line-clamp-2 leading-tight mb-1">
                               {notif.content}
                             </p>
-                            <div className="flex justify-between text-[10px] text-gray-400 font-bold">
-                              <span className="truncate">By {notif.author?.name || "System"}</span>
-                              <span className="ml-2 whitespace-nowrap">{new Date(notif.created_at).toLocaleDateString()}</span>
+                            <div className="flex justify-between items-center text-[8px] sm:text-[9px] text-gray-400 font-medium gap-1">
+                              <span className="truncate">{notif.author?.name || "System"}</span>
+                              <span className="whitespace-nowrap flex-shrink-0">{new Date(notif.created_at).toLocaleDateString()}</span>
                             </div>
                           </div>
                         );
@@ -488,15 +523,15 @@ export default function DashboardLayout() {
                     )}
                   </div>
                   
-                  <div className="p-2.5 sm:p-3 bg-gray-50/50 border-t border-gray-50 text-center">
+                  <div className="p-2 sm:p-2.5 bg-gray-50/50 border-t border-gray-50 text-center">
                     <button 
                       onClick={() => {
                         setIsNotificationsOpen(false);
                         navigate(`/${user.role}/announcements`);
                       }}
-                      className="text-[11px] text-primary-600 hover:text-primary-700 font-bold transition-colors"
+                      className="text-[9px] sm:text-[10px] text-primary-600 hover:text-primary-700 font-bold transition-colors"
                     >
-                      View All Announcements
+                      View All
                     </button>
                   </div>
                 </div>
@@ -556,6 +591,9 @@ export default function DashboardLayout() {
           </div>
         </main>
       </div>
+
+      {/* Floating Messages Widget (desktop only, student + Dean) */}
+      <MessagingFloatingWidget user={user} badgeCounts={badgeCounts} />
     </div>
   );
 }

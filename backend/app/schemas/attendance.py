@@ -1,6 +1,17 @@
 from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from datetime import date
+from pydantic import BaseModel, ConfigDict
+from typing import List, Optional
+
+class FacultyAttendanceResponse(BaseModel):
+    id: int
+    faculty_id: int
+    date: date
+    status: str
+    leave_request_id: Optional[int] = None
+    
+    model_config = ConfigDict(from_attributes=True)
 
 class OverviewStats(BaseModel):
     students_present: int
