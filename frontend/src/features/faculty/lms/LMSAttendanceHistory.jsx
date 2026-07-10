@@ -117,7 +117,7 @@ export const LMSAttendanceHistory = () => {
               {total_students} Enrolled
             </div>
             <div className="mt-2 text-xs font-semibold text-gray-500">
-              {history.length} total class day{history.length !== 1 ? 's' : ''} recorded
+              {new Set(history.map(h => h.date)).size} total class day{new Set(history.map(h => h.date)).size !== 1 ? 's' : ''} recorded
             </div>
           </div>
 
@@ -236,6 +236,7 @@ export const LMSAttendanceHistory = () => {
                         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 mt-1 sm:mt-0 w-full sm:w-auto">
                           <span className="flex-1 sm:flex-none text-center px-3 py-1.5 bg-green-50 dark:bg-gray-100 text-green-700 dark:text-green-400 text-[13px] font-bold rounded-xl border border-green-100 dark:border-gray-200 shadow-sm">{entry.present} Present</span>
                           <span className="flex-1 sm:flex-none text-center px-3 py-1.5 bg-red-50 dark:bg-gray-100 text-red-700 dark:text-red-400 text-[13px] font-bold rounded-xl border border-red-100 dark:border-gray-200 shadow-sm">{entry.absent} Absent</span>
+                          <span className="flex-1 sm:flex-none text-center px-3 py-1.5 bg-blue-50 dark:bg-gray-100 text-blue-700 dark:text-blue-400 text-[13px] font-bold rounded-xl border border-blue-100 dark:border-gray-200 shadow-sm">{entry.present + entry.absent} Total</span>
                           <span className={`hidden sm:block text-gray-400 text-sm transition-transform ml-1 ${isExpanded ? 'rotate-180' : ''}`}>
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                           </span>
