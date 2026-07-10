@@ -133,6 +133,61 @@ def get_faculty_dashboard(
                 
                 selected_date_classes.append(class_info)
     
+    # -------------------------------------------------------------
+    # Inject Substituted Classes
+    # -------------------------------------------------------------
+    from app.models.leave import FacultyDutyArrangement, FacultyLeaveRequest, LeaveStatus, ArrangementStatus
+    
+    substitutions = db.query(FacultyDutyArrangement).join(FacultyLeaveRequest).filter(
+        FacultyDutyArrangement.substitute_faculty_id == faculty.id,
+        FacultyDutyArrangement.status == ArrangementStatus.ACCEPTED,
+        FacultyLeaveRequest.status == LeaveStatus.APPROVED,
+        FacultyLeaveRequest.from_date <= selected_date_obj,
+        FacultyLeaveRequest.to_date >= selected_date_obj
+    ).all()
+    
+    for sub in substitutions:
+        # Find the requester's CourseAssignment based on course code
+        requester_assignments = db.query(CourseAssignment).options(
+            joinedload(CourseAssignment.course),
+            joinedload(CourseAssignment.section)
+        ).filter(
+            CourseAssignment.faculty_id == sub.leave_request.faculty_id,
+            CourseAssignment.is_active == True
+        ).all()
+        
+        matched_assignment = None
+        for a in requester_assignments:
+            if a.course.code == sub.subject:
+                matched_assignment = a
+                break
+                
+        if matched_assignment:
+            slots = db.query(TimetableSlot).filter(
+                TimetableSlot.course_assignment_id == matched_assignment.id
+            ).all()
+            for slot in slots:
+                slot_day = slot.day.value if hasattr(slot.day, 'value') else slot.day
+                if slot_day == selected_day_name:
+                    is_current = is_today and (slot.start_time <= now_time <= slot.end_time)
+                    
+                    # Prevent duplicate if same slot exists
+                    class_info = {
+                        "course_name": matched_assignment.course.name,
+                        "course_code": matched_assignment.course.code,
+                        "start_time": slot.start_time.strftime("%H:%M"),
+                        "end_time": slot.end_time.strftime("%H:%M"),
+                        "room": slot.room,
+                        "section": f"{matched_assignment.section.year} Year {matched_assignment.section.name}" if matched_assignment.section else "N/A",
+                        "is_current": is_current,
+                        "course_id": matched_assignment.course_id,
+                        "assignment_id": matched_assignment.id,
+                        "is_substitute": True
+                    }
+                    # check if not already added to avoid duplicates
+                    if not any(c.get("assignment_id") == matched_assignment.id and c.get("start_time") == class_info["start_time"] for c in selected_date_classes):
+                        selected_date_classes.append(class_info)
+    
     # Sort classes by start time
     selected_date_classes.sort(key=lambda x: x["start_time"])
     
@@ -919,11 +974,27 @@ def save_course_attendance(
 
     assignment = db.query(CourseAssignment).filter(
         CourseAssignment.id == assignment_id,
-        CourseAssignment.faculty_id == faculty.id,
         CourseAssignment.is_active == True
     ).first()
+    
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
+        
+    if assignment.faculty_id != faculty.id:
+        # Check if the current faculty is an authorized substitute
+        from app.models.leave import FacultyDutyArrangement, FacultyLeaveRequest, LeaveStatus, ArrangementStatus
+        today = date_type.today()
+        substitute = db.query(FacultyDutyArrangement).join(FacultyLeaveRequest).filter(
+            FacultyDutyArrangement.substitute_faculty_id == faculty.id,
+            FacultyDutyArrangement.status == ArrangementStatus.ACCEPTED,
+            FacultyLeaveRequest.status == LeaveStatus.APPROVED,
+            FacultyLeaveRequest.faculty_id == assignment.faculty_id,
+            FacultyLeaveRequest.from_date <= today,
+            FacultyLeaveRequest.to_date >= today
+        ).first()
+        
+        if not substitute:
+            raise HTTPException(status_code=403, detail="Not authorized to mark attendance for this course")
 
     from app.models.department import Department
     department = db.query(Department).filter(Department.id == assignment.course.department_id).first()
