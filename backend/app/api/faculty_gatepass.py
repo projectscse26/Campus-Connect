@@ -81,8 +81,7 @@ def get_hod_queue(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Only faculty can be HOD
-    if current_user.role != UserRole.FACULTY:
+    if current_user.role != UserRole.HOD:
         raise HTTPException(status_code=403, detail="Not authorized")
         
     faculty = get_faculty_profile(db, current_user.id)
@@ -108,6 +107,9 @@ def hod_approve_gatepass(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if current_user.role != UserRole.HOD:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
     faculty = get_faculty_profile(db, current_user.id)
     department = db.query(Department).filter(Department.hod_id == faculty.id).first()
     
