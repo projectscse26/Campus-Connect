@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { 
+import {
   Users, UserCheck, Building2, BookOpen,
   TrendingUp, TrendingDown, AlertCircle, Clock,
   FileText, ShieldAlert, RefreshCw, Activity,
@@ -32,35 +32,32 @@ const StatCard = ({ title, value, icon: Icon, colorClass, bgColorClass, subtitle
 const DepartmentCard = ({ name, code, value, type = "attendance", rank }) => {
   const isGood = value >= 75;
   const isAverage = value >= 60 && value < 75;
-  
+
   return (
-    <div className={`p-4 rounded-xl border-2 transition-all ${
-      isGood ? 'bg-emerald-50 border-emerald-200' : 
-      isAverage ? 'bg-amber-50 border-amber-200' : 
-      'bg-red-50 border-red-200'
-    }`}>
+    <div className={`p-4 rounded-xl border-2 transition-all ${isGood ? 'bg-emerald-50 border-emerald-200' :
+        isAverage ? 'bg-amber-50 border-amber-200' :
+          'bg-red-50 border-red-200'
+      }`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-gray-400">#{rank}</span>
           <h4 className="font-bold text-sm text-gray-900">{code}</h4>
         </div>
-        <div className={`flex items-center gap-1 ${
-          isGood ? 'text-emerald-600' : 
-          isAverage ? 'text-amber-600' : 
-          'text-red-600'
-        }`}>
+        <div className={`flex items-center gap-1 ${isGood ? 'text-emerald-600' :
+            isAverage ? 'text-amber-600' :
+              'text-red-600'
+          }`}>
           {isGood ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
           <span className="text-lg font-extrabold">{value}%</span>
         </div>
       </div>
       <p className="text-xs text-gray-600 truncate">{name}</p>
       <div className="mt-2 bg-gray-200 rounded-full h-1.5 overflow-hidden">
-        <div 
-          className={`h-full transition-all ${
-            isGood ? 'bg-emerald-500' : 
-            isAverage ? 'bg-amber-500' : 
-            'bg-red-500'
-          }`}
+        <div
+          className={`h-full transition-all ${isGood ? 'bg-emerald-500' :
+              isAverage ? 'bg-amber-500' :
+                'bg-red-500'
+            }`}
           style={{ width: `${value}%` }}
         />
       </div>
@@ -71,32 +68,32 @@ const DepartmentCard = ({ name, code, value, type = "attendance", rank }) => {
 // Alert Item Component
 const AlertItem = ({ alert }) => {
   const getIcon = () => {
-    switch(alert.type) {
+    switch (alert.type) {
       case 'discipline': return <ShieldAlert className="w-4 h-4" />;
       case 'leave': return <FileText className="w-4 h-4" />;
       default: return <AlertCircle className="w-4 h-4" />;
     }
   };
-  
+
   const getColor = () => {
-    switch(alert.severity) {
+    switch (alert.severity) {
       case 'high': return 'text-red-600 bg-red-50 border-red-200';
       case 'medium': return 'text-amber-600 bg-amber-50 border-amber-200';
       default: return 'text-blue-600 bg-blue-50 border-blue-200';
     }
   };
-  
+
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = Math.floor((now - date) / 1000); // seconds
-    
+
     if (diff < 60) return 'Just now';
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     return `${Math.floor(diff / 86400)}d ago`;
   };
-  
+
   return (
     <div className={`flex items-start gap-3 p-3 rounded-xl border ${getColor()}`}>
       <div className="mt-0.5">{getIcon()}</div>
@@ -144,7 +141,7 @@ const DeanDashboard = () => {
 
   useEffect(() => {
     fetchDashboardStats();
-    
+
     // Auto-refresh every 30 seconds for live updates
     const interval = setInterval(() => {
       fetchDashboardStats();
@@ -159,8 +156,8 @@ const DeanDashboard = () => {
 
   const formatTime = (date) => {
     if (!date) return '';
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     });
@@ -220,35 +217,35 @@ const DeanDashboard = () => {
 
       {/* 1. TOP NUMBERS (Stat Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          title="Total Students" 
-          value={stats?.total_students?.toLocaleString() || '0'} 
-          icon={Users} 
-          colorClass="text-blue-600" 
+        <StatCard
+          title="Total Students"
+          value={stats?.total_students?.toLocaleString() || '0'}
+          icon={Users}
+          colorClass="text-blue-600"
           bgColorClass="bg-blue-50"
           subtitle="Enrolled & Active"
         />
-        <StatCard 
-          title="Total Faculty" 
-          value={stats?.total_faculty?.toLocaleString() || '0'} 
-          icon={UserCheck} 
-          colorClass="text-emerald-600" 
+        <StatCard
+          title="Total Faculty"
+          value={stats?.total_faculty?.toLocaleString() || '0'}
+          icon={UserCheck}
+          colorClass="text-emerald-600"
           bgColorClass="bg-emerald-50"
           subtitle="Teaching Staff"
         />
-        <StatCard 
-          title="Departments" 
-          value={stats?.total_departments || '0'} 
-          icon={Building2} 
-          colorClass="text-purple-600" 
+        <StatCard
+          title="Departments"
+          value={stats?.total_departments || '0'}
+          icon={Building2}
+          colorClass="text-purple-600"
           bgColorClass="bg-purple-50"
           subtitle="Academic Units"
         />
-        <StatCard 
-          title="Active Courses" 
-          value={stats?.active_courses || '0'} 
-          icon={BookOpen} 
-          colorClass="text-amber-600" 
+        <StatCard
+          title="Active Courses"
+          value={stats?.active_courses || '0'}
+          icon={BookOpen}
+          colorClass="text-amber-600"
           bgColorClass="bg-amber-50"
           subtitle="This Semester"
         />
@@ -256,10 +253,10 @@ const DeanDashboard = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Left Column - Attendance & Performance */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* 2. ATTENDANCE OVERVIEW */}
           <div className="bg-white rounded-[20px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-5">
@@ -279,11 +276,11 @@ const DeanDashboard = () => {
                 </p>
               </div>
             </div>
-            
+
             {/* Department Attendance */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {stats?.attendance_by_department?.sort((a, b) => b.attendance_percent - a.attendance_percent).map((dept, idx) => (
-                <DepartmentCard 
+                <DepartmentCard
                   key={dept.department_code}
                   name={dept.department_name}
                   code={dept.department_code}
@@ -314,11 +311,11 @@ const DeanDashboard = () => {
                 </p>
               </div>
             </div>
-            
+
             {/* Department Performance */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {stats?.performance_by_department?.sort((a, b) => b.pass_percent - a.pass_percent).map((dept, idx) => (
-                <DepartmentCard 
+                <DepartmentCard
                   key={dept.department_code}
                   name={dept.department_name}
                   code={dept.department_code}
@@ -334,7 +331,7 @@ const DeanDashboard = () => {
 
         {/* Right Column - Pending Requests & Alerts */}
         <div className="space-y-6">
-          
+
           {/* 4. PENDING REQUESTS */}
           <div className="bg-white rounded-[20px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 p-6">
             <div className="flex items-center gap-3 mb-5">
@@ -346,7 +343,7 @@ const DeanDashboard = () => {
                 <p className="text-[11px] text-gray-500">Awaiting approval</p>
               </div>
             </div>
-            
+
             <div className="space-y-3">
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
                 <div>
@@ -357,7 +354,7 @@ const DeanDashboard = () => {
                 </div>
                 <FileText className="w-8 h-8 text-amber-400" />
               </div>
-              
+
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-rose-50 rounded-xl border border-red-200">
                 <div>
                   <p className="text-xs font-semibold text-gray-600">Student Complaints</p>
@@ -386,7 +383,7 @@ const DeanDashboard = () => {
                 {stats?.recent_alerts?.length || 0}
               </span>
             </div>
-            
+
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
               {stats?.recent_alerts && stats.recent_alerts.length > 0 ? (
                 stats.recent_alerts.map((alert, idx) => (
@@ -409,7 +406,7 @@ const DeanDashboard = () => {
         <div className="flex items-center gap-3">
           <PieChart className="w-5 h-5 text-blue-600" />
           <p className="text-sm text-gray-700">
-            <span className="font-semibold">View-Only Access:</span> This dashboard provides real-time monitoring. 
+            <span className="font-semibold">View-Only Access:</span> This dashboard provides real-time monitoring.
             All data updates automatically every 30 seconds.
           </p>
         </div>

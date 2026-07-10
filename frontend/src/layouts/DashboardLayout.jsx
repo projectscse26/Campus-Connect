@@ -3,9 +3,10 @@ import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-d
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
-  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Sun, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield, Award
+  LayoutDashboard, Users, BookOpen, GraduationCap, Settings, LogOut, Bell, Search, Moon, Sun, Home, Calendar, ShieldAlert, Clock, Menu, X, ChevronDown, ChevronRight, ClipboardList, BarChart2, TrendingUp, Info, User, Shield, Award, MessageSquare
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import MessagingFloatingWidget from '../components/MessagingFloatingWidget';
 
 const ROLE_NAV_LINKS = {
   admin: [
@@ -40,6 +41,7 @@ const ROLE_NAV_LINKS = {
   ],
   faculty: [
     { name: 'Dashboard', path: '/faculty', icon: LayoutDashboard },
+    { name: 'My Attendance', path: '/faculty/my-attendance', icon: ClipboardList },
     { name: 'My Courses', path: '/faculty/courses', icon: BookOpen },
     { name: 'Leave Requests', path: '/faculty/leave', icon: Calendar },
     { name: 'Mentorship', path: '/faculty/mentorship', icon: GraduationCap },
@@ -59,6 +61,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Gate Pass', path: '/student/gatepass', icon: Clock },
     { name: 'Late Entry Notification', path: '/student/late-entry', icon: Bell },
     { name: 'Announcements', path: '/student/announcements', icon: Bell },
+    { name: 'Message Dean', path: '/student/messaging', icon: MessageSquare },
   ],
   authority: [
     { name: 'Dashboard', path: '/authority', icon: LayoutDashboard },
@@ -222,6 +225,13 @@ export default function DashboardLayout() {
     }
     if (title !== 'dean' && title !== 'office manager') {
       navLinks = navLinks.filter(link => link.name !== 'Faculty Gate Pass Approvals');
+    }
+    if (title === 'dean') {
+      // Add Messages to Dean Authority
+      navLinks = [
+        ...navLinks,
+        { name: 'Student Messages', path: '/dean/messaging', icon: MessageSquare }
+      ];
     }
   }
   const currentLink = navLinks.find(link => link.path === location.pathname);
@@ -571,6 +581,9 @@ export default function DashboardLayout() {
           </div>
         </main>
       </div>
+
+      {/* Floating Messages Widget (desktop only, student + Dean) */}
+      <MessagingFloatingWidget user={user} badgeCounts={badgeCounts} />
     </div>
   );
 }

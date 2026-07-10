@@ -974,7 +974,7 @@ def get_attendance_analytics(
     
     faculty_donut = [
         DonutData(name="Present", value=faculty_present, color="#3b82f6"),
-        DonutData(name="Absent", value=faculty_absent, color="#f59e0b")
+        DonutData(name="On Leave", value=faculty_absent, color="#f59e0b")
     ]
     
     # ---------------------------------------------------------

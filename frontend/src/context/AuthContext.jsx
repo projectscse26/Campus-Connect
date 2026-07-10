@@ -6,12 +6,17 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 // Configure Axios once
-const apiUrl = import.meta.env.VITE_API_URL;
+let apiUrl = import.meta.env.VITE_API_URL;
 
 if (!apiUrl) {
   throw new Error(
     "VITE_API_URL is not defined. Please check your .env.production or .env file."
   );
+}
+
+// Automatically rewrite localhost to the network IP when accessed from another device
+if (apiUrl.includes('127.0.0.1') || apiUrl.includes('localhost')) {
+  apiUrl = apiUrl.replace(/127\.0\.0\.1|localhost/, window.location.hostname);
 }
 
 axios.defaults.baseURL = apiUrl;

@@ -23,6 +23,7 @@ const GRADE_LABELS = {
   internal_2: 'CIA 2',
   model_exam: 'Model Exam',
   assignment: 'Assignment',
+  seminar:    'Seminar',
   lab:        'Lab',
   external:   'External',
 };
@@ -193,7 +194,7 @@ const StudentMarks = () => {
 
                 {/* Grade cards */}
                 {grades !== null && grades.map(g => {
-                  const passmark = PASS_MARKS[g.grade_type];
+                  const passmark = ['assignment', 'seminar'].includes(g.grade_type) ? g.max_marks * 0.4 : PASS_MARKS[g.grade_type];
                   const passed   = !g.is_absent && g.marks_obtained != null
                     && (passmark == null || g.marks_obtained >= passmark);
                   const retest   = retestMap[g.grade_type];
@@ -203,7 +204,7 @@ const StudentMarks = () => {
 
                   return (
                     <div
-                      key={g.grade_type}
+                      key={g.assignment_title ? 'assignment_' + g.assignment_title : g.grade_type}
                       className="rounded-xl border border-gray-100 overflow-hidden"
                     >
                       {/* Top colour bar */}
@@ -213,7 +214,7 @@ const StudentMarks = () => {
                         {/* Assessment name + pass/fail badge */}
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-[14px] font-bold text-gray-800">
-                            {GRADE_LABELS[g.grade_type] || g.grade_type}
+                            {g.assignment_title || GRADE_LABELS[g.grade_type] || g.grade_type}
                           </span>
                           {g.is_absent
                             ? <Pill color="gray">Absent</Pill>

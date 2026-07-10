@@ -10,7 +10,7 @@ const CircularProgress = ({ percentage, size = 120, strokeWidth = 8 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (percentage / 100) * circumference;
-  
+
   const getColor = (pct) => {
     if (pct >= 75) return '#10b981'; // green
     if (pct >= 60) return '#f59e0b'; // amber
@@ -57,18 +57,18 @@ export const StudentDashboard = () => {
         ]);
 
         if (profileData.status === 'fulfilled') setProfile(profileData.value);
-        
+
         if (coursesRes.status === 'fulfilled') {
           const courses = coursesRes.value;
           setCourses(courses);
           setCourseCount(courses.length);
-          
+
           if (courses.length > 0) {
-            const attendancePromises = courses.map(c => 
+            const attendancePromises = courses.map(c =>
               axios.get(`/api/student-portal/courses/${c.id}/attendance`).catch(() => null)
             );
             const attendanceResults = await Promise.all(attendancePromises);
-            
+
             let totalPresent = 0;
             let totalClasses = 0;
             attendanceResults.forEach(res => {
@@ -77,18 +77,63 @@ export const StudentDashboard = () => {
                 totalClasses += res.data.summary.total_classes || 0;
               }
             });
-            
+
             const overallPercentage = totalClasses > 0 ? Math.round((totalPresent / totalClasses) * 100) : 0;
             setAttendance({ percentage: overallPercentage, present: totalPresent, total: totalClasses });
 
-            if (courses[0]) {
-              axios.get(`/api/student-portal/courses/${courses[0].id}/assignments`)
-                .then(res => setAssignments(res.data.slice(0, 3)))
-                .catch(() => setAssignments([]));
-            }
+            const promises = [];
+            courses.forEach(c => {
+              promises.push(axios.get(`/api/student-portal/courses/${c.id}/assignments`).catch(() => ({ data: [] })));
+              promises.push(axios.get(`/api/student-portal/courses/${c.id}/seminar`).catch(() => ({ data: { seminar: null } })));
+            });
+            
+            Promise.all(promises).then((results) => {
+              const list = [];
+              for (let i = 0; i < courses.length; i++) {
+                const assignmentsRes = results[2 * i];
+                const seminarRes = results[2 * i + 1];
+                
+                if (assignmentsRes && assignmentsRes.data) {
+                  const pendingAssignments = assignmentsRes.data
+                    .filter(a => !a.grade)
+                    .map(a => ({
+                      id: `assignment_${a.id}`,
+                      title: a.title,
+                      description: a.description,
+                      due_date: a.due_date,
+                      type: 'Assignment',
+                      course_name: courses[i].name
+                    }));
+                  list.push(...pendingAssignments);
+                }
+                
+                if (seminarRes && seminarRes.data?.seminar) {
+                  const sem = seminarRes.data.seminar;
+                  if (sem.is_topic_published && !sem.is_marks_published) {
+                    list.push({
+                      id: `seminar_${courses[i].id}`,
+                      title: `Seminar: ${sem.seminar_topic}`,
+                      description: `Course: ${courses[i].name} - Prepare and present your seminar topic.`,
+                      due_date: sem.seminar_date,
+                      type: 'Seminar',
+                      course_name: courses[i].name
+                    });
+                  }
+                }
+              }
+              
+              // Sort by due date (nearest first)
+              list.sort((a, b) => {
+                if (!a.due_date) return 1;
+                if (!b.due_date) return -1;
+                return new Date(a.due_date) - new Date(b.due_date);
+              });
+              
+              setAssignments(list.slice(0, 3));
+            }).catch(() => setAssignments([]));
           }
         }
-        
+
         if (lateRes.status === 'fulfilled') setLateEntries(lateRes.value.data);
         if (leavesRes.status === 'fulfilled') setLeaves(leavesRes.value.data);
         if (classRes.status === 'fulfilled') setTimetable(classRes.value.data.timetable || []);
@@ -105,7 +150,7 @@ export const StudentDashboard = () => {
   const studentName = profile ? `${profile.first_name} ${profile.last_name}` : user?.name || user?.email?.split('@')[0] || 'Student';
   const pendingLeaves = leaves.filter(l => l.status.startsWith('pending')).length;
   const approvedLeaves = leaves.filter(l => l.status === 'approved').length;
-  
+
   const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const currentDay = daysOfWeek[new Date().getDay()];
   const todaysClasses = timetable.filter(t => t.day === currentDay).sort((a, b) => a.start_time.localeCompare(b.start_time));
@@ -144,11 +189,10 @@ export const StudentDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Profile Card - Slimmer */}
           <div className="relative bg-white dark:bg-gradient-to-br dark:from-blue-500 dark:via-blue-600 dark:to-indigo-600 rounded-[20px] shadow-xl border border-gray-200 dark:border-transparent overflow-hidden">
             <div className="absolute inset-0 dark:bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgZmlsbD0iI2ZmZiIgb3BhY2l0eT0iLjEiIGN4PSIzMCIgY3k9IjMwIiByPSIxNSIvPjwvZz48L3N2Zz4=')] opacity-30"></div>
-            
             <div className="relative p-5 flex flex-col sm:flex-row items-start sm:items-center gap-5">
               <div className="relative">
                 <div className="w-20 h-20 rounded-2xl bg-blue-600 dark:bg-white/20 dark:backdrop-blur-sm border-3 dark:border-white/30 flex items-center justify-center">
@@ -231,7 +275,7 @@ export const StudentDashboard = () => {
               </div>
             </Link>
           </div>
-          
+
           {/* Today's Schedule */}
           <div className="bg-white rounded-[20px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
             <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
@@ -244,11 +288,11 @@ export const StudentDashboard = () => {
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
-            
+
             <div className="p-6">
               {loading ? (
                 <div className="space-y-4 animate-pulse">
-                  {[1,2].map(i => <div key={i} className="h-16 bg-gray-100 rounded-xl" />)}
+                  {[1, 2].map(i => <div key={i} className="h-16 bg-gray-100 rounded-xl" />)}
                 </div>
               ) : todaysClasses.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -328,11 +372,11 @@ export const StudentDashboard = () => {
               <BookOpen className="w-5 h-5 text-blue-500" />
               <h3 className="text-[16px] font-bold text-gray-900">Course Progress</h3>
             </div>
-            
+
             <div className="p-6">
               {loading ? (
                 <div className="space-y-4 animate-pulse">
-                  {[1,2,3].map(i => <div key={i} className="h-20 bg-gray-100 rounded-xl" />)}
+                  {[1, 2, 3].map(i => <div key={i} className="h-20 bg-gray-100 rounded-xl" />)}
                 </div>
               ) : courses.length > 0 ? (
                 <div className="space-y-4">
@@ -341,7 +385,7 @@ export const StudentDashboard = () => {
                     const progress = Math.floor(50 + Math.random() * 40); // 50-90% range
                     const colors = ['bg-blue-600', 'bg-green-600', 'bg-purple-600', 'bg-orange-600', 'bg-indigo-600', 'bg-teal-600'];
                     const color = colors[idx % colors.length];
-                    
+
                     return (
                       <div key={course.id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
                         <div className="flex items-center justify-between mb-3">
@@ -357,14 +401,14 @@ export const StudentDashboard = () => {
                           </div>
                           <span className="text-sm font-bold text-gray-700">{progress}%</span>
                         </div>
-                        
+
                         <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className={`absolute left-0 top-0 h-full ${color} rounded-full transition-all duration-500`}
                             style={{ width: `${progress}%` }}
                           ></div>
                         </div>
-                        
+
                         <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
                             <CheckCircle className="w-3 h-3 text-green-500" />
@@ -377,8 +421,8 @@ export const StudentDashboard = () => {
                       </div>
                     );
                   })}
-                  
-                  <Link 
+
+                  <Link
                     to="/student/courses"
                     className="block text-center text-sm font-semibold text-blue-600 hover:text-blue-700 py-2 hover:bg-blue-50 rounded-lg transition-colors"
                   >
@@ -407,7 +451,7 @@ export const StudentDashboard = () => {
                 </div>
                 <span className="text-xs font-bold text-amber-600 bg-amber-100 px-3 py-1 rounded-full">NEW</span>
               </div>
-              
+
               <div className="p-6">
                 {assignments.slice(0, 1).map(assignment => (
                   <div key={assignment.id} className="space-y-4">
@@ -416,15 +460,10 @@ export const StudentDashboard = () => {
                       <p className="text-sm text-gray-500">{assignment.description || 'Complete the assignment and submit on time'}</p>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-500">Due in 2 days</span>
-                      <span className="text-xs font-semibold text-gray-600">Progress: 0%</span>
+                      <span className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-100 px-3 py-1 rounded-lg">
+                        {assignment.due_date ? `Due: ${new Date(assignment.due_date).toLocaleDateString()}` : 'No due date'}
+                      </span>
                     </div>
-                    <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div className="absolute left-0 top-0 h-full bg-blue-600 rounded-full" style={{ width: '0%' }}></div>
-                    </div>
-                    <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-blue-200">
-                      Submit
-                    </button>
                   </div>
                 ))}
               </div>
@@ -434,7 +473,7 @@ export const StudentDashboard = () => {
 
         {/* Right Column */}
         <div className="lg:col-span-1 space-y-6">
-          
+
           {/* Recent Announcements - Moved to Top */}
           <div className="bg-white rounded-[20px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 overflow-hidden">
             <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
@@ -451,7 +490,7 @@ export const StudentDashboard = () => {
             <div className="p-2">
               {loading ? (
                 <div className="p-4 space-y-4 animate-pulse">
-                  {[1,2].map(i => <div key={i} className="h-12 bg-gray-100 rounded-lg" />)}
+                  {[1, 2].map(i => <div key={i} className="h-12 bg-gray-100 rounded-lg" />)}
                 </div>
               ) : announcements.length > 0 ? (
                 <div className="divide-y divide-gray-50">
@@ -477,7 +516,7 @@ export const StudentDashboard = () => {
               )}
             </div>
           </div>
-          
+
           {/* Attendance Card */}
           <div className="bg-white rounded-[20px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 p-6">
             <h3 className="text-[16px] font-bold text-gray-900 mb-5">Academic Standing & Attendance</h3>
@@ -514,13 +553,13 @@ export const StudentDashboard = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Student Info Card */}
           <div className="bg-white rounded-[20px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 p-6">
             <h3 className="text-[16px] font-bold text-gray-900 mb-4">Student Info</h3>
             {loading ? (
               <div className="space-y-3 animate-pulse">
-                {[1,2,3,4].map(i => <div key={i} className="h-8 bg-gray-100 rounded-lg" />)}
+                {[1, 2, 3, 4].map(i => <div key={i} className="h-8 bg-gray-100 rounded-lg" />)}
               </div>
             ) : profile ? (
               <div className="space-y-3">

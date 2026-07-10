@@ -309,7 +309,7 @@ export const CAAttendanceSummary = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
         
         {/* Left Column: Summary & Calendar */}
-        <div className="lg:col-span-1 space-y-6 sticky top-0">
+        <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6 lg:z-10">
           
           {/* Calendar UI */}
           <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 relative">
@@ -394,7 +394,7 @@ export const CAAttendanceSummary = () => {
 
         {/* Right Column: Student Records (Scrollable) */}
         <div className="lg:col-span-2">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col max-h-[calc(100vh-140px)]">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col lg:max-h-[calc(100vh-140px)]">
             
             {/* Records Header */}
             <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between sm:items-center gap-4 flex-shrink-0">

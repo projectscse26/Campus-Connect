@@ -35,6 +35,7 @@ import { Courses as FacultyCourses } from './features/faculty/Courses';
 import { LMSDashboard } from './features/faculty/lms/LMSDashboard';
 import { LMSResources } from './features/faculty/lms/LMSResources';
 import { LMSAssignments } from './features/faculty/lms/LMSAssignments';
+import { LMSSeminars } from './features/faculty/lms/LMSSeminars';
 import { LMSAnnouncements as CourseAnnouncements } from './features/faculty/lms/LMSAnnouncements';
 import { LMSSyllabus } from './features/faculty/lms/LMSSyllabus';
 import { LMSAttendance } from './features/faculty/lms/LMSAttendance';
@@ -81,6 +82,9 @@ import PrincipalDashboard from './features/authority/PrincipalDashboard';
 import DeanDashboard from './features/authority/DeanDashboard';
 import OMDashboard from './features/authority/OMDashboard';
 import AuthorityDashboardRouter from './features/authority/AuthorityDashboardRouter';
+import StudentMessaging from './features/student/StudentMessaging';
+import DeanMessaging from './features/dean/DeanMessaging';
+import MyAttendance from './features/faculty/MyAttendance';
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
@@ -250,6 +254,11 @@ function AppRoutes() {
             <FacultyDashboard />
           </ProtectedRoute>
         } />
+        <Route path="/faculty/my-attendance" element={
+          <ProtectedRoute allowedRole="faculty">
+            <MyAttendance />
+          </ProtectedRoute>
+        } />
         <Route path="/faculty/courses" element={
           <ProtectedRoute allowedRole="faculty">
             <FacultyCourses />
@@ -268,6 +277,11 @@ function AppRoutes() {
         <Route path="/faculty/courses/:assignmentId/lms/assignments" element={
           <ProtectedRoute allowedRole="faculty">
             <LMSAssignments />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/courses/:assignmentId/lms/seminars" element={
+          <ProtectedRoute allowedRole="faculty">
+            <LMSSeminars />
           </ProtectedRoute>
         } />
         <Route path="/faculty/courses/:assignmentId/lms/announcements" element={
@@ -440,6 +454,11 @@ function AppRoutes() {
             <StudentLeave />
           </ProtectedRoute>
         } />
+        <Route path="/student/messaging" element={
+          <ProtectedRoute allowedRole="student">
+            <StudentMessaging />
+          </ProtectedRoute>
+        } />
       </Route>
 
       {/* Late Tracker Routes (No Sidebar) */}
@@ -473,6 +492,11 @@ function AppRoutes() {
         <Route path="/dean" element={
           <ProtectedRoute allowedRole="authority">
             <DeanDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/dean/messaging" element={
+          <ProtectedRoute allowedRole="authority">
+            <DeanMessaging />
           </ProtectedRoute>
         } />
         
