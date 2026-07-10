@@ -82,6 +82,7 @@ import PrincipalDashboard from './features/authority/PrincipalDashboard';
 import DeanDashboard from './features/authority/DeanDashboard';
 import OMDashboard from './features/authority/OMDashboard';
 import AuthorityDashboardRouter from './features/authority/AuthorityDashboardRouter';
+import MyAttendance from './features/faculty/MyAttendance';
 // A simple protective wrapper that forces login and checks roles
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user } = useAuth();
@@ -249,6 +250,11 @@ function AppRoutes() {
         <Route path="/faculty" element={
           <ProtectedRoute allowedRole="faculty">
             <FacultyDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/faculty/my-attendance" element={
+          <ProtectedRoute allowedRole="faculty">
+            <MyAttendance />
           </ProtectedRoute>
         } />
         <Route path="/faculty/courses" element={

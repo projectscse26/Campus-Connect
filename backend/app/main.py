@@ -34,7 +34,7 @@ app.add_middleware(
     "https://secure-healing-production-6347.up.railway.app",
     settings.FRONTEND_URL,
     ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -80,6 +80,13 @@ app.include_router(alumni.router, prefix="/api/admin", tags=["Alumni"])
 from app.api import retest
 app.include_router(retest.router, prefix="/api/retest", tags=["Retest Marks"])
 
+
+import asyncio
+from app.core.tasks import faculty_attendance_job
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(faculty_attendance_job())
 
 @app.get("/")
 def read_root():

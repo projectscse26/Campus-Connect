@@ -120,52 +120,13 @@ export const CADailyAttendance = () => {
     fetchSettings();
   }, [fetchSettings]);
 
-  // Subject and Lesson Plan integration state
-  const [subjects, setSubjects] = useState([]);
-  const [selectedSubject, setSelectedSubject] = useState(null);
-  const [selectedPeriod, setSelectedPeriod] = useState(1);
-  const [selectedUnit, setSelectedUnit] = useState("1");
-  const [topics, setTopics] = useState([]);
-  const [selectedTopicId, setSelectedTopicId] = useState("");
 
-  // Fetch advisor's section subjects on mount
-  useEffect(() => {
-    axios.get('/api/class-advisor/subjects')
-      .then(r => {
-        setSubjects(r.data);
-        if (r.data.length > 0) {
-          setSelectedSubject(r.data[0]);
-        }
-      })
-      .catch(err => console.error("Failed to load section subjects", err));
-  }, []);
 
-  // Fetch syllabus/lesson plan topics when selected subject changes
-  useEffect(() => {
-    if (!selectedSubject || !selectedSubject.course_assignment_id) {
-      setTopics([]);
-      setSelectedTopicId("");
-      return;
-    }
-    axios.get(`/api/course-plan/${selectedSubject.course_assignment_id}`)
-      .then(r => {
-        setTopics(r.data.topics || []);
-        setSelectedTopicId("");
-      })
-      .catch(err => {
-        console.error("Failed to load course plan topics", err);
-        setTopics([]);
-        setSelectedTopicId("");
-      });
-  }, [selectedSubject]);
-
-  const fetchAttendance = useCallback((dateStr, courseId, hour) => {
+  const fetchAttendance = useCallback((dateStr) => {
     setLoading(true);
     setError(null);
     setSaved(false);
     let url = `/api/class-advisor/attendance?date=${dateStr}`;
-    if (courseId) url += `&course_id=${courseId}`;
-    if (hour) url += `&hour=${hour}`;
     
     axios.get(url)
       .then(r => setStudents(r.data))
@@ -174,9 +135,8 @@ export const CADailyAttendance = () => {
   }, []);
 
   useEffect(() => {
-    const courseId = selectedSubject ? selectedSubject.course_id : null;
-    fetchAttendance(selectedDate, courseId, selectedPeriod);
-  }, [selectedDate, selectedSubject, selectedPeriod, fetchAttendance]);
+    fetchAttendance(selectedDate);
+  }, [selectedDate, fetchAttendance]);
 
   const setStatus = (studentId, status) => {
     setStudents(prev => prev.map(s => {
@@ -198,21 +158,9 @@ export const CADailyAttendance = () => {
     try {
       await axios.post('/api/class-advisor/attendance', {
         date: selectedDate,
-        records: students.filter(s => s.status).map(s => ({ student_id: s.student_id, status: s.status })),
-        course_id: selectedSubject ? selectedSubject.course_id : null,
-        course_assignment_id: selectedSubject ? selectedSubject.course_assignment_id : null,
-        unit: selectedUnit,
-        topic_id: selectedTopicId ? parseInt(selectedTopicId) : null,
-        hour: selectedPeriod
+        records: students.filter(s => s.status).map(s => ({ student_id: s.student_id, status: s.status }))
       });
       setSaved(true);
-      
-      // Refresh topics so that covered status (actual_date) gets updated visually in the dropdown
-      if (selectedSubject && selectedSubject.course_assignment_id) {
-        axios.get(`/api/course-plan/${selectedSubject.course_assignment_id}`)
-          .then(r => setTopics(r.data.topics || []))
-          .catch(err => console.error(err));
-      }
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to save attendance');
     } finally {
@@ -232,8 +180,6 @@ export const CADailyAttendance = () => {
     const parts = [
       '*Daily Attendance Report*',
       `Date: ${selectedDate.split('-').reverse().join('-')}`,
-      `Subject: ${selectedSubject ? selectedSubject.name : ''}`,
-      `Period: ${selectedPeriod}`,
       '',
       `Total Students: ${totalStudents}`,
       `Present: ${presentCount}`,
@@ -253,19 +199,6 @@ export const CADailyAttendance = () => {
     const message = parts.join('\n');
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
-
-  // Filter topics based on unit (supports "1" vs "Unit 1", "UNIT I" etc.)
-  const filteredTopics = topics.filter(t => {
-    const unitStr = String(t.unit).trim().toLowerCase();
-    const selUnit = String(selectedUnit).trim().toLowerCase();
-    return unitStr === selUnit || 
-           unitStr === `unit ${selUnit}` || 
-           (selUnit === '1' && unitStr === 'unit i') ||
-           (selUnit === '2' && unitStr === 'unit ii') ||
-           (selUnit === '3' && unitStr === 'unit iii') ||
-           (selUnit === '4' && unitStr === 'unit iv') ||
-           (selUnit === '5' && unitStr === 'unit v');
-  });
 
   return (
     <div className="max-w-4xl mx-auto pb-24 space-y-6">
@@ -296,92 +229,7 @@ export const CADailyAttendance = () => {
         </div>
       </div>
 
-      {/* Subject and Lesson Plan Integration Controls */}
-      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-          <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-primary-600" /> Subject & Lesson Plan Coverage
-          </h3>
-          {selectedSubject && (
-            <span className="text-[11px] font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
-              Faculty: {selectedSubject.faculty_name}
-            </span>
-          )}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Subject Dropdown */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subject / Course</label>
-            <select
-              value={selectedSubject ? selectedSubject.course_id : ""}
-              onChange={(e) => {
-                const sub = subjects.find(s => s.course_id === parseInt(e.target.value));
-                setSelectedSubject(sub || null);
-              }}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary-500 focus:outline-none"
-            >
-              {subjects.map(s => (
-                <option key={s.course_id} value={s.course_id}>
-                  {s.code} - {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
 
-          {/* Period/Hour Dropdown */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Hour / Period</label>
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(parseInt(e.target.value))}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary-500 focus:outline-none"
-            >
-              {PERIODS.map(p => (
-                <option key={p.id} value={p.id}>{p.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Unit Dropdown */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Unit</label>
-            <select
-              value={selectedUnit}
-              onChange={(e) => {
-                setSelectedUnit(e.target.value);
-                setSelectedTopicId("");
-              }}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary-500 focus:outline-none"
-            >
-              <option value="1">Unit 1</option>
-              <option value="2">Unit 2</option>
-              <option value="3">Unit 3</option>
-              <option value="4">Unit 4</option>
-              <option value="5">Unit 5</option>
-            </select>
-          </div>
-
-          {/* Topic Dropdown */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Topic to Cover</label>
-            <select
-              value={selectedTopicId}
-              onChange={(e) => setSelectedTopicId(e.target.value)}
-              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary-500 focus:outline-none"
-            >
-              <option value="">-- None / Select Topic --</option>
-              {filteredTopics.map(t => {
-                const isCovered = t.actual_date !== null;
-                return (
-                  <option key={t.id} value={t.id}>
-                    {isCovered ? "✓ (Covered) " : ""}S.No {t.sequence_no}: {t.topic}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-        </div>
-      </div>
 
       {/* Stats Cards */}
       {totalStudents > 0 && (
@@ -518,15 +366,7 @@ export const CADailyAttendance = () => {
                       <span className="hidden sm:inline">Successfully saved</span>
                       <span className="sm:hidden">Saved</span>
                     </div>
-                    {selectedSubject && (
-                      <Link
-                        to={`/faculty/courses/${selectedSubject.course_assignment_id}/lms/syllabus`}
-                        state={{ mode: 'record' }}
-                        className="text-xs font-bold text-primary-600 hover:text-primary-700 underline sm:ml-2"
-                      >
-                        Verify Record →
-                      </Link>
-                    )}
+
                   </span>
                   <button
                     onClick={handleWhatsAppShare}

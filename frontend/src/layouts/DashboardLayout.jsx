@@ -40,6 +40,7 @@ const ROLE_NAV_LINKS = {
   ],
   faculty: [
     { name: 'Dashboard', path: '/faculty', icon: LayoutDashboard },
+    { name: 'My Attendance', path: '/faculty/my-attendance', icon: ClipboardList },
     { name: 'My Courses', path: '/faculty/courses', icon: BookOpen },
     { name: 'Leave Requests', path: '/faculty/leave', icon: Calendar },
     { name: 'Mentorship', path: '/faculty/mentorship', icon: GraduationCap },
