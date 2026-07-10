@@ -63,8 +63,8 @@ export const LMSDashboard = () => {
       path: `/faculty/courses/${assignmentId}/lms/announcements`
     },
     {
-      title: 'Syllabus',
-      description: 'Define course outcomes, modules, and grading criteria.',
+      title: 'Lesson Plan',
+      description: 'Plan topics, record actual coverage dates, and sign off with Bloom\'s Taxonomy tracking.',
       icon: <Settings className="w-8 h-8 text-orange-600" />,
       bg: 'bg-orange-50',
       border: 'border-orange-100',

@@ -94,6 +94,8 @@ class HodDashboardResponse(BaseModel):
     course_count: int
     section_count: int
     assignment_count: int
+    hod_name: Optional[str] = None
+    hod_title: Optional[str] = None
 
 # --- Timetable Schemas ---
 class TimetableSlotCreate(BaseModel):

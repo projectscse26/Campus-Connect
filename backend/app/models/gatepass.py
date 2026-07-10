@@ -52,3 +52,51 @@ class GatePass(Base):
     mentor = relationship("Faculty", foreign_keys=[mentor_id])
     hod = relationship("Faculty", foreign_keys=[hod_id])
     om = relationship("Authority", foreign_keys=[om_id])
+
+
+class FacultyGatePassStatus(str, enum.Enum):
+    PENDING_HOD = "pending_hod"
+    PENDING_DEAN = "pending_dean"
+    PENDING_OM = "pending_om"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class FacultyGatePass(Base):
+    __tablename__ = "faculty_gate_passes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    faculty_id = Column(Integer, ForeignKey("faculty.id"), nullable=False)
+    
+    reason = Column(Text, nullable=False)
+    out_time = Column(DateTime(timezone=True), nullable=False)
+    expected_in_time = Column(DateTime(timezone=True), nullable=True)
+    actual_in_time = Column(DateTime(timezone=True), nullable=True)
+    
+    status = Column(SQLEnum(FacultyGatePassStatus), default=FacultyGatePassStatus.PENDING_HOD, nullable=False)
+    
+    viewed_by_hod = Column(Boolean, default=False, nullable=False)
+    viewed_by_dean = Column(Boolean, default=False, nullable=False)
+    viewed_by_om = Column(Boolean, default=False, nullable=False)
+    
+    # Audit trail
+    hod_id = Column(Integer, ForeignKey("faculty.id"), nullable=True)
+    hod_approved_at = Column(DateTime(timezone=True), nullable=True)
+    
+    dean_id = Column(Integer, ForeignKey("authorities.id"), nullable=True)
+    dean_approved_at = Column(DateTime(timezone=True), nullable=True)
+    
+    om_id = Column(Integer, ForeignKey("authorities.id"), nullable=True)
+    om_approved_at = Column(DateTime(timezone=True), nullable=True)
+    
+    rejection_reason = Column(Text, nullable=True)
+    is_deleted_by_faculty = Column(Boolean, default=False)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Forward relationships
+    faculty = relationship("Faculty", foreign_keys=[faculty_id])
+    hod_approver = relationship("Faculty", foreign_keys=[hod_id])
+    dean = relationship("Authority", foreign_keys=[dean_id])
+    om = relationship("Authority", foreign_keys=[om_id])

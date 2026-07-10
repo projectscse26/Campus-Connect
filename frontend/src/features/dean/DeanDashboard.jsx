@@ -3,8 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   Users, UserCheck, Building2, BookOpen,
   TrendingUp, TrendingDown, AlertCircle, Clock,
-  FileText, ShieldAlert, RefreshCw, ChevronRight,
-  BarChart3, PieChart, Activity
+  FileText, ShieldAlert, RefreshCw, Activity,
+  BarChart3, PieChart
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -73,7 +73,6 @@ const AlertItem = ({ alert }) => {
   const getIcon = () => {
     switch(alert.type) {
       case 'discipline': return <ShieldAlert className="w-4 h-4" />;
-      case 'gatepass': return <FileText className="w-4 h-4" />;
       case 'leave': return <FileText className="w-4 h-4" />;
       default: return <AlertCircle className="w-4 h-4" />;
     }
@@ -114,7 +113,7 @@ const AlertItem = ({ alert }) => {
   );
 };
 
-const PrincipalDashboard = () => {
+const DeanDashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -127,7 +126,7 @@ const PrincipalDashboard = () => {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/api/dashboard/authority/stats`, {
+      const response = await axios.get(`${API_BASE_URL}/api/dashboard/dean/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -194,8 +193,8 @@ const PrincipalDashboard = () => {
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-[28px] font-bold text-gray-900 tracking-tight mb-1 capitalize">
-            {user?.title ? `${user.title} Dashboard 🎓` : 'Authority Dashboard 🎓'}
+          <h1 className="text-[28px] font-bold text-gray-900 tracking-tight mb-1">
+            Dean Dashboard 📊
           </h1>
           <p className="text-[14px] text-gray-500">
             Real-time overview of campus operations • View-only access
@@ -336,7 +335,7 @@ const PrincipalDashboard = () => {
         {/* Right Column - Pending Requests & Alerts */}
         <div className="space-y-6">
           
-          {/* 4. PENDING REQUESTS (WITHOUT GATE PASSES) */}
+          {/* 4. PENDING REQUESTS */}
           <div className="bg-white rounded-[20px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-gray-100 p-6">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 rounded-[12px] bg-amber-50 flex items-center justify-center">
@@ -361,15 +360,13 @@ const PrincipalDashboard = () => {
               
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-rose-50 rounded-xl border border-red-200">
                 <div>
-                  <p className="text-xs font-semibold text-gray-600">Complaints</p>
+                  <p className="text-xs font-semibold text-gray-600">Student Complaints</p>
                   <p className="text-2xl font-extrabold text-red-700 mt-1">
                     {stats?.pending_complaints || 0}
                   </p>
                 </div>
                 <ShieldAlert className="w-8 h-8 text-red-400" />
               </div>
-              
-              {/* Gate Passes section REMOVED for Principal */}
             </div>
           </div>
 
@@ -421,4 +418,4 @@ const PrincipalDashboard = () => {
   );
 };
 
-export default PrincipalDashboard;
+export default DeanDashboard;

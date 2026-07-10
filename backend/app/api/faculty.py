@@ -932,9 +932,15 @@ def save_course_attendance(
     now_time = datetime.now().time()
     records = payload.get("records", [])
     slot_start = payload.get("slot_start_time")  # e.g. "08:45"
+    payload_hour = payload.get("hour")
 
-    # Determine period number from slot_start or current time
-    period_number = PERIOD_MAP.get(slot_start) if slot_start else None
+    # Determine period number from hour, slot_start, or current time
+    period_number = None
+    if payload_hour is not None:
+        period_number = int(payload_hour)
+    else:
+        period_number = PERIOD_MAP.get(slot_start) if slot_start else None
+
     if not period_number:
         # Find active slot from timetable right now
         DAY_MAP = {0: "mon", 1: "tue", 2: "wed", 3: "thu", 4: "fri", 5: "sat", 6: "sun"}
@@ -975,6 +981,22 @@ def save_course_attendance(
                 marked_by_id=faculty.id
             ))
         saved += 1
+
+    # Automated update of Lesson Plan (CoursePlanTopic) if topic_id is provided
+    topic_id = payload.get("topic_id")
+    if topic_id:
+        from app.models.course_plan import CoursePlanTopic
+        from sqlalchemy import func as sa_func
+        topic = db.query(CoursePlanTopic).filter(CoursePlanTopic.id == int(topic_id)).first()
+        if topic:
+            topic.actual_date = today
+            topic.is_signed = True
+            topic.signed_at = sa_func.now()
+            if period_number:
+                topic.hours = period_number
+            if topic.proposed_date and topic.proposed_date != today:
+                if not topic.reason_for_deviation:
+                    topic.reason_for_deviation = "Topic covered during Daily Attendance session"
 
     db.commit()
     return {"message": "Attendance saved", "saved": saved}
