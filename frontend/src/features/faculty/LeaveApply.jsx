@@ -1,8 +1,98 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, User as UserIcon, Calendar, Users, Paperclip, UploadCloud, Trash2 } from 'lucide-react';
+import { ArrowLeft, User as UserIcon, Calendar, Users, Paperclip, UploadCloud, Trash2, Search, ChevronDown, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+const SearchableFacultySelect = ({ value, onChange, options, placeholder = "Select Faculty..." }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const wrapperRef = useRef(null);
+
+  const selectedOption = options.find(o => o.id.toString() === value?.toString());
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(o => {
+    const nameStr = o.name.toLowerCase();
+    const q = search.toLowerCase();
+    return nameStr.includes(q);
+  });
+
+  return (
+    <div className="relative w-full" ref={wrapperRef}>
+      <input 
+        type="text" 
+        value={value || ''} 
+        onChange={() => {}}
+        required 
+        className="opacity-0 w-full h-0 absolute bottom-0 left-0 -z-10 pointer-events-none"
+        tabIndex={-1}
+      />
+      <div 
+        className="flex items-center justify-between w-full px-3 py-2 bg-white border border-gray-200 rounded text-sm cursor-pointer hover:border-primary-500 focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className={`truncate ${!selectedOption ? 'text-gray-400' : 'text-gray-900'}`}>
+          {selectedOption ? (
+            <span>
+              {selectedOption.name} {selectedOption.teaches_this_class ? '🌟' : ''}
+            </span>
+          ) : placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col">
+          <div className="p-2 border-b border-gray-100 flex items-center bg-gray-50">
+            <Search className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
+            <input
+              type="text"
+              className="w-full text-sm bg-transparent outline-none focus:outline-none"
+              placeholder="Search faculty..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="overflow-y-auto p-1 flex-1">
+            {filteredOptions.length === 0 ? (
+              <div className="p-3 text-sm text-gray-500 text-center">No faculty found</div>
+            ) : (
+              filteredOptions.map((f) => (
+                <div
+                  key={f.id}
+                  className={`flex items-center justify-between p-2 rounded cursor-pointer text-sm ${selectedOption?.id === f.id ? 'bg-primary-50 text-primary-700' : 'hover:bg-gray-50'}`}
+                  onClick={() => {
+                    onChange(f.id);
+                    setIsOpen(false);
+                    setSearch('');
+                  }}
+                >
+                  <div>
+                    <div className="font-medium text-gray-900">{f.name} {f.teaches_this_class && '🌟'}</div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">{f.teaches_this_class ? 'Teaches Class' : (f.designation || 'Faculty')}</div>
+                  </div>
+                  {selectedOption?.id === f.id && <Check className="w-4 h-4 text-primary-600 flex-shrink-0 ml-2" />}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const LeaveApply = () => {
   const navigate = useNavigate();
@@ -99,7 +189,8 @@ export const LeaveApply = () => {
           subject: slot.course_code,
           class_section: slot.class_section,
           period: slot.period_display,
-          day: slot.day
+          day: slot.day,
+          available_substitutes: slot.available_substitutes
         }));
         
         // Add class advisor duty if exists
@@ -110,7 +201,8 @@ export const LeaveApply = () => {
               subject: 'Class Advisor',
               class_section: duty.class_display,
               period: 'All Periods',
-              day: 'All Days'
+              day: 'All Days',
+              available_substitutes: duty.available_substitutes
             });
           });
         }
@@ -144,7 +236,7 @@ export const LeaveApply = () => {
   };
 
   const addArrangementRow = () => {
-    setArrangements([...arrangements, { substitute_faculty_id: '', subject: '', class_section: '', period: '' }]);
+    setArrangements([...arrangements, { substitute_faculty_id: '', subject: '', class_section: '', period: '', available_substitutes: null }]);
   };
 
   const removeArrangementRow = (index) => {
@@ -384,18 +476,11 @@ export const LeaveApply = () => {
                       )}
                       <div className="col-span-4 w-full">
                         <label className="block md:hidden text-xs font-bold text-gray-500 uppercase mb-0.5">Substitute Faculty</label>
-                        <select 
+                        <SearchableFacultySelect
                           value={arr.substitute_faculty_id}
-                          onChange={(e) => handleArrangementChange(idx, 'substitute_faculty_id', e.target.value)}
-                          className="w-full px-2 md:px-2 py-1.5 md:py-1.5 bg-blue-50 border border-blue-200 rounded text-sm md:text-sm focus:outline-none focus:border-blue-300 font-medium text-slate-700 transition-all"
-                          style={{ maxHeight: '200px' }}
-                          required
-                        >
-                          <option value="">Select Faculty...</option>
-                          {allFaculty.map(f => (
-                            <option key={f.id} value={f.id}>{f.name} ({f.designation || 'Faculty'})</option>
-                          ))}
-                        </select>
+                          onChange={(val) => handleArrangementChange(idx, 'substitute_faculty_id', val)}
+                          options={arr.available_substitutes || allFaculty}
+                        />
                       </div>
                       <div className="col-span-2 w-full">
                         <label className="block md:hidden text-xs font-bold text-gray-500 uppercase mb-0.5">Subject</label>

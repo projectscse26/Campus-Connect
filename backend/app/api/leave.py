@@ -87,7 +87,10 @@ def get_leave_preparation_data(
                     "year": section.year,
                     "department_short": department.code if department else "DEPT",
                     "class_section": f"{department.code if department else 'Dept'} Year-{section.year} {section.name}",
-                    "period_display": f"{slot.start_time.strftime('%H:%M') if slot.start_time else ''} - {slot.end_time.strftime('%H:%M') if slot.end_time else ''}"
+                    "period_display": f"{slot.start_time.strftime('%H:%M') if slot.start_time else ''} - {slot.end_time.strftime('%H:%M') if slot.end_time else ''}",
+                    "_section_id": section.id,
+                    "_start_time": slot.start_time,
+                    "_end_time": slot.end_time
                 })
     
     # Get all other active faculty (excluding current faculty)
@@ -105,7 +108,63 @@ def get_leave_preparation_data(
             "designation": f.designation,
             "department": dept.name if dept else "N/A"
         })
+        
+    # Pre-fetch data for substitute filtering
+    other_faculty_ids = [f["id"] for f in faculty_list]
+    active_assignments = db.query(CourseAssignment).filter(
+        CourseAssignment.faculty_id.in_(other_faculty_ids),
+        CourseAssignment.is_active == True
+    ).all()
     
+    faculty_sections = {}
+    for a in active_assignments:
+        if a.faculty_id not in faculty_sections:
+            faculty_sections[a.faculty_id] = set()
+        faculty_sections[a.faculty_id].add(a.section_id)
+        
+    assignment_to_faculty = {a.id: a.faculty_id for a in active_assignments}
+    all_slots = db.query(TimetableSlot).filter(
+        TimetableSlot.course_assignment_id.in_(list(assignment_to_faculty.keys())),
+        TimetableSlot.day.in_(day_names)
+    ).all()
+    
+    faculty_busy_slots = {}
+    for s in all_slots:
+        fid = assignment_to_faculty[s.course_assignment_id]
+        if fid not in faculty_busy_slots:
+            faculty_busy_slots[fid] = []
+        faculty_busy_slots[fid].append(s)
+
+    # Compute available_substitutes for my_schedule
+    for item in my_schedule:
+        item["available_substitutes"] = []
+        target_section_id = item.get("_section_id")
+        for f in faculty_list:
+            fid = f["id"]
+            # Check overlap
+            is_busy = False
+            if fid in faculty_busy_slots:
+                for bs in faculty_busy_slots[fid]:
+                    if bs.day == item["day"]:
+                        if bs.start_time and bs.end_time and item.get("_start_time") and item.get("_end_time"):
+                            if bs.start_time < item["_end_time"] and bs.end_time > item["_start_time"]:
+                                is_busy = True
+                                break
+            
+            if not is_busy:
+                teaches_class = target_section_id in faculty_sections.get(fid, set())
+                sub_info = dict(f)
+                sub_info["teaches_this_class"] = teaches_class
+                item["available_substitutes"].append(sub_info)
+                
+        # Sort so those who teach class appear first
+        item["available_substitutes"].sort(key=lambda x: not x["teaches_this_class"])
+        
+        # Remove internal fields
+        item.pop("_section_id", None)
+        item.pop("_start_time", None)
+        item.pop("_end_time", None)
+
     # Check if current faculty is a class advisor
     advised_sections = db.query(Section).filter(
         Section.class_advisor_id == faculty.id,
@@ -115,6 +174,17 @@ def get_leave_preparation_data(
     class_advisor_duties = []
     for sec in advised_sections:
         dept = db.query(Department).filter(Department.id == sec.department_id).first()
+        
+        # Compute available_substitutes for class advisor
+        available_subs = []
+        for f in faculty_list:
+            fid = f["id"]
+            teaches_class = sec.id in faculty_sections.get(fid, set())
+            sub_info = dict(f)
+            sub_info["teaches_this_class"] = teaches_class
+            available_subs.append(sub_info)
+        available_subs.sort(key=lambda x: not x["teaches_this_class"])
+        
         class_advisor_duties.append({
             "section_id": sec.id,
             "section_name": sec.name,
@@ -122,7 +192,8 @@ def get_leave_preparation_data(
             "batch": sec.batch,
             "department": dept.name if dept else "N/A",
             "class_display": f"{dept.code if dept else 'Dept'} Year-{sec.year} {sec.name}",
-            "duty_type": "Class Advisor"
+            "duty_type": "Class Advisor",
+            "available_substitutes": available_subs
         })
     
     return {
@@ -441,15 +512,50 @@ def get_substitute_requests(
     
     request_ids = list(set([a.leave_request_id for a in arrangements]))
     requests = db.query(FacultyLeaveRequest).filter(FacultyLeaveRequest.id.in_(request_ids)).all()
-    
+    response_data = []
     for req in requests:
         fac = db.query(Faculty).filter(Faculty.id == req.faculty_id).first()
-        req.faculty_name = f"{fac.first_name} {fac.last_name}" if fac else "Unknown"
+        req_dict = {
+            "id": req.id,
+            "faculty_id": req.faculty_id,
+            "leave_type": req.leave_type,
+            "from_date": req.from_date,
+            "to_date": req.to_date,
+            "duration_days": req.duration_days,
+            "reason": req.reason,
+            "attachment_url": req.attachment_url,
+            "status": req.status,
+            "hod_approved_by": req.hod_approved_by,
+            "dean_approved_by": req.dean_approved_by,
+            "om_approved_by": req.om_approved_by,
+            "rejection_reason": req.rejection_reason,
+            "faculty_name": f"{fac.first_name} {fac.last_name}" if fac else "Unknown",
+            "created_at": req.created_at,
+            "updated_at": req.updated_at,
+            "arrangements": []
+        }
+        
         for arr in req.arrangements:
-            sub = db.query(Faculty).filter(Faculty.id == arr.substitute_faculty_id).first()
-            arr.substitute_faculty_name = f"{sub.first_name} {sub.last_name}" if sub else "Unknown"
+            if arr.substitute_faculty_id == faculty.id:
+                sub = db.query(Faculty).filter(Faculty.id == arr.substitute_faculty_id).first()
+                arr_dict = {
+                    "id": arr.id,
+                    "leave_request_id": arr.leave_request_id,
+                    "substitute_faculty_id": arr.substitute_faculty_id,
+                    "subject": arr.subject,
+                    "class_section": arr.class_section,
+                    "period": arr.period,
+                    "status": arr.status,
+                    "substitute_faculty_name": f"{sub.first_name} {sub.last_name}" if sub else "Unknown",
+                    "created_at": arr.created_at,
+                    "updated_at": arr.updated_at
+                }
+                req_dict["arrangements"].append(arr_dict)
+                
+        if req_dict["arrangements"]:
+            response_data.append(req_dict)
             
-    return requests
+    return response_data
 
 @router.put("/substitute-requests/{arr_id}")
 def update_substitute_request(
