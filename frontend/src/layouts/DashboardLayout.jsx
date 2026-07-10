@@ -36,6 +36,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Discipline', path: '/hod/discipline', icon: ShieldAlert },
     { name: 'Late Tracker', path: '/hod/latetracker', icon: Clock },
     { name: 'Gate Pass Approvals', path: '/hod/gatepass', icon: Clock },
+    { name: 'Faculty Gate Pass Approvals', path: '/hod/faculty-gatepass', icon: Clock },
   ],
   faculty: [
     { name: 'Dashboard', path: '/faculty', icon: LayoutDashboard },
@@ -44,6 +45,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Mentorship', path: '/faculty/mentorship', icon: GraduationCap },
     { name: 'Report Incident', path: '/faculty/discipline', icon: ShieldAlert },
     { name: 'Gate Pass Approvals', path: '/faculty/gatepass', icon: Clock },
+    { name: 'Faculty Gate Pass', path: '/faculty/faculty-gatepass', icon: Clock },
     { name: 'Late Entry Notifications', path: '/faculty/late-entry', icon: Bell },
     { name: 'Announcements', path: '/faculty/announcements', icon: Bell },
   ],
@@ -64,6 +66,7 @@ const ROLE_NAV_LINKS = {
     { name: 'Late Tracker', path: '/authority/latetracker', icon: Clock },
     { name: 'Leave Approvals', path: '/authority/leave', icon: Calendar },
     { name: 'Gate Pass Approvals', path: '/authority/gatepass', icon: Clock },
+    { name: 'Faculty Gate Pass Approvals', path: '/authority/faculty-gatepass', icon: Clock },
     { name: 'Announcements', path: '/authority/announcements', icon: Bell },
   ]
 };
@@ -215,6 +218,9 @@ export default function DashboardLayout() {
     const title = user.title ? user.title.toLowerCase().trim() : '';
     if (title !== 'office manager') {
       navLinks = navLinks.filter(link => link.name !== 'Gate Pass Approvals');
+    }
+    if (title !== 'dean' && title !== 'office manager') {
+      navLinks = navLinks.filter(link => link.name !== 'Faculty Gate Pass Approvals');
     }
   }
   const currentLink = navLinks.find(link => link.path === location.pathname);

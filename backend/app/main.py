@@ -68,6 +68,9 @@ app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"]
 from app.api import gatepass
 app.include_router(gatepass.router, prefix="/api/gatepass", tags=["Gate Pass"])
 
+from app.api import faculty_gatepass
+app.include_router(faculty_gatepass.router, prefix="/api/faculty-gatepass", tags=["Faculty Gate Pass"])
+
 from app.api import notifications
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 
