@@ -187,7 +187,9 @@ def get_students(
             first_name=s.first_name,
             last_name=s.last_name,
             phone=s.phone,
-            gender=s.gender
+            gender=s.gender,
+            father_phone=s.father_phone,
+            mother_phone=s.mother_phone
         )
         for s in students
     ]
@@ -401,6 +403,8 @@ def get_student_profile(
         section_name=section.name,
         phone=student.phone,
         gender=student.gender,
+        father_phone=student.father_phone,
+        mother_phone=student.mother_phone,
         overall_attendance_percentage=attendance_pct,
         enrolled_subjects=enrolled_subjects
     )

@@ -10,11 +10,20 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+import os
+from fastapi.staticfiles import StaticFiles
+
+# Ensure static directories exist before mounting
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("uploads/messages", exist_ok=True)
+
 app = FastAPI(
     title="Campus Connect ERP API",
     description="Backend API for Campus Connect Education Resource Planning System",
     version="1.0.0",
 )
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
@@ -79,6 +88,9 @@ app.include_router(alumni.router, prefix="/api/admin", tags=["Alumni"])
 
 from app.api import retest
 app.include_router(retest.router, prefix="/api/retest", tags=["Retest Marks"])
+
+from app.api import messaging
+app.include_router(messaging.router, prefix="/api/messaging", tags=["Messaging"])
 
 
 import asyncio

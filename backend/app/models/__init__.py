@@ -38,6 +38,7 @@ from app.models.leave import (
 from app.models.grade import Grade, GradeType, AssignmentGrade, Seminar
 from app.models.lms import LMSResource, ResourceType, Announcement, TimetableSlot, DayOfWeek
 from app.models.course_plan import CoursePlan, CoursePlanTopic
+from app.models.messaging import Conversation, Message
 
 __all__ = [
     "User", "UserRole",
@@ -64,4 +65,5 @@ __all__ = [
     "Announcement",
     "TimetableSlot", "DayOfWeek",
     "CoursePlan", "CoursePlanTopic",
+    "Conversation", "Message",
 ]
